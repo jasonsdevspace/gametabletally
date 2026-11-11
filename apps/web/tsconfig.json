@@ -1,0 +1,14 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "jsx": "react-jsx",
+        "types": ["vite/client", "node"],
+        // jest-dom's matchers for Vitest declare types their own dependencies disagree with, so
+        // declaration files are left unchecked.
+        "skipLibCheck": true,
+        "noEmit": true,
+        "customConditions": ["@gametabletally/source"]
+    },
+    "include": ["src", "vite.config.ts", "vitest.setup.ts"]
+}

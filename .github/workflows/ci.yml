@@ -1,0 +1,64 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    # Every pull request, not only those into main, so a PR stacked on
+    # another's branch is checked before it is merged down.
+    pull_request:
+
+permissions:
+    contents: read
+
+# A newer push to a pull request supersedes the run in progress. A push to
+# main does not: runs on main wait their turn, so the newest commit is always
+# the last one checked.
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The install below skips its packages' install scripts, so no dependency runs code here by
+# being installed.
+jobs:
+    verify:
+        name: Lint, test and build
+        runs-on: ubuntu-26.04
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Set up Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: .nvmrc
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci --ignore-scripts
+
+            - name: Type-check
+              run: npm run type-check --workspaces && npx tsc -p scripts
+
+            - name: Lint
+              run: npx eslint .
+
+            - name: Format check
+              run: npx prettier --check .
+
+            - name: Prose check
+              run: node scripts/check-prose.mjs
+
+            - name: Node version check
+              run: node scripts/check-node.mjs
+
+            - name: Unit tests
+              run: npx vitest run
+
+            # The scoring package from its compiled output, and the app as a
+            # browser receives it, so a build that type-checks but does not
+            # bundle is caught here.
+            - name: Build
+              run: npm run build
