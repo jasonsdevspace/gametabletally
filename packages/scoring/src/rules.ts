@@ -44,3 +44,32 @@ export const isRecord = (value: unknown): value is Readonly<Record<string, unkno
  */
 export const isWhole = (value: unknown): value is number =>
     typeof value === 'number' && Number.isSafeInteger(value);
+
+/** Why something is refused, before it is placed: its code, its sentence and what it is about. */
+export type Refusal = Pick<Problem, 'code' | 'message' | 'data'>;
+
+/** A refusal, with nothing to add unless its data is given. */
+export const refusal = (
+    code: string,
+    message: string,
+    data: Readonly<Record<string, unknown>> = {}
+): Refusal => ({ code, message, data });
+
+/** A refusal placed in the game: at a round, about a player, or about the game as a whole. */
+export const problemAt = (
+    { code, message, data }: Refusal,
+    round: number | null = null,
+    player: string | null = null
+): Problem => ({ code, message, data, round, player });
+
+/**
+ * A value as a problem's data holds it and its sentence shows it: text, a whole or a fractional
+ * number, or true or false as given, and null for anything else, such as a card that is not
+ * there. So what a problem carries always survives being written as JSON, whatever was entered.
+ */
+export const plain = (value: unknown): string | number | boolean | null =>
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+        ? value
+        : null;

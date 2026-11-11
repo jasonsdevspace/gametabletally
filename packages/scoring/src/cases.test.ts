@@ -22,7 +22,7 @@ it('runs every file of cases in the folder', () => {
 
 /**
  * An answer as a case states it. A problem's sentence is this implementation's own wording, so
- * a case holds its code and its place and never the sentence.
+ * a case holds its code, its data and its place and never the sentence.
  */
 const comparable = (answer: string): unknown => {
     const read: unknown = JSON.parse(answer, (key, value: unknown) =>
