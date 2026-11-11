@@ -57,14 +57,14 @@ try {
                 // The game goes in as text and is read inside the runtime, as a phone's app
                 // hands one over, so a key such as `__proto__` is the key it is in the file.
                 // A problem's sentence is an implementation's own wording, so a case holds its
-                // code and its place and never the sentence.
+                // code, its data and its place and never the sentence.
                 const answer = evaluate(
                     `(() => {
                         const text = ${JSON.stringify(text ?? JSON.stringify(input))};
                         const { problems, ...rest } = JSON.parse(GameTableTallyScoring.scoreJson(text));
                         return JSON.stringify({
                             ...rest,
-                            problems: problems.map(({ code, round, player }) => ({ code, round, player })),
+                            problems: problems.map(({ code, data, round, player }) => ({ code, data, round, player })),
                         });
                     })()`,
                     `${file}: ${name}`

@@ -319,6 +319,9 @@
                 "problems": [
                     {
                         "code": "number-twice",
+                        "data": {
+                            "number": 5
+                        },
                         "round": 0,
                         "player": "ann"
                     }
@@ -374,18 +377,100 @@
                 "problems": [
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": 13,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "+3",
+                            "kind": "modifier"
+                        },
                         "round": 0,
                         "player": "ben"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": 1.5,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a card entered in the wrong list is refused, and named by the list it was in",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": ["+4"],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [],
+                                "modifiers": [5],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-card",
+                        "data": {
+                            "card": "+4",
+                            "kind": "number"
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "data": {
+                            "card": 5,
+                            "kind": "modifier"
+                        },
+                        "round": 0,
+                        "player": "ben"
                     }
                 ]
             }
@@ -439,16 +524,28 @@
                 "problems": [
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "second chance",
+                            "kind": "modifier"
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "freeze",
+                            "kind": "modifier"
+                        },
                         "round": 0,
                         "player": "ben"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "flip three",
+                            "kind": "modifier"
+                        },
                         "round": 0,
                         "player": "cat"
                     }
@@ -507,6 +604,9 @@
                 "problems": [
                     {
                         "code": "modifier-twice",
+                        "data": {
+                            "modifier": "+8"
+                        },
                         "round": 0,
                         "player": "ann"
                     }
@@ -565,6 +665,10 @@
                 "problems": [
                     {
                         "code": "too-many-numbers",
+                        "data": {
+                            "max": 7,
+                            "given": 8
+                        },
                         "round": 0,
                         "player": "ann"
                     }
@@ -617,11 +721,81 @@
                 "problems": [
                     {
                         "code": "not-an-entry",
+                        "data": {
+                            "part": "bust"
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "not-an-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "ben"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry that lacks a list of cards is refused, and names the list",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "bust": false
+                            },
+                            "ben": {
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "modifiers"
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "numbers"
+                        },
                         "round": 0,
                         "player": "ben"
                     }
@@ -686,6 +860,7 @@
                 "problems": [
                     {
                         "code": "unknown-player",
+                        "data": {},
                         "round": 0,
                         "player": "dan"
                     }
@@ -721,6 +896,7 @@
                 "problems": [
                     {
                         "code": "not-a-round",
+                        "data": {},
                         "round": 0,
                         "player": null
                     }
@@ -865,11 +1041,13 @@
                 "problems": [
                     {
                         "code": "round-unfinished",
+                        "data": {},
                         "round": 0,
                         "player": null
                     },
                     {
                         "code": "after-a-gap",
+                        "data": {},
                         "round": 1,
                         "player": null
                     }
@@ -974,16 +1152,21 @@
                 "problems": [
                     {
                         "code": "number-twice",
+                        "data": {
+                            "number": 5
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "after-a-gap",
+                        "data": {},
                         "round": 1,
                         "player": null
                     },
                     {
                         "code": "after-a-gap",
+                        "data": {},
                         "round": 2,
                         "player": null
                     }
@@ -1629,6 +1812,7 @@
                 "problems": [
                     {
                         "code": "after-the-end",
+                        "data": {},
                         "round": 2,
                         "player": null
                     }
@@ -1678,6 +1862,10 @@
                 "problems": [
                     {
                         "code": "too-few-players",
+                        "data": {
+                            "min": 3,
+                            "given": 2
+                        },
                         "round": null,
                         "player": null
                     }
@@ -1707,8 +1895,46 @@
                 "problems": [
                     {
                         "code": "player-twice",
+                        "data": {},
                         "round": null,
-                        "player": null
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "each player listed more than once is named once, in seat order",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "ann", "cat", "ben", "ann"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "ann", "cat", "ben", "ann"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "player-twice",
+                        "data": {},
+                        "round": null,
+                        "player": "ben"
+                    },
+                    {
+                        "code": "player-twice",
+                        "data": {},
+                        "round": null,
+                        "player": "ann"
                     }
                 ]
             }
@@ -1737,6 +1963,9 @@
                 "problems": [
                     {
                         "code": "unknown-rules",
+                        "data": {
+                            "rules": 2
+                        },
                         "round": null,
                         "player": null
                     }
@@ -1769,6 +1998,9 @@
                 "problems": [
                     {
                         "code": "unknown-option",
+                        "data": {
+                            "option": "target"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -1908,16 +2140,28 @@
                 "problems": [
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": -1,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "5",
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "ben"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": null,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "cat"
                     }
@@ -1973,16 +2217,26 @@
                 "problems": [
                     {
                         "code": "number-twice",
+                        "data": {
+                            "number": 5
+                        },
                         "round": 0,
                         "player": "ann"
                     },
                     {
                         "code": "number-twice",
+                        "data": {
+                            "number": 6
+                        },
                         "round": 0,
                         "player": "ben"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": 13,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "cat"
                     }
@@ -2040,11 +2294,19 @@
                 "problems": [
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": 13,
+                            "kind": "number"
+                        },
                         "round": 0,
                         "player": "ben"
                     },
                     {
                         "code": "unknown-card",
+                        "data": {
+                            "card": "freeze",
+                            "kind": "modifier"
+                        },
                         "round": 0,
                         "player": "cat"
                     }
@@ -2118,21 +2380,27 @@
                 "problems": [
                     {
                         "code": "unknown-player",
+                        "data": {},
                         "round": 0,
                         "player": "7"
                     },
                     {
                         "code": "unknown-player",
+                        "data": {},
                         "round": 0,
                         "player": "dan"
                     },
                     {
                         "code": "unknown-player",
+                        "data": {},
                         "round": 0,
                         "player": "zed"
                     },
                     {
                         "code": "number-twice",
+                        "data": {
+                            "number": 5
+                        },
                         "round": 0,
                         "player": "ann"
                     }
@@ -2172,6 +2440,9 @@
                 "problems": [
                     {
                         "code": "unknown-game",
+                        "data": {
+                            "game": "chess"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -2473,16 +2744,24 @@
                 "problems": [
                     {
                         "code": "too-few-players",
+                        "data": {
+                            "min": 3,
+                            "given": 2
+                        },
                         "round": null,
                         "player": null
                     },
                     {
                         "code": "player-twice",
+                        "data": {},
                         "round": null,
-                        "player": null
+                        "player": "ann"
                     },
                     {
                         "code": "unknown-option",
+                        "data": {
+                            "option": "target"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -2589,6 +2868,7 @@
                 "problems": [
                     {
                         "code": "not-json",
+                        "data": {},
                         "round": null,
                         "player": null
                     }
@@ -2609,6 +2889,7 @@
                 "problems": [
                     {
                         "code": "not-a-game",
+                        "data": {},
                         "round": null,
                         "player": null
                     }
@@ -2629,6 +2910,9 @@
                 "problems": [
                     {
                         "code": "not-a-game",
+                        "data": {
+                            "part": "options"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -2649,6 +2933,9 @@
                 "problems": [
                     {
                         "code": "not-a-game",
+                        "data": {
+                            "part": "rules"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -2669,6 +2956,9 @@
                 "problems": [
                     {
                         "code": "not-a-game",
+                        "data": {
+                            "part": "players"
+                        },
                         "round": null,
                         "player": null
                     }
@@ -2689,6 +2979,9 @@
                 "problems": [
                     {
                         "code": "not-a-game",
+                        "data": {
+                            "part": "rounds"
+                        },
                         "round": null,
                         "player": null
                     }
