@@ -1,0 +1,16 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "jsx": "react-jsx",
+        // No Node types, so the app's source cannot read `process` or `Buffer`, which a phone
+        // does not have. The Vite config is checked by tsconfig.node.json, which has them.
+        "types": ["vite/client"],
+        // jest-dom's matchers for Vitest declare types their own dependencies disagree with, so
+        // declaration files are left unchecked.
+        "skipLibCheck": true,
+        "noEmit": true,
+        "customConditions": ["@gametabletally/source"]
+    },
+    "include": ["src", "vitest.setup.ts"]
+}

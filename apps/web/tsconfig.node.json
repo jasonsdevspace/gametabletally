@@ -1,0 +1,10 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        // The Vite config runs in Node, apart from the app it builds.
+        "types": ["node"],
+        "skipLibCheck": true,
+        "noEmit": true
+    },
+    "include": ["vite.config.ts"]
+}

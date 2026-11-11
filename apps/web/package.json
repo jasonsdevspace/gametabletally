@@ -1,0 +1,18 @@
+{
+    "name": "@gametabletally/web",
+    "version": "0.0.0",
+    "private": true,
+    "description": "The app at gametabletally.com: a scorekeeper for the game table that works with no connection.",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "@gametabletally/scoring": "0.0.0",
+        "react": "19.3.1",
+        "react-dom": "19.3.1"
+    }
+}

@@ -6,6 +6,28 @@ ahead. It works with no connection, and games, players and their history are sav
 
 It keeps score for card games people already own, starting with Flip 7, Skyjo and Wizard.
 
+## Working on it
+
+You need [Node.js 24](https://nodejs.org/) and Git. The version is in `.nvmrc`, so `nvm use` picks it.
+
+```bash
+npm ci
+npm run dev
+npm run verify
+```
+
+`npm run dev` serves the app with its changes as they are saved. `npm run verify` runs what CI
+runs on every pull request: the type check, the lint rules, the formatting, a prose check, a check
+that everything names the Node version in `.nvmrc`, the tests and the build.
+
+- `packages/scoring` is `@gametabletally/scoring`, the games' scoring rules with no dependencies.
+- `apps/web` is the app, which reads the scoring package from its source, so nothing needs
+  building first.
+
+Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
+message to the house style. Pull requests are squashed, so a pull request's title becomes the
+commit on main, and CI holds the title and the body to the same check.
+
 ## Names and trademarks
 
 Game Table Tally is not affiliated with, endorsed by or sponsored by the publishers of the games it

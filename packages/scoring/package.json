@@ -1,0 +1,21 @@
+{
+    "name": "@gametabletally/scoring",
+    "version": "0.0.0",
+    "private": true,
+    "description": "The scoring rules of card and table games as data in and scores out. No dependencies, runs anywhere JavaScript does.",
+    "license": "MIT",
+    "author": "Jason Poteet",
+    "type": "module",
+    "exports": {
+        ".": {
+            "@gametabletally/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "sideEffects": false,
+    "scripts": {
+        "type-check": "tsc -p tsconfig.json",
+        "build": "tsc -b tsconfig.build.json"
+    }
+}
