@@ -22,7 +22,7 @@ it('runs every file of cases in the folder', () => {
 
 /**
  * An answer as a case states it. A problem's sentence is this implementation's own wording, so
- * a case holds its code and its place and never the sentence.
+ * a case holds its code, its data and its place and never the sentence.
  */
 const comparable = (answer: string): unknown => {
     const read: unknown = JSON.parse(answer, (key, value: unknown) =>
@@ -47,6 +47,12 @@ describe.each(FILES)('the cases for $game', ({ game, rules, cases }) => {
     // text, as it does for a caller in another language and in the run outside Node.
     it.each(cases)('$name', ({ input, text, expect: expected }) => {
         expect(comparable(scoreJson(text ?? JSON.stringify(input)))).toStrictEqual(expected);
+    });
+
+    it('give every refusal its data, as an object even where it has nothing to add', () => {
+        for (const { input } of cases)
+            for (const { data } of input ? score(input).problems : [])
+                expect(Object.prototype.toString.call(data)).toBe('[object Object]');
     });
 
     it('say every refusal in a sentence', () => {

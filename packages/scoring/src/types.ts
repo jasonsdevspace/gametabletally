@@ -24,8 +24,14 @@ export interface ScoreInput {
 export interface Problem {
     /** A name for the reason that never changes, for a caller that words the reason itself. */
     readonly code: string;
-    /** The reason in a plain sentence. */
+    /** The reason in a plain sentence. It is this package's own wording and may change. */
     readonly message: string;
+    /**
+     * What the problem is about, for a caller that words the reason itself: the card refused,
+     * the number a game takes. Which fields it holds depends on the code, and it is empty, never
+     * missing, where the code has nothing to add.
+     */
+    readonly data: Readonly<Record<string, unknown>>;
     /** The round it is in, counted from zero, or null when it is about the game as a whole. */
     readonly round: number | null;
     /** The player it is about, or null when it is about the round or the game. */

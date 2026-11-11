@@ -61,13 +61,21 @@ const isNumberCard = (value: unknown): value is number =>
 const firstRepeated = <Value>(values: readonly Value[]): Value | undefined =>
     values.find((value, index) => values.indexOf(value) !== index);
 
-/** Why an entry is refused: a code that never changes, and the reason in a sentence. */
+/** Why an entry is refused: a code that never changes, the reason, and what it is about. */
 interface Refusal {
     readonly code: string;
     readonly message: string;
+    readonly data: Readonly<Record<string, unknown>>;
 }
 
-const refused = (code: string, message: string): Refusal => ({ code, message });
+const refused = (
+    code: string,
+    message: string,
+    data: Readonly<Record<string, unknown>> = {}
+): Refusal => ({ code, message, data });
+
+/** A card as a problem's data holds it. One that is not there at all is held as null. */
+const held = (card: unknown): unknown => card ?? null;
 
 /** A value as a refusal's sentence shows it. */
 const shown = (value: unknown): string =>
@@ -86,13 +94,15 @@ const readEntry = (raw: unknown): Flip7Entry | Refusal => {
     if (unknownNumber !== -1)
         return refused(
             'unknown-card',
-            `The deck holds no number card ${shown(numbers[unknownNumber])}.`
+            `The deck holds no number card ${shown(numbers[unknownNumber])}.`,
+            { card: held(numbers[unknownNumber]) }
         );
     const unknownModifier = modifiers.findIndex((card) => !isModifier(card));
     if (unknownModifier !== -1)
         return refused(
             'unknown-card',
-            `The deck holds no modifier card ${shown(modifiers[unknownModifier])}.`
+            `The deck holds no modifier card ${shown(modifiers[unknownModifier])}.`,
+            { card: held(modifiers[unknownModifier]) }
         );
     return { numbers: numbers.filter(isNumberCard), modifiers: modifiers.filter(isModifier), bust };
 };
@@ -101,15 +111,20 @@ const readEntry = (raw: unknown): Flip7Entry | Refusal => {
 const refusal = (entry: Flip7Entry): Refusal | null => {
     const number = firstRepeated(entry.numbers);
     if (number !== undefined)
-        return refused('number-twice', `The hand holds the ${number} twice, which is a bust.`);
+        return refused('number-twice', `The hand holds the ${number} twice, which is a bust.`, {
+            number,
+        });
     const modifier = firstRepeated(entry.modifiers);
     if (modifier !== undefined)
         return refused(
             'modifier-twice',
-            `The hand holds the ${modifier} twice, and the deck has one.`
+            `The hand holds the ${modifier} twice, and the deck has one.`,
+            { modifier }
         );
     if (entry.numbers.length > FLIP)
-        return refused('too-many-numbers', `The round ends at ${FLIP} different numbers.`);
+        return refused('too-many-numbers', `The round ends at ${FLIP} different numbers.`, {
+            max: FLIP,
+        });
     return null;
 };
 
@@ -131,16 +146,19 @@ const readPlayer = (raw: unknown): number | Refusal => {
 };
 
 const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutcome => {
-    const problem = (code: string, message: string, player: string | null): Problem => ({
+    const problem = ({ code, message, data }: Refusal, player: string | null): Problem => ({
         code,
         message,
+        data,
         round: index,
         player,
     });
     if (!isRecord(round) || !isRecord(round['entries']))
         return {
             scores: new Map(),
-            problems: [problem('not-a-round', 'The round does not hold its entries.', null)],
+            problems: [
+                problem(refused('not-a-round', 'The round does not hold its entries.'), null),
+            ],
         };
     const { entries } = round;
     const scores = new Map<string, number>();
@@ -149,13 +167,15 @@ const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutc
     const problems: Problem[] = Object.keys(entries)
         .filter((id) => !players.includes(id))
         .sort()
-        .map((id) => problem('unknown-player', 'The entry is for nobody in the game.', id));
+        .map((id) =>
+            problem(refused('unknown-player', 'The entry is for nobody in the game.'), id)
+        );
     for (const player of players) {
         // Asked of the entries themselves, so an id such as `toString` is not found on every object.
         if (!Object.prototype.hasOwnProperty.call(entries, player)) continue;
         const read = readPlayer(entries[player]);
         if (typeof read === 'number') scores.set(player, read);
-        else problems.push(problem(read.code, read.message, player));
+        else problems.push(problem(read, player));
     }
     return { scores, problems };
 };
@@ -178,9 +198,10 @@ export const FLIP_7: Rules = {
     ahead: 'highest',
     // The published rules are the only ones this version knows.
     checkOptions: (options) =>
-        Object.keys(options).map((name) => ({
+        Object.keys(options).map((option) => ({
             code: 'unknown-option',
-            message: `Flip 7 has no option named ${JSON.stringify(name)}.`,
+            message: `Flip 7 has no option named ${JSON.stringify(option)}.`,
+            data: { option },
             round: null,
             player: null,
         })),

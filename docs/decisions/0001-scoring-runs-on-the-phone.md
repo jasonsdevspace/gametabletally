@@ -62,8 +62,8 @@ What makes that hold:
   played by, and one naming a version the package does not hold is refused, never scored under
   another.
 - **The rules are also written as cases in JSON,** a game in and the answer out, under
-  `packages/scoring/cases`. A case holds a refusal's code and place and never its sentence, since
-  the wording is one implementation's own. The cases are the contract a second implementation has
+  `packages/scoring/cases`. A case holds a refusal's code, its data and its place and never its
+  sentence, since the wording is one implementation's own. The cases are the contract a second implementation has
   to pass. Every case goes in as text and comes back as text, so the order of what is refused
   and what is passed over in a game are part of the contract too.
 - **The package builds to one script with no dependencies,** `dist/scoring.global.js`, beside the
@@ -80,8 +80,10 @@ Nothing here changes for either.
   shape of what it is given, which is code a typed caller would not need.
 - Working in whole numbers rules out a game scored in halves until its rules are written in the
   smaller unit.
-- A refusal's sentence is English and the package's own. An app that words refusals itself, or in
-  another language, goes by the code.
+- A refusal's sentence is English and the package's own, and is not part of the contract. An app
+  that words refusals itself, or in another language, goes by the code and by the data each
+  problem carries, which names the card refused or the number of players a game takes. Reading
+  those out of the sentence would tie every caller to its wording.
 - A change to how a game scores is a new version of its rule set, with the old one kept for the
   games saved under it. A correction to a rule that was simply wrong may replace the version in
   place, and is the exception that is written down when it happens.

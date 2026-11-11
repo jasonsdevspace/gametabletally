@@ -101,6 +101,9 @@ describe('scoring a game', () => {
         expect(result.problems.map(({ code, player }) => [code, player])).toEqual([
             ['unknown-card', 'ann'],
         ]);
+        // A card that is not there has no value to carry, and null survives being written as
+        // JSON where undefined would drop the field.
+        expect(result.problems[0]?.data).toEqual({ card: null });
         expect(result.rounds[0]?.scores).toEqual({ ben: 9, cat: 8 });
     });
 

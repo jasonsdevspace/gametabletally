@@ -22,18 +22,18 @@ export const GAMES: readonly Game[] = NEWEST.map(({ id, name, rules, minPlayers,
     maxPlayers,
 }));
 
-/** A problem with the game as a whole. */
-const refuse = (code: string, message: string): Problem => ({
-    code,
-    message,
-    round: null,
-    player: null,
-});
+/** A problem with the game as a whole, with what it is about. */
+const refuse = (
+    code: string,
+    message: string,
+    data: Readonly<Record<string, unknown>> = {}
+): Problem => ({ code, message, data, round: null, player: null });
 
 /** A problem with one round as a whole. */
 const refuseRound = (code: string, message: string, round: number): Problem => ({
     code,
     message,
+    data: {},
     round,
     player: null,
 });
@@ -60,14 +60,24 @@ const playerProblems = (rules: Rules, players: readonly string[]): readonly Prob
     const problems: Problem[] = [];
     if (players.length < rules.minPlayers)
         problems.push(
-            refuse('too-few-players', `${rules.name} takes ${rules.minPlayers} players or more.`)
+            refuse('too-few-players', `${rules.name} takes ${rules.minPlayers} players or more.`, {
+                min: rules.minPlayers,
+            })
         );
     if (rules.maxPlayers !== null && players.length > rules.maxPlayers)
         problems.push(
-            refuse('too-many-players', `${rules.name} takes ${rules.maxPlayers} players or fewer.`)
+            refuse(
+                'too-many-players',
+                `${rules.name} takes ${rules.maxPlayers} players or fewer.`,
+                { max: rules.maxPlayers }
+            )
         );
-    if (new Set(players).size !== players.length)
-        problems.push(refuse('player-twice', 'A player is in the game twice.'));
+    const twice = players.find((player, seat) => players.indexOf(player) !== seat);
+    if (twice !== undefined)
+        problems.push({
+            ...refuse('player-twice', 'A player is in the game twice.'),
+            player: twice,
+        });
     return problems;
 };
 
@@ -161,12 +171,16 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
     const known = RULES.filter(({ id }) => id === input.game);
     if (known.length === 0)
         return unscored(input, [
-            refuse('unknown-game', `No game has the id ${JSON.stringify(input.game)}.`),
+            refuse('unknown-game', `No game has the id ${JSON.stringify(input.game)}.`, {
+                game: input.game,
+            }),
         ]);
     const rules = known.find((candidate) => candidate.rules === input.rules);
     if (!rules)
         return unscored(input, [
-            refuse('unknown-rules', `The game has no rule set with the version ${input.rules}.`),
+            refuse('unknown-rules', `The game has no rule set with the version ${input.rules}.`, {
+                rules: input.rules,
+            }),
         ]);
     const { players } = input;
     const stopped = [...playerProblems(rules, players), ...rules.checkOptions(input.options)];
