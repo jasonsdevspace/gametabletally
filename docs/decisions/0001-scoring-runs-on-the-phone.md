@@ -25,8 +25,8 @@ nothing to bridge. Every game is then written three times, and the three drift a
 test happens to look.
 
 **Write the rules in Kotlin and compile them for each platform.** One implementation that reaches
-Android, iOS and JavaScript. It gives up a plain TypeScript package the web app and a server import as it is,
-and it puts a toolchain in the web app's build that nothing else here uses.
+Android, iOS and JavaScript. It gives up a plain TypeScript package the web app and a server import
+as it is, and it puts a toolchain in the web app's build that nothing else here uses.
 
 **Write the rules once in TypeScript, as a function from data to data, and run that everywhere.**
 The web app imports the package. A server runs the same package to check a game it is sent. A
@@ -44,16 +44,16 @@ won, and everything the rules refused with the reason.
 
 What makes that hold:
 
-- **Everything in and out survives being written as JSON,** so a caller in any language hands a
-  game over as text, which `scoreJson` takes and answers in. A round is read and checked as it arrives, so a caller with no type checker
-  is told what is wrong with a game or a round and never gets a wrong total for it. Nothing
-  handed over makes the function throw.
+- **Everything in and out survives being written as JSON,** so a caller in any language hands a game
+  over as text, which `scoreJson` takes and answers in. A round is read and checked as it arrives,
+  so a caller with no type checker is told what is wrong with a game or a round and never gets a
+  wrong total for it. Nothing handed over makes the function throw.
 - **The function keeps nothing and reads nothing but what it is passed.** No clock, no locale, no
   random number. The same game always gets the same answer.
-- **A round counts only when every round before it is entered in full and accepted.** One
-  entered behind a round that is unfinished or refused is skipped, and says so with a state of
-  its own, so no game is called over on totals with a round missing and a screen can tell a round
-  with something wrong in it from one that another round holds up.
+- **A round counts only when every round before it is entered in full and accepted.** One entered
+  behind a round that is unfinished or refused is skipped, and says so with a state of its own, so
+  no game is called over on totals with a round missing and a screen can tell a round with something
+  wrong in it from one that another round holds up.
 - **Scores are worked out from every round entered, never by adding a round to a kept total.**
   Changing or taking back an earlier round is scoring the game again, so there is no total to
   repair.
