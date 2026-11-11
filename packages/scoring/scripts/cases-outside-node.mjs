@@ -49,9 +49,9 @@ const failed = [];
 try {
     evaluate(readFileSync(BUNDLE, 'utf8'), 'scoring.global.js');
     for (const file of readdirSync(CASES).filter((name) => name.endsWith('.json'))) {
-        /** @type {{ cases: { name: string, input: unknown, expect: unknown }[] }} */
+        /** @type {{ cases: { name: string, input?: unknown, text?: string, expect: unknown }[] }} */
         const { cases } = JSON.parse(readFileSync(join(CASES, file), 'utf8'));
-        for (const { name, input, expect } of cases) {
+        for (const { name, input, text, expect } of cases) {
             ran += 1;
             try {
                 // The game goes in as text and is read inside the runtime, as a phone's app
@@ -60,7 +60,7 @@ try {
                 // code and its place and never the sentence.
                 const answer = evaluate(
                     `(() => {
-                        const text = ${JSON.stringify(JSON.stringify(input))};
+                        const text = ${JSON.stringify(text ?? JSON.stringify(input))};
                         const { problems, ...rest } = JSON.parse(GameTableTallyScoring.scoreJson(text));
                         return JSON.stringify({
                             ...rest,

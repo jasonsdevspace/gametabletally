@@ -50,12 +50,13 @@ What makes that hold:
   handed over makes the function throw.
 - **The function keeps nothing and reads nothing but what it is passed.** No clock, no locale, no
   random number. The same game always gets the same answer.
-- **A round counts only when every round before it does.** One entered behind a round that is
-  unfinished or refused is passed over, so no game is called over on totals with a round missing.
+- **A round counts only when every round before it is entered in full and accepted.** One
+  entered behind a round that is unfinished or refused is skipped, and says so with a state of
+  its own, so no game is called over on totals with a round missing and a screen can tell a round
+  with something wrong in it from one that is only waiting on another.
 - **Scores are worked out from every round entered, never by adding a round to a kept total.**
   Changing or taking back an earlier round is scoring the game again, so there is no total to
-  repair. It also fits a game whose earlier score depends on a later entry, as a frame of bowling
-  does.
+  repair.
 - **Whole numbers only,** so no two runtimes round a total differently.
 - **A rule set has a version, which a game names.** A saved game is scored under the rules it was
   played by, and one naming a version the package does not hold is refused, never scored under
@@ -63,7 +64,8 @@ What makes that hold:
 - **The rules are also written as cases in JSON,** a game in and the answer out, under
   `packages/scoring/cases`. A case holds a refusal's code and place and never its sentence, since
   the wording is one implementation's own. The cases are the contract a second implementation has
-  to pass.
+  to pass. Every case goes in as text and comes back as text, so the order of what is refused
+  and what is passed over in a game are part of the contract too.
 - **The package builds to one script with no dependencies,** `dist/scoring.global.js`, beside the
   modules a bundler imports. Evaluated once, it leaves the package's exports on one global.
 

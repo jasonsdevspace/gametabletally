@@ -38,6 +38,9 @@ export interface Rules extends Game {
 export const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Whether a value is a whole number. The package works in nothing else. */
+/**
+ * Whether a value is a whole number every runtime holds exactly. The package works in nothing
+ * else, so a total is the same wherever it is added up.
+ */
 export const isWhole = (value: unknown): value is number =>
-    typeof value === 'number' && Number.isInteger(value);
+    typeof value === 'number' && Number.isSafeInteger(value);

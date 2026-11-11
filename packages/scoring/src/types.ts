@@ -36,9 +36,11 @@ export interface Problem {
 export interface RoundResult {
     /**
      * `scored` once every player's entry is in and the rules accept each. `open` while entries
-     * are missing. `refused` when the rules turned something in it down.
+     * are missing. `refused` when something in the round itself was turned down. `skipped` when
+     * the round was never read, for a reason outside it: an earlier round has yet to be scored,
+     * the game was already over, or the game as a whole was refused.
      */
-    readonly state: 'scored' | 'open' | 'refused';
+    readonly state: 'scored' | 'open' | 'refused' | 'skipped';
     /**
      * The round's score for each player whose entry the rules accept, by player id. In a round
      * that is not yet scored these are what stands so far, and they count toward no total.

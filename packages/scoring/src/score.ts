@@ -82,7 +82,7 @@ const unscored = (input: ScoreInput, problems: readonly Problem[]): ScoreResult 
     game: input.game,
     rules: input.rules,
     state: 'in-play',
-    rounds: input.rounds.map(() => ({ state: 'refused', scores: {} })),
+    rounds: input.rounds.map(() => ({ state: 'skipped', scores: {} })),
     totals: Object.fromEntries(input.players.map((player) => [player, 0])),
     leaders: [...input.players],
     winners: [],
@@ -99,10 +99,10 @@ interface Walked {
     readonly winners: readonly number[] | null;
 }
 
-/** A round nothing is read from, with the reason. */
+/** A round that is never read, for a reason outside it. */
 const passedOver = (walked: Walked, problem: Problem): Walked => ({
     ...walked,
-    rounds: [...walked.rounds, { state: 'refused', scores: {} }],
+    rounds: [...walked.rounds, { state: 'skipped', scores: {} }],
     problems: [...walked.problems, problem],
 });
 

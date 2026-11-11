@@ -144,8 +144,11 @@ const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutc
         };
     const { entries } = round;
     const scores = new Map<string, number>();
+    // Entries for nobody in the game come first, sorted by id, since the order an object's keys
+    // come in is one runtime's own. The players' entries follow in seat order.
     const problems: Problem[] = Object.keys(entries)
         .filter((id) => !players.includes(id))
+        .sort()
         .map((id) => problem('unknown-player', 'The entry is for nobody in the game.', id));
     for (const player of players) {
         // Asked of the entries themselves, so an id such as `toString` is not found on every object.

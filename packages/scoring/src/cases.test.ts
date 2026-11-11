@@ -3,7 +3,7 @@ import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import flip7 from '../cases/flip-7.json' with { type: 'json' };
-import { GAMES, score } from './index.js';
+import { GAMES, score, scoreJson } from './index.js';
 
 /**
  * The rules as cases: a game in, the answer out. They are the contract another implementation
@@ -24,17 +24,12 @@ it('runs every file of cases in the folder', () => {
  * An answer as a case states it. A problem's sentence is this implementation's own wording, so
  * a case holds its code and its place and never the sentence.
  */
-const comparable = (input: Parameters<typeof score>[0]) => {
-    const { problems, ...rest } = score(input);
-    // Written as JSON and read back, as the run outside Node compares it, so the two runs hold an
-    // answer to the same thing.
-    const written: unknown = JSON.parse(
-        JSON.stringify({
-            ...rest,
-            problems: problems.map(({ code, round, player }) => ({ code, round, player })),
-        })
+const comparable = (answer: string): unknown => {
+    const read: unknown = JSON.parse(answer, (key, value: unknown) =>
+        // Dropped as the answer is read, so nothing but a problem's sentence is let go.
+        key === 'message' ? undefined : value
     );
-    return written;
+    return read;
 };
 
 describe.each(FILES)('the cases for $game', ({ game, rules, cases }) => {
@@ -47,12 +42,16 @@ describe.each(FILES)('the cases for $game', ({ game, rules, cases }) => {
         expect(new Set(names).size).toBe(names.length);
     });
 
-    it.each(cases)('$name', ({ input, expect: expected }) => {
-        expect(comparable(input)).toStrictEqual(expected);
+    // A case hands the game over as `text`, where what it holds is not a game at all, or as
+    // `input`, which is written as text here. Either way it goes in as text and comes back as
+    // text, as it does for a caller in another language and in the run outside Node.
+    it.each(cases)('$name', ({ input, text, expect: expected }) => {
+        expect(comparable(scoreJson(text ?? JSON.stringify(input)))).toStrictEqual(expected);
     });
 
     it('say every refusal in a sentence', () => {
         for (const { input } of cases)
-            for (const { message } of score(input).problems) expect(message).toMatch(/^[A-Z].*\.$/);
+            for (const { message } of input ? score(input).problems : [])
+                expect(message).toMatch(/^[A-Z].*\.$/);
     });
 });

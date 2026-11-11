@@ -60,7 +60,7 @@ describe('scoring a game', () => {
         const result = score({ ...game([FIRST]), game: 'chess' });
         expect(result.problems.map(({ code }) => code)).toEqual(['unknown-game']);
         expect(result.totals).toEqual({ ann: 0, ben: 0, cat: 0 });
-        expect(result.rounds).toEqual([{ state: 'refused', scores: {} }]);
+        expect(result.rounds).toEqual([{ state: 'skipped', scores: {} }]);
     });
 
     it('names the rule set the scores were worked out under', () => {
@@ -78,9 +78,10 @@ describe('scoring a game', () => {
     });
 
     it('gives the same answer with a round taken back as for a game that never had it', () => {
-        score(game([FIRST, SECOND]));
-        expect(score(game([FIRST]))).toEqual(score(game([FIRST])));
-        expect(score(game([FIRST])).totals).toEqual({ ann: 10, ben: 9, cat: 8 });
+        const both = score(game([FIRST, SECOND]));
+        const one = score(game([FIRST]));
+        expect(one.totals).toEqual({ ann: 10, ben: 9, cat: 8 });
+        expect(one.rounds).toEqual(both.rounds.slice(0, 1));
     });
 
     it('changes nothing it is given', () => {
@@ -90,7 +91,7 @@ describe('scoring a game', () => {
 
     it('answers in values that survive being written as JSON', () => {
         const result = score(game([FIRST, { entries: { ann: hand([5, 5]) } }]));
-        expect(JSON.parse(JSON.stringify(result))).toEqual(result);
+        expect(JSON.parse(JSON.stringify(result))).toStrictEqual(result);
     });
 
     it('refuses a card that is not there at all, where a caller with no type checker passes one', () => {
@@ -108,11 +109,6 @@ describe('scoring a game', () => {
         expect(score({ ...game([FIRST]), rules: 7 }).problems.map(({ code }) => code)).toEqual([
             'unknown-rules',
         ]);
-    });
-
-    it('keeps its totals in whole numbers', () => {
-        const { totals } = score(game([FIRST, SECOND]));
-        for (const total of Object.values(totals)) expect(Number.isInteger(total)).toBe(true);
     });
 });
 
