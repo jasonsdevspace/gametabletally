@@ -34,7 +34,7 @@ result.state; // 'in-play'
 
 `score` is given everything entered so far, every time. It keeps nothing between calls, so changing
 or taking back an earlier round is scoring the game again with the round changed. The players' ids
-are the caller's own and are never shown.
+are the caller's own and never appear in a message.
 
 `GAMES` lists each game the package knows, with its id, its name, the version of its rule set a new
 game starts under, and how many can play.
@@ -48,10 +48,16 @@ game starts under, and how many can play.
 - `totals` is each player's total over the scored rounds.
 - `leaders` is whoever is ahead, and `winners` is whoever won once `state` is `over`.
 - `problems` is everything the rules refused. Each has a `code` that never changes, a `message`
-  that says the reason in a sentence, and the `round` and `player` it is about.
+  that says the reason in a sentence, and the `round`, counted from zero, and the `player` it is
+  about, each null when the problem is wider than that.
 
-Nothing refused is ever scored, and `score` does not throw for anything a round holds. A round is
-checked as it is read, so a caller with no type checker is told what is wrong with it.
+Nothing refused is ever scored, and `score` does not throw, whatever it is given. The game and
+each round are checked as they are read, so a caller with no type checker is told what is wrong.
+A round counts toward the totals only when every round before it does: one entered behind a round
+that is unfinished or refused is passed over, so no game is over on totals with a round missing.
+
+`scoreJson` takes the same game as JSON text and answers in JSON text, for a caller in another
+language. Text that is not JSON, or not a game, is answered with a problem like any other.
 
 ## Flip 7
 
@@ -59,20 +65,23 @@ A round's entry for each player is the number cards held, from 0 to 12, the modi
 which are `+2`, `+4`, `+6`, `+8`, `+10` and `x2`, and whether the player bust.
 
 A round's score is the number cards added up, doubled by the x2 card, plus each plus card, plus
-fifteen for seven different numbers. A bust scores nothing. The game is for three or more players.
+fifteen for seven different numbers. Neither the plus cards nor the fifteen are doubled. A bust
+scores nothing. The game is for three or more players.
 It is over at the end of the round in which a player reaches two hundred, and the highest total
 wins. A tie at the top does not end it, and the game goes on by whole rounds until one player
 leads.
 
 ## The cases
 
-`cases` holds the rules as JSON, one file for each game: a list of cases, each with a `name`, an
-`input` as `score` takes it and the answer to `expect`. An expected problem holds its `code`, its
+`cases` holds the rules as JSON, one file for each game, which names the `game`, the version of
+its `rules` and a list of `cases`, each with a `name`, an `input` as `score` takes it and the
+answer to `expect`. An expected problem holds its `code`, its
 `round` and its `player` and never its sentence, which is this implementation's own wording.
 
 The cases are the contract. Anything else that scores these games, in any language, agrees with
 this package when it passes them. The package's tests run them against the source, and
-`npm run cases:outside-node` runs them against the built script in a runtime that is not Node.
+after a build, `npm run cases:outside-node` runs them against the built script in QuickJS, a
+runtime that is not Node.
 
 ## One script
 

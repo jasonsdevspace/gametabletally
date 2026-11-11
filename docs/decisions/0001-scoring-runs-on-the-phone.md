@@ -10,7 +10,7 @@ sync and for play across phones, and apps for iOS and Android written in Swift a
 repositories of their own. Each of those has to score a game the same way, down to the round a
 game ends in, or a game that moves between them changes its totals on the way.
 
-The scoring rules are the part most likely to be got wrong and the part players argue about, so
+The scoring rules are the part most likely to be wrong and the part players argue about, so
 there should be one place they are written and one way to prove a second place agrees with it.
 
 ## Options
@@ -25,7 +25,7 @@ nothing to bridge. Every game is then written three times, and the three drift a
 test happens to look.
 
 **Write the rules in Kotlin and compile them for each platform.** One implementation that reaches
-Android, iOS and JavaScript. It gives up a plain TypeScript package anyone can install from npm,
+Android, iOS and JavaScript. It gives up a plain TypeScript package the web app and a server import as it is,
 and it puts a toolchain in the web app's build that nothing else here uses.
 
 **Write the rules once in TypeScript, as a function from data to data, and run that everywhere.**
@@ -45,17 +45,21 @@ won, and everything the rules refused with the reason.
 What makes that hold:
 
 - **Everything in and out survives being written as JSON,** so a caller in any language hands a
-  game over as text. A round is read and checked as it arrives, so a caller with no type checker
-  is told what is wrong with a round and never gets a wrong total for it.
+  game over as text, which `scoreJson` takes and answers in. A round is read and checked as it arrives, so a caller with no type checker
+  is told what is wrong with a game or a round and never gets a wrong total for it. Nothing
+  handed over makes the function throw.
 - **The function keeps nothing and reads nothing but what it is passed.** No clock, no locale, no
   random number. The same game always gets the same answer.
+- **A round counts only when every round before it does.** One entered behind a round that is
+  unfinished or refused is passed over, so no game is called over on totals with a round missing.
 - **Scores are worked out from every round entered, never by adding a round to a kept total.**
   Changing or taking back an earlier round is scoring the game again, so there is no total to
   repair. It also fits a game whose earlier score depends on a later entry, as a frame of bowling
   does.
 - **Whole numbers only,** so no two runtimes round a total differently.
 - **A rule set has a version, which a game names.** A saved game is scored under the rules it was
-  played by.
+  played by, and one naming a version the package does not hold is refused, never scored under
+  another.
 - **The rules are also written as cases in JSON,** a game in and the answer out, under
   `packages/scoring/cases`. A case holds a refusal's code and place and never its sentence, since
   the wording is one implementation's own. The cases are the contract a second implementation has
@@ -63,8 +67,8 @@ What makes that hold:
 - **The package builds to one script with no dependencies,** `dist/scoring.global.js`, beside the
   modules a bundler imports. Evaluated once, it leaves the package's exports on one global.
 
-Whether a phone app embeds that script or carries rules of its own, held to the cases, is decided
-when that app is built, game by game if need be. Nothing here has to change for either.
+A phone app may embed that script or carry rules of its own held to the cases, game by game.
+Nothing here changes for either.
 
 ## Consequences
 
@@ -85,8 +89,8 @@ when that app is built, game by game if need be. Nothing here has to change for 
 - `packages/scoring/src/cases.test.ts` runs every case in `packages/scoring/cases` against the
   source.
 - `packages/scoring/scripts/cases-outside-node.mjs` runs the same cases against the built script
-  inside QuickJS, which has none of Node's globals and none of a browser's. CI runs it as a job of
-  its own. It proves the one script holds the whole package and needs nothing a bare engine lacks.
+  inside QuickJS, which has none of Node's globals and none of a browser's. CI runs it after the
+  build. It proves the one script holds the whole package and needs nothing a bare engine lacks.
   It proves QuickJS, and stands in for the engine a phone ships.
 - `packages/scoring/src/index.test.ts` scores a game whose input is frozen, so a function that
   changed what it was given would throw, and checks that an answer survives being written as JSON.

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { GAMES, score, type ScoreInput } from './index.js';
+import { GAMES, score, type ScoreInput, scoreJson } from './index.js';
 
 /** A hand that did not bust. */
-const hand = (numbers: readonly number[], modifiers: readonly string[] = []) => ({
+const hand = (numbers: readonly unknown[], modifiers: readonly string[] = []) => ({
     numbers,
     modifiers,
     bust: false,
@@ -93,8 +93,71 @@ describe('scoring a game', () => {
         expect(JSON.parse(JSON.stringify(result))).toEqual(result);
     });
 
+    it('refuses a card that is not there at all, where a caller with no type checker passes one', () => {
+        const result = score(
+            game([{ entries: { ann: hand([undefined, 5]), ben: hand([9]), cat: hand([8]) } }])
+        );
+        expect(result.problems.map(({ code, player }) => [code, player])).toEqual([
+            ['unknown-card', 'ann'],
+        ]);
+        expect(result.rounds[0]?.scores).toEqual({ ben: 9, cat: 8 });
+    });
+
+    it('scores a game saved under a rule set by that rule set, and refuses one it never had', () => {
+        expect(score({ ...game([FIRST]), rules: 1 }).problems).toEqual([]);
+        expect(score({ ...game([FIRST]), rules: 7 }).problems.map(({ code }) => code)).toEqual([
+            'unknown-rules',
+        ]);
+    });
+
     it('keeps its totals in whole numbers', () => {
         const { totals } = score(game([FIRST, SECOND]));
         for (const total of Object.values(totals)) expect(Number.isInteger(total)).toBe(true);
+    });
+});
+
+describe('scoring a game handed over as text', () => {
+    /** What comes back, read from the text it is written as. */
+    const answer = (text: string): unknown => {
+        const read: unknown = JSON.parse(scoreJson(text));
+        return read;
+    };
+
+    it('gives the answer `score` gives', () => {
+        const input = game([FIRST, SECOND]);
+        expect(answer(JSON.stringify(input))).toEqual(score(input));
+    });
+
+    it('answers text that is not JSON with a problem, and does not throw', () => {
+        expect(answer('{"game":')).toMatchObject({ problems: [{ code: 'not-json' }], totals: {} });
+    });
+
+    it.each([
+        ['nothing but a number', '5'],
+        ['no id', '{"rules":1,"options":{},"players":["a","b","c"],"rounds":[]}'],
+        ['no rule set', '{"game":"flip-7","options":{},"players":["a","b","c"],"rounds":[]}'],
+        ['no options', '{"game":"flip-7","rules":1,"players":["a","b","c"],"rounds":[]}'],
+        ['null for options', '{"game":"flip-7","rules":1,"options":null,"players":[],"rounds":[]}'],
+        ['no players', '{"game":"flip-7","rules":1,"options":{},"rounds":[]}'],
+        [
+            'a number for a player',
+            '{"game":"flip-7","rules":1,"options":{},"players":[1],"rounds":[]}',
+        ],
+        [
+            'an empty player id',
+            '{"game":"flip-7","rules":1,"options":{},"players":[""],"rounds":[]}',
+        ],
+        ['no rounds', '{"game":"flip-7","rules":1,"options":{},"players":["a","b","c"]}'],
+    ])('answers a game with %s with a problem, and does not throw', (_, text) => {
+        expect(answer(text)).toMatchObject({
+            game: '',
+            rules: 0,
+            state: 'in-play',
+            rounds: [],
+            totals: {},
+            leaders: [],
+            winners: [],
+            problems: [{ code: 'not-a-game', round: null, player: null }],
+        });
     });
 });

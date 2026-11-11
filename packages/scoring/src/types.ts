@@ -11,7 +11,7 @@ export interface ScoreInput {
     readonly rules: number;
     /** The options that change a rule, by name. A game with none takes an empty object. */
     readonly options: Readonly<Record<string, unknown>>;
-    /** The players' ids in seat order. An id is the caller's own and is never shown. */
+    /** The players' ids in seat order. An id is the caller's own and never appears in a message. */
     readonly players: readonly string[];
     /**
      * Every round so far, in order. What a round holds is the game's own, so each is checked as

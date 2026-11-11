@@ -1,9 +1,9 @@
 /**
- * Runs every case against the built single file inside QuickJS, a script runtime with none of
+ * Runs every case against the built script inside QuickJS, a script runtime with none of
  * Node's globals and none of a browser's.
  *
  * The tests run the same cases against the source in Node. This run proves two things they
- * cannot: that the one file a phone's runtime loads holds the whole package, and that the
+ * cannot: that the one script a phone's runtime loads holds the whole package, and that the
  * package needs nothing a bare engine lacks, such as `console`, timers or `Intl`. It proves
  * QuickJS, which is one such engine, and stands in for the others.
  *
@@ -53,21 +53,26 @@ try {
         const { cases } = JSON.parse(readFileSync(join(CASES, file), 'utf8'));
         for (const { name, input, expect } of cases) {
             ran += 1;
-            // A problem's sentence is an implementation's own wording, so a case holds its
-            // code and its place and never the sentence.
-            const answer = evaluate(
-                `(() => {
-                    const { problems, ...rest } = GameTableTallyScoring.score(${JSON.stringify(input)});
-                    return JSON.stringify({
-                        ...rest,
-                        problems: problems.map(({ code, round, player }) => ({ code, round, player })),
-                    });
-                })()`,
-                `${file}: ${name}`
-            );
             try {
+                // The game goes in as text and is read inside the runtime, as a phone's app
+                // hands one over, so a key such as `__proto__` is the key it is in the file.
+                // A problem's sentence is an implementation's own wording, so a case holds its
+                // code and its place and never the sentence.
+                const answer = evaluate(
+                    `(() => {
+                        const text = ${JSON.stringify(JSON.stringify(input))};
+                        const { problems, ...rest } = JSON.parse(GameTableTallyScoring.scoreJson(text));
+                        return JSON.stringify({
+                            ...rest,
+                            problems: problems.map(({ code, round, player }) => ({ code, round, player })),
+                        });
+                    })()`,
+                    `${file}: ${name}`
+                );
                 deepStrictEqual(JSON.parse(String(answer)), expect);
             } catch (error) {
+                // A case that throws in the runtime is one failure among the others, so the
+                // rest still run and every failing case is named.
                 failed.push(
                     `FAIL ${file}: ${name}\n${error instanceof Error ? error.message : String(error)}`
                 );
@@ -81,4 +86,4 @@ try {
 if (ran === 0) failed.push('FAIL no cases were found to run');
 for (const failure of failed) console.error(failure);
 if (failed.length > 0) process.exit(1);
-console.log('Every case passed against the built file in QuickJS.');
+console.log('Every case passed against the built script in QuickJS.');

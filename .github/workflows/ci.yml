@@ -63,30 +63,9 @@ jobs:
             - name: Build
               run: npm run build
 
-    # The scoring package as a phone's script runtime would load it: the one
-    # built script, evaluated in QuickJS, which has none of Node's globals and
-    # none of a browser's, and held to every case the tests run in Node.
-    outside-node:
-        name: Scoring cases outside Node
-        runs-on: ubuntu-26.04
-        timeout-minutes: 5
-        steps:
-            - name: Checkout
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  persist-credentials: false
-
-            - name: Set up Node
-              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-              with:
-                  node-version-file: .nvmrc
-                  cache: 'npm'
-
-            - name: Install dependencies
-              run: npm ci --ignore-scripts
-
-            - name: Build the scoring package
-              run: npm run build --workspace=@gametabletally/scoring
-
-            - name: Run the cases against the built script
+            # The scoring package as a phone's script runtime would load it: the
+            # one built script, evaluated in QuickJS, which has none of Node's
+            # globals and none of a browser's, and held to every case the tests
+            # run against the source.
+            - name: Scoring cases outside Node
               run: npm run cases:outside-node
