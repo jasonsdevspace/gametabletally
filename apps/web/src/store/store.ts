@@ -1,4 +1,5 @@
 import {
+    compareInstants,
     FORMAT,
     FORMAT_VERSION,
     readGame,
@@ -11,14 +12,23 @@ import {
 /**
  * Where players and games are kept on the phone: the one module the rest of the app calls.
  *
- * It is IndexedDB behind a few plain functions. A change is one transaction, so it is saved
- * whole or not at all, and a page closed in the middle of a round leaves the game as it was
- * after the last entry.
+ * It is IndexedDB behind a few plain functions. Each one is a single transaction, reads and
+ * writes together, so what it decides on is what it writes over, and a change is saved whole or
+ * not at all. A page closed in the middle of a round leaves the game as it was after the last
+ * entry.
  */
 
 const DATABASE = 'gametabletally';
 const PLAYERS = 'players';
 const GAMES = 'games';
+
+/** What a page shows when the phone's games were saved by a newer build than this one. */
+export const NEWER_DATABASE =
+    'The games on this phone were saved by a newer version of the app. Update the app to open them.';
+
+/** What a page shows when another tab of the app keeps a newer build from opening the games. */
+export const BLOCKED_DATABASE =
+    'Another tab of the app is open on an older version. Close it, then open the app again.';
 
 /** A request's result, once it has one. */
 const settled = <Result>(request: IDBRequest<Result>): Promise<Result> =>
@@ -44,6 +54,63 @@ const finished = (transaction: IDBTransaction): Promise<void> =>
         transaction.onerror = failed;
     });
 
+/**
+ * Runs one piece of work as a single transaction over the kinds of record named, and ends when
+ * it is saved. The work may read and then write, and nothing else can come between the two. If
+ * it fails, nothing it wrote is kept.
+ */
+const within = async <Result>(
+    database: IDBDatabase,
+    names: readonly string[],
+    mode: IDBTransactionMode,
+    work: (transaction: IDBTransaction) => Promise<Result>
+): Promise<Result> => {
+    const transaction = database.transaction(names, mode);
+    const done = finished(transaction);
+    let result: Result;
+    try {
+        result = await work(transaction);
+    } catch (error) {
+        // The transaction may have failed already, in which case there is nothing left to stop.
+        try {
+            transaction.abort();
+        } catch {
+            // Already ended.
+        }
+        await done.catch(() => undefined);
+        throw error;
+    }
+    await done;
+    return result;
+};
+
+/** Every record of one kind as it sits in the database, read or not. */
+const rows = (transaction: IDBTransaction, name: string): Promise<unknown[]> =>
+    settled<unknown[]>(transaction.objectStore(name).getAll());
+
+/** The records of one kind that are what they should be, and how many are not. */
+const readRows = <Saved>(
+    raw: readonly unknown[],
+    read: (row: unknown) => Saved | null
+): { readonly saved: Saved[]; readonly damaged: number } => {
+    const saved = raw.flatMap((row) => read(row) ?? []);
+    return { saved, damaged: raw.length - saved.length };
+};
+
+/** Whether a record in the games' store names a player, readable as a game or not. */
+const names = (row: unknown, id: string): boolean =>
+    typeof row === 'object' &&
+    row !== null &&
+    'players' in row &&
+    Array.isArray(row.players) &&
+    row.players.includes(id);
+
+const byAdded = (first: SavedPlayer, second: SavedPlayer): number =>
+    compareInstants(first.added, second.added);
+
+const lastChangedFirst = (first: SavedGame, second: SavedGame): number =>
+    compareInstants(second.changed, first.changed);
+
 /** How many records an import added or replaced. */
 export interface Imported {
     readonly players: number;
@@ -53,7 +120,7 @@ export interface Imported {
 export interface Store {
     /** Every player, the removed ones among them, in the order they were added. */
     readonly players: () => Promise<readonly SavedPlayer[]>;
-    /** Saves a player, new or changed. */
+    /** Saves a player, new or changed. One that is not a player is refused and nothing is saved. */
     readonly savePlayer: (player: SavedPlayer) => Promise<void>;
     /**
      * Removes a player. One who has played is kept and marked as removed, so their games still
@@ -64,145 +131,155 @@ export interface Store {
     readonly games: () => Promise<readonly SavedGame[]>;
     /** One game, or null when there is none with the id. */
     readonly game: (id: string) => Promise<SavedGame | null>;
-    /** Saves a game as it stands, which is how each entry is kept. */
+    /**
+     * Saves a game as it stands, which is how each entry is kept. One that is not a game is
+     * refused and nothing is saved.
+     */
     readonly saveGame: (game: SavedGame) => Promise<void>;
     readonly removeGame: (id: string) => Promise<void>;
-    /** Everything saved, as one file. */
+    /**
+     * How many records in the database are not a player or a game, and so are shown nowhere and
+     * left out of an exported file. Above zero, a page should say a backup is not whole.
+     */
+    readonly damaged: () => Promise<number>;
+    /** Everything saved that can be read, as one file, taken at one moment. */
     readonly exportFile: (exported: string) => Promise<SavedFile>;
     /**
      * Merges a file into what is saved, whole or not at all. A player or a game that is not
      * here is added. A game that is here is kept as whichever was changed later, so no game is
-     * here twice, and a player who is here keeps the name they have here.
+     * here twice, and a player who is here is kept as they are here.
      */
     readonly importFile: (file: SavedFile) => Promise<Imported>;
     readonly close: () => void;
 }
 
-/** Every record of one kind, read, with any that is not of the kind passed over. */
-const all = async <Saved>(
-    database: IDBDatabase,
-    name: string,
-    read: (raw: unknown) => Saved | null
-): Promise<Saved[]> => {
-    const rows: unknown[] = await settled(
-        database.transaction(name, 'readonly').objectStore(name).getAll()
-    );
-    return rows.flatMap((row) => read(row) ?? []);
-};
-
-/** Runs one change to the records of the kinds named, and ends when it is saved. */
-const change = async <Result>(
-    database: IDBDatabase,
-    names: readonly string[],
-    run: (transaction: IDBTransaction) => Result
-): Promise<Result> => {
-    const transaction = database.transaction(names, 'readwrite');
-    const done = finished(transaction);
-    let result: Result;
-    try {
-        result = run(transaction);
-    } catch (error) {
-        transaction.abort();
-        await done.catch(() => undefined);
-        throw error;
-    }
-    await done;
-    return result;
-};
-
-const byAdded = (first: SavedPlayer, second: SavedPlayer): number =>
-    first.added.localeCompare(second.added);
-
-const byChanged = (first: SavedGame, second: SavedGame): number =>
-    second.changed.localeCompare(first.changed);
-
-const storeOver = (database: IDBDatabase): Store => {
-    const players = async () => (await all(database, PLAYERS, readPlayer)).sort(byAdded);
-    const games = async () => (await all(database, GAMES, readGame)).sort(byChanged);
-
-    return {
-        players,
-        games,
-        savePlayer: (player) =>
-            change(database, [PLAYERS], (transaction) => {
-                transaction.objectStore(PLAYERS).put(player);
-            }),
-        removePlayer: async (id) => {
-            const [saved, played] = await Promise.all([players(), games()]);
-            const player = saved.find((candidate) => candidate.id === id);
-            if (!player) return;
-            const hasPlayed = played.some((game) => game.players.includes(id));
-            await change(database, [PLAYERS], (transaction) => {
-                const records = transaction.objectStore(PLAYERS);
-                if (hasPlayed) records.put({ ...player, removed: true });
-                else records.delete(id);
-            });
-        },
-        game: async (id) => {
-            const row: unknown = await settled(
-                database.transaction(GAMES, 'readonly').objectStore(GAMES).get(id)
-            );
+const storeOver = (database: IDBDatabase): Store => ({
+    players: () =>
+        within(database, [PLAYERS], 'readonly', async (transaction) =>
+            readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded)
+        ),
+    games: () =>
+        within(database, [GAMES], 'readonly', async (transaction) =>
+            readRows(await rows(transaction, GAMES), readGame).saved.sort(lastChangedFirst)
+        ),
+    savePlayer: async (player) => {
+        if (readPlayer(player) === null)
+            throw new Error('This is not a player, so it was not saved.');
+        await within(database, [PLAYERS], 'readwrite', (transaction) =>
+            settled(transaction.objectStore(PLAYERS).put(player))
+        );
+    },
+    removePlayer: (id) =>
+        // The games are read in the transaction that removes the player, so a game saved in
+        // between cannot name a player who is then deleted.
+        within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
+            const records = transaction.objectStore(PLAYERS);
+            const row: unknown = await settled<unknown>(records.get(id));
+            const player = readPlayer(row);
+            const played = (await rows(transaction, GAMES)).some((game) => names(game, id));
+            if (played && player) await settled(records.put({ ...player, removed: true }));
+            else if (!played) await settled(records.delete(id));
+        }),
+    game: (id) =>
+        within(database, [GAMES], 'readonly', async (transaction) => {
+            const row: unknown = await settled<unknown>(transaction.objectStore(GAMES).get(id));
             return readGame(row);
-        },
-        saveGame: (game) =>
-            change(database, [GAMES], (transaction) => {
-                transaction.objectStore(GAMES).put(game);
-            }),
-        removeGame: (id) =>
-            change(database, [GAMES], (transaction) => {
-                transaction.objectStore(GAMES).delete(id);
-            }),
-        exportFile: async (exported) => ({
+        }),
+    saveGame: async (game) => {
+        if (readGame(game) === null) throw new Error('This is not a game, so it was not saved.');
+        await within(database, [GAMES], 'readwrite', (transaction) =>
+            settled(transaction.objectStore(GAMES).put(game))
+        );
+    },
+    removeGame: (id) =>
+        within(database, [GAMES], 'readwrite', (transaction) =>
+            settled(transaction.objectStore(GAMES).delete(id))
+        ),
+    damaged: () =>
+        within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => {
+            const players = readRows(await rows(transaction, PLAYERS), readPlayer);
+            const games = readRows(await rows(transaction, GAMES), readGame);
+            return players.damaged + games.damaged;
+        }),
+    exportFile: (exported) =>
+        within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => ({
             format: FORMAT,
             version: FORMAT_VERSION,
             exported,
-            players: await players(),
-            games: await games(),
+            players: readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded),
+            games: readRows(await rows(transaction, GAMES), readGame).saved.sort(lastChangedFirst),
+        })),
+    importFile: (file) =>
+        // What is here is read in the transaction that writes, so an entry saved while a file is
+        // being merged is weighed against the file's copy and never lost under it.
+        within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
+            const here = {
+                players: readRows(await rows(transaction, PLAYERS), readPlayer).saved,
+                games: readRows(await rows(transaction, GAMES), readGame).saved,
+            };
+            const known = new Set(here.players.map(({ id }) => id));
+            const changedAt = new Map(here.games.map(({ id, changed }) => [id, changed]));
+            const players = file.players.filter(({ id }) => !known.has(id));
+            const games = file.games.filter(({ id, changed }) => {
+                const saved = changedAt.get(id);
+                return saved === undefined || compareInstants(changed, saved) > 0;
+            });
+            for (const player of players)
+                await settled(transaction.objectStore(PLAYERS).put(player));
+            for (const game of games) await settled(transaction.objectStore(GAMES).put(game));
+            return { players: players.length, games: games.length };
         }),
-        importFile: async (file) => {
-            const [savedPlayers, savedGames] = await Promise.all([players(), games()]);
-            const known = new Set(savedPlayers.map(({ id }) => id));
-            const changedAt = new Map(savedGames.map(({ id, changed }) => [id, changed]));
-            const newPlayers = file.players.filter(({ id }) => !known.has(id));
-            const newGames = file.games.filter(({ id, changed }) => {
-                const here = changedAt.get(id);
-                return here === undefined || changed > here;
-            });
-            await change(database, [PLAYERS, GAMES], (transaction) => {
-                for (const player of newPlayers) transaction.objectStore(PLAYERS).put(player);
-                for (const game of newGames) transaction.objectStore(GAMES).put(game);
-            });
-            return { players: newPlayers.length, games: newGames.length };
-        },
-        close: () => {
-            database.close();
-        },
-    };
-};
+    close: () => {
+        database.close();
+    },
+});
 
 /**
  * Opens the phone's saved players and games, making the place for them on a first visit.
  *
  * The database's version is the saved shape's, so a later shape is brought in by the upgrade
- * that opening at the new version runs.
+ * that opening at the new version runs. A database a newer build has already upgraded is
+ * refused with a sentence a page can show, as a newer file is. An open tab lets go of the
+ * database when a newer build asks to upgrade it, and a build that is kept waiting by a tab
+ * that does not says so.
  */
 export const openStore = async (
     factory: IDBFactory = indexedDB,
-    name: string = DATABASE
+    name: string = DATABASE,
+    // The saved shape's version, which only a test of a later one passes.
+    version: number = FORMAT_VERSION
 ): Promise<Store> => {
-    const opening = factory.open(name, FORMAT_VERSION);
+    const opening = factory.open(name, version);
     opening.onupgradeneeded = () => {
         const database = opening.result;
         for (const kind of [PLAYERS, GAMES])
             if (!database.objectStoreNames.contains(kind))
                 database.createObjectStore(kind, { keyPath: 'id' });
     };
-    return storeOver(await settled(opening));
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        opening.onsuccess = () => {
+            resolve(opening.result);
+        };
+        opening.onblocked = () => {
+            reject(new Error(BLOCKED_DATABASE));
+        };
+        opening.onerror = () => {
+            reject(
+                opening.error?.name === 'VersionError'
+                    ? new Error(NEWER_DATABASE)
+                    : (opening.error ?? new Error('The saved games could not be opened.'))
+            );
+        };
+    });
+    database.onversionchange = () => {
+        database.close();
+    };
+    return storeOver(database);
 };
 
 /**
  * Asks the browser to keep what the app has saved. A browser may clear a site's data when the
- * phone runs low, and a site that has asked is passed over. Whether it agreed.
+ * phone runs low, and a site that has asked is passed over. Resolves to whether it agreed.
  */
 export const keepStorage = async (
     storage: Pick<StorageManager, 'persist'> | null = 'storage' in navigator

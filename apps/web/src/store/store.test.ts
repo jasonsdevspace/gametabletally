@@ -6,11 +6,12 @@ import {
     FORMAT,
     FORMAT_VERSION,
     readFile,
+    type SavedFile,
     type SavedGame,
     type SavedPlayer,
     toScoreInput,
 } from './format.js';
-import { keepStorage, openStore } from './store.js';
+import { BLOCKED_DATABASE, keepStorage, NEWER_DATABASE, openStore } from './store.js';
 
 /*
  * The store runs here against an IndexedDB that lives in memory, with the real one's
@@ -229,6 +230,155 @@ describe('export and import', () => {
         };
         await expect(here.importFile(file)).rejects.toThrow();
         expect(await here.exportFile('2026-11-04T09:00:00Z')).toEqual(before);
+    });
+});
+
+/** Puts a record straight into a database, past the store, as a damaged or foreign one would sit. */
+const plant = (factory: IDBFactory, kind: string, record: unknown): Promise<void> =>
+    new Promise((resolve, reject) => {
+        const opening = factory.open('gametabletally');
+        opening.onerror = () => {
+            reject(opening.error ?? new Error('not opened'));
+        };
+        opening.onsuccess = () => {
+            const database = opening.result;
+            const transaction = database.transaction(kind, 'readwrite');
+            transaction.objectStore(kind).put(record);
+            transaction.oncomplete = () => {
+                database.close();
+                resolve();
+            };
+        };
+    });
+
+describe('what the store refuses to save', () => {
+    it('refuses a player the reader would not read, and saves nothing', async () => {
+        const store = await openStore(new IDBFactory());
+        await expect(store.savePlayer({ ...ANN, name: '' })).rejects.toThrow(/not a player/);
+        await expect(store.savePlayer({ ...ANN, added: 'today' })).rejects.toThrow(/not a player/);
+        expect(await store.players()).toEqual([]);
+    });
+
+    it('refuses a game the reader would not read, and saves nothing', async () => {
+        const store = await openStore(new IDBFactory());
+        const played = game('g-1', [FIRST], '2026-11-01T10:20:00Z');
+        await expect(store.saveGame({ ...played, rules: 1.5 })).rejects.toThrow(/not a game/);
+        await expect(store.saveGame({ ...played, started: '' })).rejects.toThrow(/not a game/);
+        expect(await store.games()).toEqual([]);
+        expect(await store.damaged()).toBe(0);
+    });
+});
+
+describe('a record in the database that is not a player or a game', () => {
+    const withDamage = async () => {
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const each of [ANN, BEN, CAT]) await store.savePlayer(each);
+        await store.saveGame(game('g-1', [FIRST], '2026-11-01T10:20:00Z'));
+        store.close();
+        await plant(factory, 'players', { id: 'p-odd', name: 7 });
+        await plant(factory, 'games', { id: 'g-odd', players: ['p-ben'], rounds: 'lost' });
+        return openStore(factory);
+    };
+
+    it('is passed over when the players and games are read', async () => {
+        const store = await withDamage();
+        expect((await store.players()).map(({ id }) => id)).toEqual(['p-ann', 'p-ben', 'p-cat']);
+        expect((await store.games()).map(({ id }) => id)).toEqual(['g-1']);
+        expect(await store.game('g-odd')).toBeNull();
+    });
+
+    it('is counted, and left out of an exported file', async () => {
+        const store = await withDamage();
+        expect(await store.damaged()).toBe(2);
+        const file = await store.exportFile('2026-11-04T09:00:00Z');
+        expect(file.games.map(({ id }) => id)).toEqual(['g-1']);
+        expect(readFile(JSON.stringify(file))).toEqual(file);
+    });
+
+    it('still keeps a player it names from being deleted', async () => {
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        await store.savePlayer(BEN);
+        store.close();
+        await plant(factory, 'games', { id: 'g-odd', players: ['p-ben'], rounds: 'lost' });
+        const again = await openStore(factory);
+        await again.removePlayer('p-ben');
+        expect(await again.players()).toEqual([{ ...BEN, removed: true }]);
+    });
+});
+
+describe('a merge by the time each copy was changed', () => {
+    it('keeps the later moment, however finely each copy wrote its time', async () => {
+        const here = await openStore(new IDBFactory());
+        await here.saveGame(game('g-1', [FIRST], '2026-11-01T10:20:00Z'));
+        const file: SavedFile = {
+            format: FORMAT,
+            version: FORMAT_VERSION,
+            exported: '2026-11-04T09:00:00Z',
+            players: [],
+            // Half a second later, and before the saved copy when the two are read as text.
+            games: [game('g-1', [FIRST, SECOND], '2026-11-01T10:20:00.500Z')],
+        };
+        expect(await here.importFile(file)).toEqual({ players: 0, games: 1 });
+        expect((await here.game('g-1'))?.rounds).toEqual([FIRST, SECOND]);
+    });
+
+    it('keeps the copy on the phone when the two were changed at the same moment', async () => {
+        const here = await openStore(new IDBFactory());
+        await here.saveGame(game('g-1', [FIRST], '2026-11-01T10:20:00Z'));
+        const file: SavedFile = {
+            format: FORMAT,
+            version: FORMAT_VERSION,
+            exported: '2026-11-04T09:00:00Z',
+            players: [],
+            games: [game('g-1', [FIRST, SECOND], '2026-11-01T10:20:00.000Z')],
+        };
+        expect(await here.importFile(file)).toEqual({ players: 0, games: 0 });
+        expect((await here.game('g-1'))?.rounds).toEqual([FIRST]);
+    });
+});
+
+/** Opens a database at a version, as a build with a later saved shape would. */
+const openAt = (factory: IDBFactory, version: number): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+        const opening = factory.open('gametabletally', version);
+        opening.onsuccess = () => {
+            resolve(opening.result);
+        };
+        opening.onerror = () => {
+            reject(opening.error ?? new Error('not opened'));
+        };
+        opening.onblocked = () => {
+            reject(new Error('blocked'));
+        };
+    });
+
+describe('a database and a build of different versions', () => {
+    it('says to update the app when a newer build has already upgraded the database', async () => {
+        const factory = new IDBFactory();
+        (await openAt(factory, FORMAT_VERSION + 1)).close();
+        await expect(openStore(factory)).rejects.toThrow(NEWER_DATABASE);
+    });
+
+    it('lets go of the database when a newer build asks to upgrade it', async () => {
+        const factory = new IDBFactory();
+        await openStore(factory);
+        // The store above is still open. A newer build opens at the next version and is not
+        // kept waiting, since the open store closes when it is asked to.
+        const upgraded = await openAt(factory, FORMAT_VERSION + 1);
+        expect(upgraded.version).toBe(FORMAT_VERSION + 1);
+        upgraded.close();
+    });
+
+    it('says to close the other tab when one keeps the database open', async () => {
+        const factory = new IDBFactory();
+        // A connection that never lets go, as a tab of a build before this change would be.
+        const held = await openAt(factory, FORMAT_VERSION);
+        await expect(openStore(factory, 'gametabletally', FORMAT_VERSION + 1)).rejects.toThrow(
+            BLOCKED_DATABASE
+        );
+        held.close();
     });
 });
 
