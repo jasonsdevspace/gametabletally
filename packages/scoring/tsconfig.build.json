@@ -2,6 +2,10 @@
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
         "types": [],
+        // What Node itself accepts, so an import the build lets through is one the built
+        // files can load with no bundler in between.
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
         "composite": true,
         "declaration": true,
         "declarationMap": true,

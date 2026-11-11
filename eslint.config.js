@@ -1,3 +1,4 @@
+import { builtinModules } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 import js from '@eslint/js';
@@ -56,6 +57,9 @@ const sizeBudgets = {
  */
 const WORKSPACES = workspacePackages(fileURLToPath(new URL('./', import.meta.url)));
 
+/** Why a file that runs outside Node may not import one of Node's modules. */
+const NO_NODE = 'Runs outside Node, so it cannot load Node.';
+
 export default defineConfig(
     {
         linterOptions: { reportUnusedDisableDirectives: 'error' },
@@ -100,7 +104,11 @@ export default defineConfig(
             parserOptions: {
                 projectService: {
                     // The two files at the root, which no tsconfig includes.
-                    allowDefaultProject: ['vitest.config.ts', 'source-condition.ts'],
+                    allowDefaultProject: [
+                        'vitest.config.ts',
+                        'source-condition.ts',
+                        'apps/web/vite.config.ts',
+                    ],
                 },
                 tsconfigRootDir: import.meta.dirname,
             },
@@ -143,22 +151,19 @@ export default defineConfig(
         rules: { 'max-params': 'off' },
     },
     {
-        // What runs in the browser, and for the scoring package in a phone's script runtime as
-        // well. It may not load anything from Node, or it stops running there. Enforced here
-        // rather than discovered there.
-        files: ['packages/scoring/src/**/*.ts', 'apps/web/src/**/*.{ts,tsx}'],
+        // Every workspace's source runs in the browser, and the scoring package's in a phone's
+        // script runtime as well. It may not load anything from Node, by a module's bare name
+        // or with the prefix, or it stops running there. Enforced here rather than discovered
+        // there, and for each workspace the manifest names, so a new one is held to it too.
+        files: WORKSPACES.map((path) => `${path}/src/**/*.{ts,tsx}`),
         // The tests run only in Node.
         ignores: ['**/*.test.{ts,tsx}'],
         rules: {
             '@typescript-eslint/no-restricted-imports': [
                 'error',
                 {
-                    patterns: [
-                        {
-                            group: ['node:*'],
-                            message: 'Runs outside Node, so it cannot load Node.',
-                        },
-                    ],
+                    paths: builtinModules.map((name) => ({ name, message: NO_NODE })),
+                    patterns: [{ group: ['node:*'], message: NO_NODE }],
                 },
             ],
         },

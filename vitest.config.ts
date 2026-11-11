@@ -9,14 +9,15 @@ export default defineConfig({
     resolve: { conditions: [SOURCE_CONDITION, ...defaultClientConditions] },
     ssr: { resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] } },
     test: {
-        // The app's tests need a document. Everything else runs in Node.
+        // What is under apps/ needs a document. Everything else runs in Node. Each project takes
+        // every test file in its folders, wherever it sits, so none is linted and never run.
         projects: [
             {
                 extends: true,
                 test: {
                     name: 'node',
                     environment: 'node',
-                    include: ['packages/*/src/**/*.test.ts', 'scripts/*.test.ts'],
+                    include: ['packages/*/**/*.test.{ts,tsx}', 'scripts/*.test.ts'],
                 },
             },
             {
@@ -24,7 +25,7 @@ export default defineConfig({
                 test: {
                     name: 'web',
                     environment: 'jsdom',
-                    include: ['apps/web/src/**/*.test.{ts,tsx}'],
+                    include: ['apps/*/**/*.test.{ts,tsx}'],
                     setupFiles: ['apps/web/vitest.setup.ts'],
                 },
             },

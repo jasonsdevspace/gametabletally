@@ -6,7 +6,7 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "type-check": "tsc -p tsconfig.json",
+        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
         "dev": "vite",
         "build": "vite build"
     },
