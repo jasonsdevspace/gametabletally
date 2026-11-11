@@ -1,8 +1,8 @@
 import {
     isRecord,
     isWhole,
+    noOptions,
     plain,
-    problemAt,
     readEntries,
     type Refusal,
     refusal,
@@ -142,9 +142,9 @@ const readPlayer = (raw: unknown): number | Refusal => {
 };
 
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
-    const { scores, problems } = readEntries(round, context, readPlayer);
     // A round of Flip 7 needs an entry from each player and nothing more.
-    return { scores, problems, complete: context.players.every((player) => scores.has(player)) };
+    const { scores, problems, allIn } = readEntries(round, context, readPlayer);
+    return { scores, problems, complete: allIn };
 };
 
 /** The one player alone on the highest total, once it has reached the target. */
@@ -164,14 +164,7 @@ export const FLIP_7: Rules = {
     maxPlayers: null,
     ahead: 'highest',
     // The published rules are the only ones this version knows.
-    checkOptions: (options) =>
-        Object.keys(options).map((option) =>
-            problemAt(
-                refusal('unknown-option', `Flip 7 has no option named ${JSON.stringify(option)}.`, {
-                    option,
-                })
-            )
-        ),
+    checkOptions: noOptions('Flip 7'),
     scoreRound,
     winners,
 };

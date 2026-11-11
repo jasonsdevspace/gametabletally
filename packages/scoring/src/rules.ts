@@ -83,6 +83,12 @@ export interface Entered {
     readonly round: Readonly<Record<string, unknown>> | null;
     readonly scores: Map<string, number>;
     readonly problems: Problem[];
+    /**
+     * Whether every player has an entry the rules accept. A round is complete when this is so
+     * and the game has whatever else it needs, and never while it is not, so no player is
+     * scored for an entry they have yet to make.
+     */
+    readonly allIn: boolean;
 }
 
 /**
@@ -103,6 +109,7 @@ export const readEntries = (
             problems: [
                 problemAt(refusal('not-a-round', 'The round does not hold its entries.'), index),
             ],
+            allIn: false,
         };
     const { entries } = round;
     const scores = new Map<string, number>();
@@ -119,5 +126,23 @@ export const readEntries = (
         if (typeof answer === 'number') scores.set(player, answer);
         else problems.push(problemAt(answer, index, player));
     }
-    return { round, scores, problems };
+    return { round, scores, problems, allIn: players.every((player) => scores.has(player)) };
 };
+
+/**
+ * The check of a game's options for a game that has none: each one given is refused by name.
+ */
+export const noOptions =
+    (game: string) =>
+    (options: Readonly<Record<string, unknown>>): readonly Problem[] =>
+        Object.keys(options).map((option) =>
+            problemAt(
+                refusal(
+                    'unknown-option',
+                    `${game} has no option named ${JSON.stringify(option)}.`,
+                    {
+                        option,
+                    }
+                )
+            )
+        );

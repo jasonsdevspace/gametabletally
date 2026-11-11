@@ -1,6 +1,7 @@
 import {
     isRecord,
     isWhole,
+    noOptions,
     plain,
     problemAt,
     readEntries,
@@ -21,7 +22,7 @@ import {
  *
  * Players count their own cards, and a cleared column leaves a hand with fewer of them, so an
  * entry is the total a player counted. It may be given as the cards themselves instead, which
- * are added up here.
+ * are added up here and held to what the deck holds of each.
  */
 
 /** What a player ended a round with: the total they counted, or the cards they hold. */
@@ -43,39 +44,63 @@ const LOWEST_CARD = -2;
 const HIGHEST_CARD = 12;
 /** A grid holds four columns of three, and never gains a card. */
 const MOST_CARDS = 12;
-/** What a full grid of the lowest and of the highest card comes to. */
-const LOWEST_TOTAL = MOST_CARDS * LOWEST_CARD;
-const HIGHEST_TOTAL = MOST_CARDS * HIGHEST_CARD;
 const TARGET = 100;
+
+/** How many of a card the deck holds: five of the lowest, ten of the next, fifteen zeros, ten of each other. */
+const copiesOf = (card: number): number => {
+    if (card === LOWEST_CARD) return 5;
+    if (card === 0) return 15;
+    return 10;
+};
+
+/**
+ * The least and the most a hand can come to, from what the deck holds: its five lowest cards
+ * beside seven of the next, and its ten highest beside two of the next. A total outside them is
+ * one no hand was ever counted to, which a slip of the thumb is far likelier to have typed.
+ */
+const LOWEST_TOTAL = 5 * LOWEST_CARD + 7 * (LOWEST_CARD + 1);
+const HIGHEST_TOTAL = 10 * HIGHEST_CARD + 2 * (HIGHEST_CARD - 1);
 
 const isCard = (value: unknown): value is number =>
     isWhole(value) && value >= LOWEST_CARD && value <= HIGHEST_CARD;
 
 /** The cards an entry lists, added up, or why they are refused. */
-const readCards = (cards: readonly unknown[]): number | Refusal => {
+const readCards = (listed: readonly unknown[]): number | Refusal => {
     // Found by place, so a card that is itself undefined is refused like any other.
-    const unknown = cards.findIndex((card) => !isCard(card));
+    const unknown = listed.findIndex((card) => !isCard(card));
     if (unknown !== -1)
         return refusal(
             'unknown-card',
-            `The deck holds no card ${JSON.stringify(plain(cards[unknown]))}.`,
-            { card: plain(cards[unknown]) }
+            `The deck holds no card ${JSON.stringify(plain(listed[unknown]))}.`,
+            { card: plain(listed[unknown]) }
         );
+    const cards = listed.filter(isCard);
     if (cards.length > MOST_CARDS)
         return refusal('too-many-cards', `A hand holds ${MOST_CARDS} cards at most.`, {
             max: MOST_CARDS,
             given: cards.length,
         });
-    return cards.filter(isCard).reduce((sum, card) => sum + card, 0);
+    const held = (card: number): number => cards.filter((other) => other === card).length;
+    const over = cards.find((card) => held(card) > copiesOf(card));
+    if (over !== undefined)
+        return refusal(
+            'too-many-copies',
+            `The deck holds ${copiesOf(over)} of the card ${over}, and the hand lists more.`,
+            { card: over, max: copiesOf(over), given: held(over) }
+        );
+    return cards.reduce((sum, card) => sum + card, 0);
 };
 
 /** One player's entry read and checked: what they hold, or why it is refused. */
 const readPlayer = (raw: unknown): number | Refusal => {
     if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.');
-    const { total, cards } = raw;
+    // A part given as null is a part not given, as a round's ender is, since a caller in
+    // another language writes what it leaves out that way.
+    const total = raw['total'] ?? undefined;
+    const cards = raw['cards'] ?? undefined;
     if (total !== undefined && cards !== undefined)
         return refusal('not-an-entry', 'The entry gives a total and its cards, and takes one.', {
-            part: 'total',
+            part: 'both',
         });
     if (Array.isArray(cards)) return readCards(cards);
     if (cards !== undefined)
@@ -90,7 +115,8 @@ const readPlayer = (raw: unknown): number | Refusal => {
             `A hand comes to no less than ${LOWEST_TOTAL} and no more than ${HIGHEST_TOTAL}.`,
             { min: LOWEST_TOTAL, max: HIGHEST_TOTAL, given: total }
         );
-    return total;
+    // A zero written with a minus sign is zero, here and once the answer is written as JSON.
+    return total === 0 ? 0 : total;
 };
 
 /**
@@ -106,8 +132,9 @@ const withPenalty = (held: ReadonlyMap<string, number>, ender: string): Map<stri
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     const { players, index } = context;
     const entered = readEntries(round, context, readPlayer);
-    const { scores, problems } = entered;
+    const { scores, problems, allIn } = entered;
     const ender = entered.round?.['ender'] ?? null;
+    // The entries' refusals come first, in their order, and the ender's after them.
     if (ender !== null && (typeof ender !== 'string' || !players.includes(ender)))
         return {
             scores,
@@ -122,10 +149,10 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
                 ),
             ],
         };
-    const allIn = players.every((player) => scores.has(player));
+    // What each holds stands undoubled until the round is whole: with an entry refused or a
+    // player yet to count, who holds the least is not known.
     if (problems.length > 0 || !allIn) return { scores, problems, complete: false };
-    // Every player has counted, so the round has ended, and it has to say who ended it. Until
-    // it does, what each holds stands and nothing is scored.
+    // Every player has counted, so the round has ended, and it has to say who ended it.
     if (ender === null)
         return {
             scores,
@@ -153,14 +180,7 @@ export const SKYJO: Rules = {
     minPlayers: 2,
     maxPlayers: 8,
     // The published rules are the only ones this version knows.
-    checkOptions: (options) =>
-        Object.keys(options).map((option) =>
-            problemAt(
-                refusal('unknown-option', `Skyjo has no option named ${JSON.stringify(option)}.`, {
-                    option,
-                })
-            )
-        ),
+    checkOptions: noOptions('Skyjo'),
     scoreRound,
     winners,
 };

@@ -904,6 +904,46 @@
             }
         },
         {
+            "name": "a round that is an object and holds no entries is not a round",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "note": "lost"
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "not-a-round",
+                        "data": {},
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
             "name": "a round still being played counts toward no total",
             "input": {
                 "game": "flip-7",

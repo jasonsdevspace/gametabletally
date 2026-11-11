@@ -139,6 +139,18 @@ describe('scoring a game', () => {
         }
     );
 
+    it('scores a zero written with a minus sign as zero, as the answer written as JSON does', () => {
+        const result = score({
+            game: 'skyjo',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+            rounds: [{ entries: { ann: { total: -0 }, ben: { total: 4 } }, ender: 'ann' }],
+        });
+        expect(Object.is(result.rounds[0]?.scores['ann'], 0)).toBe(true);
+        expect(Object.is(result.totals['ann'], 0)).toBe(true);
+    });
+
     it('scores a game saved under a rule set by that rule set, and refuses one it never had', () => {
         expect(score({ ...game([FIRST]), rules: 1 }).problems).toEqual([]);
         expect(score({ ...game([FIRST]), rules: 7 }).problems.map(({ code }) => code)).toEqual([

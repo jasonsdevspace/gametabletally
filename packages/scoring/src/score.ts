@@ -236,8 +236,8 @@ const scoreAny = (raw: unknown): ScoreResult => {
  * Nothing is kept between calls and nothing is read but what is passed in, so the same game
  * always gets the same answer, and changing an earlier round is scoring the game again with the
  * round changed. Whatever the rules refuse is reported in `problems` and counts toward no total.
- * A round is added to the totals once every player's entry is in and accepted, and only when
- * every round before it has been. It does not throw, whatever it is given.
+ * A round is added to the totals once it is whole, which is every player's entry in and accepted
+ * with whatever else the game needs of a round, and only when every round before it has been. It does not throw, whatever it is given.
  */
 export const score = (input: ScoreInput): ScoreResult => scoreAny(input);
 
