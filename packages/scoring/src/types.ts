@@ -82,6 +82,11 @@ export interface Game {
     readonly name: string;
     /** The newest version of its rule set, which a new game is started under. */
     readonly rules: number;
+    /**
+     * Whether the highest or the lowest total is ahead, so a table of scores ranks every place
+     * the right way round.
+     */
+    readonly ahead: 'highest' | 'lowest';
     /** The fewest players it takes. */
     readonly minPlayers: number;
     /** The most players it takes, or null when the rules name no limit. */

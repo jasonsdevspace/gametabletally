@@ -44,14 +44,18 @@ describe('the games the package knows', () => {
         for (const { name } of GAMES) expect(name.trim()).not.toBe('');
     });
 
-    it('says which rule set a new game starts under and how many can play', () => {
-        expect(GAMES.find(({ id }) => id === 'flip-7')).toEqual({
-            id: 'flip-7',
-            name: 'Flip 7',
-            rules: 1,
-            minPlayers: 3,
-            maxPlayers: null,
-        });
+    it('says which rule set a new game starts under, which way is ahead and how many can play', () => {
+        expect(GAMES).toEqual([
+            {
+                id: 'flip-7',
+                name: 'Flip 7',
+                rules: 1,
+                ahead: 'highest',
+                minPlayers: 3,
+                maxPlayers: null,
+            },
+            { id: 'skyjo', name: 'Skyjo', rules: 1, ahead: 'lowest', minPlayers: 2, maxPlayers: 8 },
+        ]);
     });
 });
 
