@@ -1,5 +1,5 @@
 import { FLIP_7 } from './flip-7.js';
-import { isRecord, isWhole, type Rules } from './rules.js';
+import { isRecord, isWhole, problemAt, type Refusal, refusal, type Rules } from './rules.js';
 import type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
 
 /**
@@ -22,63 +22,59 @@ export const GAMES: readonly Game[] = NEWEST.map(({ id, name, rules, minPlayers,
     maxPlayers,
 }));
 
-/** A problem with the game as a whole, with what it is about. */
-const refuse = (
-    code: string,
-    message: string,
-    data: Readonly<Record<string, unknown>> = {}
-): Problem => ({ code, message, data, round: null, player: null });
-
-/** A problem with one round as a whole. */
-const refuseRound = (code: string, message: string, round: number): Problem => ({
-    code,
-    message,
-    data: {},
-    round,
-    player: null,
-});
+/** What is not a game, naming the part it lacks where it lacks one. */
+const notGame = (message: string, part?: string): Refusal =>
+    refusal('not-a-game', message, part === undefined ? {} : { part });
 
 /**
  * Reads a game as handed over, or says what it lacks. A caller in another language passes text
  * no type checker saw, so nothing about its shape is taken on trust.
  */
-const readInput = (raw: unknown): ScoreInput | string => {
-    if (!isRecord(raw)) return 'The game is not an object.';
+const readInput = (raw: unknown): ScoreInput | Refusal => {
+    if (!isRecord(raw)) return notGame('The game is not an object.');
     const { game, rules, options, players, rounds } = raw;
-    if (typeof game !== 'string') return 'The game does not name which game it is.';
-    if (!isWhole(rules)) return 'The game does not name the version of its rule set.';
-    if (!isRecord(options)) return 'The game does not hold its options.';
-    if (!Array.isArray(players)) return 'The game does not list its players.';
+    if (typeof game !== 'string')
+        return notGame('The game does not name which game it is.', 'game');
+    if (!isWhole(rules))
+        return notGame('The game does not name the version of its rule set.', 'rules');
+    if (!isRecord(options)) return notGame('The game does not hold its options.', 'options');
+    if (!Array.isArray(players)) return notGame('The game does not list its players.', 'players');
     const ids = players.filter((id): id is string => typeof id === 'string' && id !== '');
-    if (ids.length !== players.length) return 'A player is not named by an id.';
-    if (!Array.isArray(rounds)) return 'The game does not list its rounds.';
+    if (ids.length !== players.length) return notGame('A player is not named by an id.', 'players');
+    if (!Array.isArray(rounds)) return notGame('The game does not list its rounds.', 'rounds');
     return { game, rules, options, players: ids, rounds };
 };
 
 /** What is wrong with the list of players, if anything. */
 const playerProblems = (rules: Rules, players: readonly string[]): readonly Problem[] => {
-    const problems: Problem[] = [];
-    if (players.length < rules.minPlayers)
-        problems.push(
-            refuse('too-few-players', `${rules.name} takes ${rules.minPlayers} players or more.`, {
+    const given = players.length;
+    const count: Refusal[] = [];
+    if (given < rules.minPlayers)
+        count.push(
+            refusal('too-few-players', `${rules.name} takes ${rules.minPlayers} players or more.`, {
                 min: rules.minPlayers,
+                given,
             })
         );
-    if (rules.maxPlayers !== null && players.length > rules.maxPlayers)
-        problems.push(
-            refuse(
+    if (rules.maxPlayers !== null && given > rules.maxPlayers)
+        count.push(
+            refusal(
                 'too-many-players',
                 `${rules.name} takes ${rules.maxPlayers} players or fewer.`,
-                { max: rules.maxPlayers }
+                { max: rules.maxPlayers, given }
             )
         );
-    const twice = players.find((player, seat) => players.indexOf(player) !== seat);
-    if (twice !== undefined)
-        problems.push({
-            ...refuse('player-twice', 'A player is in the game twice.'),
-            player: twice,
-        });
-    return problems;
+    // Each player listed more than once is named once, in seat order, so one pass fixes them all.
+    const twice = players.filter(
+        (player, seat) =>
+            players.indexOf(player) !== seat && players.indexOf(player, seat + 1) === -1
+    );
+    return [
+        ...count.map((problem) => problemAt(problem)),
+        ...twice.map((player) =>
+            problemAt(refusal('player-twice', 'A player is in the game twice.'), null, player)
+        ),
+    ];
 };
 
 /** The players ahead on the totals, in seat order. */
@@ -127,12 +123,12 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
     if (walked.winners !== null)
         return passedOver(
             walked,
-            refuseRound('after-the-end', 'The game was over before this round.', index)
+            problemAt(refusal('after-the-end', 'The game was over before this round.'), index)
         );
     if (walked.rounds.some(({ state }) => state !== 'scored'))
         return passedOver(
             walked,
-            refuseRound('after-a-gap', 'An earlier round has yet to be scored.', index)
+            problemAt(refusal('after-a-gap', 'An earlier round has yet to be scored.'), index)
         );
     const { players, rounds } = input;
     const outcome = rules.scoreRound(rounds[index], { players, index });
@@ -141,9 +137,11 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
     const unfinished = !complete && outcome.problems.length === 0 && index < rounds.length - 1;
     const problems = unfinished
         ? [
-              refuseRound(
-                  'round-unfinished',
-                  'A later round was entered before every player had played this one.',
+              problemAt(
+                  refusal(
+                      'round-unfinished',
+                      'A later round was entered before every player had played this one.'
+                  ),
                   index
               ),
           ]
@@ -171,16 +169,24 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
     const known = RULES.filter(({ id }) => id === input.game);
     if (known.length === 0)
         return unscored(input, [
-            refuse('unknown-game', `No game has the id ${JSON.stringify(input.game)}.`, {
-                game: input.game,
-            }),
+            problemAt(
+                refusal('unknown-game', `No game has the id ${JSON.stringify(input.game)}.`, {
+                    game: input.game,
+                })
+            ),
         ]);
     const rules = known.find((candidate) => candidate.rules === input.rules);
     if (!rules)
         return unscored(input, [
-            refuse('unknown-rules', `The game has no rule set with the version ${input.rules}.`, {
-                rules: input.rules,
-            }),
+            problemAt(
+                refusal(
+                    'unknown-rules',
+                    `The game has no rule set with the version ${input.rules}.`,
+                    {
+                        rules: input.rules,
+                    }
+                )
+            ),
         ]);
     const { players } = input;
     const stopped = [...playerProblems(rules, players), ...rules.checkOptions(input.options)];
@@ -203,7 +209,7 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
 };
 
 /** The answer for something that is not a game at all. */
-const notAGame = (code: string, message: string): ScoreResult => ({
+const notAGame = (problem: Refusal): ScoreResult => ({
     game: '',
     rules: 0,
     state: 'in-play',
@@ -211,13 +217,13 @@ const notAGame = (code: string, message: string): ScoreResult => ({
     totals: {},
     leaders: [],
     winners: [],
-    problems: [refuse(code, message)],
+    problems: [problemAt(problem)],
 });
 
 /** Scores whatever is handed over, which may not be a game. */
 const scoreAny = (raw: unknown): ScoreResult => {
     const input = readInput(raw);
-    return typeof input === 'string' ? notAGame('not-a-game', input) : scoreRead(input);
+    return 'code' in input ? notAGame(input) : scoreRead(input);
 };
 
 /**
@@ -241,7 +247,7 @@ export const scoreJson = (game: string): string => {
     try {
         raw = JSON.parse(game);
     } catch {
-        return JSON.stringify(notAGame('not-json', 'The game is not written as JSON.'));
+        return JSON.stringify(notAGame(refusal('not-json', 'The game is not written as JSON.')));
     }
     return JSON.stringify(scoreAny(raw));
 };

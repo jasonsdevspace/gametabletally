@@ -1,4 +1,14 @@
-import { isRecord, isWhole, type RoundContext, type RoundOutcome, type Rules } from './rules.js';
+import {
+    isRecord,
+    isWhole,
+    plain,
+    problemAt,
+    type Refusal,
+    refusal,
+    type RoundContext,
+    type RoundOutcome,
+    type Rules,
+} from './rules.js';
 import type { Problem } from './types.js';
 
 /**
@@ -61,69 +71,55 @@ const isNumberCard = (value: unknown): value is number =>
 const firstRepeated = <Value>(values: readonly Value[]): Value | undefined =>
     values.find((value, index) => values.indexOf(value) !== index);
 
-/** Why an entry is refused: a code that never changes, the reason, and what it is about. */
-interface Refusal {
-    readonly code: string;
-    readonly message: string;
-    readonly data: Readonly<Record<string, unknown>>;
-}
-
-const refused = (
-    code: string,
-    message: string,
-    data: Readonly<Record<string, unknown>> = {}
-): Refusal => ({ code, message, data });
-
-/** A card as a problem's data holds it. One that is not there at all is held as null. */
-const held = (card: unknown): unknown => card ?? null;
-
-/** A value as a refusal's sentence shows it. */
-const shown = (value: unknown): string =>
-    value === undefined ? 'undefined' : JSON.stringify(value);
+/** A card the deck does not hold, named by the list it was entered in. */
+const unknownCard = (card: unknown, kind: 'number' | 'modifier'): Refusal =>
+    refusal('unknown-card', `The deck holds no ${kind} card ${JSON.stringify(plain(card))}.`, {
+        card: plain(card),
+        kind,
+    });
 
 /** Reads an entry as entered, or says why it is not one. */
 const readEntry = (raw: unknown): Flip7Entry | Refusal => {
-    if (!isRecord(raw)) return refused('not-an-entry', 'The entry is not an object.');
+    if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.');
     const { numbers, modifiers, bust } = raw;
     if (typeof bust !== 'boolean')
-        return refused('not-an-entry', 'The entry does not say whether the player bust.');
-    if (!Array.isArray(numbers) || !Array.isArray(modifiers))
-        return refused('not-an-entry', 'The entry does not list its number and modifier cards.');
+        return refusal('not-an-entry', 'The entry does not say whether the player bust.', {
+            part: 'bust',
+        });
+    if (!Array.isArray(numbers))
+        return refusal('not-an-entry', 'The entry does not list its number cards.', {
+            part: 'numbers',
+        });
+    if (!Array.isArray(modifiers))
+        return refusal('not-an-entry', 'The entry does not list its modifier cards.', {
+            part: 'modifiers',
+        });
     // Found by place, so a card that is itself undefined is refused like any other.
     const unknownNumber = numbers.findIndex((card) => !isNumberCard(card));
-    if (unknownNumber !== -1)
-        return refused(
-            'unknown-card',
-            `The deck holds no number card ${shown(numbers[unknownNumber])}.`,
-            { card: held(numbers[unknownNumber]) }
-        );
+    if (unknownNumber !== -1) return unknownCard(numbers[unknownNumber], 'number');
     const unknownModifier = modifiers.findIndex((card) => !isModifier(card));
-    if (unknownModifier !== -1)
-        return refused(
-            'unknown-card',
-            `The deck holds no modifier card ${shown(modifiers[unknownModifier])}.`,
-            { card: held(modifiers[unknownModifier]) }
-        );
+    if (unknownModifier !== -1) return unknownCard(modifiers[unknownModifier], 'modifier');
     return { numbers: numbers.filter(isNumberCard), modifiers: modifiers.filter(isModifier), bust };
 };
 
-/** What the rules refuse in a hand that did not bust, by code and reason, if anything. */
-const refusal = (entry: Flip7Entry): Refusal | null => {
+/** What the rules refuse in a hand that did not bust, if anything. */
+const handRefusal = (entry: Flip7Entry): Refusal | null => {
     const number = firstRepeated(entry.numbers);
     if (number !== undefined)
-        return refused('number-twice', `The hand holds the ${number} twice, which is a bust.`, {
+        return refusal('number-twice', `The hand holds the ${number} twice, which is a bust.`, {
             number,
         });
     const modifier = firstRepeated(entry.modifiers);
     if (modifier !== undefined)
-        return refused(
+        return refusal(
             'modifier-twice',
             `The hand holds the ${modifier} twice, and the deck has one.`,
             { modifier }
         );
     if (entry.numbers.length > FLIP)
-        return refused('too-many-numbers', `The round ends at ${FLIP} different numbers.`, {
+        return refusal('too-many-numbers', `The round ends at ${FLIP} different numbers.`, {
             max: FLIP,
+            given: entry.numbers.length,
         });
     return null;
 };
@@ -142,22 +138,15 @@ const readPlayer = (raw: unknown): number | Refusal => {
     const entry = readEntry(raw);
     if ('code' in entry) return entry;
     // A bust scores nothing whatever is held, so its cards are checked only for being in the deck.
-    return (entry.bust ? null : refusal(entry)) ?? scoreEntry(entry);
+    return (entry.bust ? null : handRefusal(entry)) ?? scoreEntry(entry);
 };
 
 const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutcome => {
-    const problem = ({ code, message, data }: Refusal, player: string | null): Problem => ({
-        code,
-        message,
-        data,
-        round: index,
-        player,
-    });
     if (!isRecord(round) || !isRecord(round['entries']))
         return {
             scores: new Map(),
             problems: [
-                problem(refused('not-a-round', 'The round does not hold its entries.'), null),
+                problemAt(refusal('not-a-round', 'The round does not hold its entries.'), index),
             ],
         };
     const { entries } = round;
@@ -168,14 +157,14 @@ const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutc
         .filter((id) => !players.includes(id))
         .sort()
         .map((id) =>
-            problem(refused('unknown-player', 'The entry is for nobody in the game.'), id)
+            problemAt(refusal('unknown-player', 'The entry is for nobody in the game.'), index, id)
         );
     for (const player of players) {
         // Asked of the entries themselves, so an id such as `toString` is not found on every object.
         if (!Object.prototype.hasOwnProperty.call(entries, player)) continue;
         const read = readPlayer(entries[player]);
         if (typeof read === 'number') scores.set(player, read);
-        else problems.push(problem(read, player));
+        else problems.push(problemAt(read, index, player));
     }
     return { scores, problems };
 };
@@ -198,13 +187,13 @@ export const FLIP_7: Rules = {
     ahead: 'highest',
     // The published rules are the only ones this version knows.
     checkOptions: (options) =>
-        Object.keys(options).map((option) => ({
-            code: 'unknown-option',
-            message: `Flip 7 has no option named ${JSON.stringify(option)}.`,
-            data: { option },
-            round: null,
-            player: null,
-        })),
+        Object.keys(options).map((option) =>
+            problemAt(
+                refusal('unknown-option', `Flip 7 has no option named ${JSON.stringify(option)}.`, {
+                    option,
+                })
+            )
+        ),
     scoreRound,
     winners,
 };

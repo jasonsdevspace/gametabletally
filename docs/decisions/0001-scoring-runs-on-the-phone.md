@@ -63,9 +63,9 @@ What makes that hold:
   another.
 - **The rules are also written as cases in JSON,** a game in and the answer out, under
   `packages/scoring/cases`. A case holds a refusal's code, its data and its place and never its
-  sentence, since the wording is one implementation's own. The cases are the contract a second implementation has
-  to pass. Every case goes in as text and comes back as text, so the order of what is refused
-  and what is passed over in a game are part of the contract too.
+  sentence, since the wording is one implementation's own. The cases are the contract a second
+  implementation has to pass. Every case goes in as text and comes back as text, so the order of
+  what is refused and what is passed over in a game are part of the contract too.
 - **The package builds to one script with no dependencies,** `dist/scoring.global.js`, beside the
   modules a bundler imports. Evaluated once, it leaves the package's exports on one global.
 

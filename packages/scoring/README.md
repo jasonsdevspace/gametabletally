@@ -70,28 +70,32 @@ language. Text that is not JSON, or not a game, is answered with a problem like 
 
 A caller that words a refusal itself, in its own voice or another language, goes by the `code` and
 the `data`. The `message` is this package's own wording and may change. `data` is always an
-object, and is empty where the code has nothing to add.
+object, and is empty where the code has nothing to add. A field's meaning belongs to its code, so
+read it by code: `max` is a number of players under one code and a number of cards under another.
 
-| Code               | When                                                     | `data`                                                       |
-| ------------------ | -------------------------------------------------------- | ------------------------------------------------------------ |
-| `not-json`         | The text handed to `scoreJson` is not JSON               | empty                                                        |
-| `not-a-game`       | What is handed over lacks a part of a game               | empty                                                        |
-| `unknown-game`     | No game has the id                                       | `game`, the id given                                         |
-| `unknown-rules`    | The game has no rule set with the version                | `rules`, the version given                                   |
-| `too-few-players`  | The game takes more players                              | `min`, the fewest it takes                                   |
-| `too-many-players` | The game takes fewer players                             | `max`, the most it takes                                     |
-| `player-twice`     | A player is in the game twice, named by `player`         | empty                                                        |
-| `unknown-option`   | The game has no such option                              | `option`, its name                                           |
-| `not-a-round`      | A round does not hold its entries                        | empty                                                        |
-| `round-unfinished` | A later round was entered before this one was played out | empty                                                        |
-| `after-a-gap`      | An earlier round has yet to be scored                    | empty                                                        |
-| `after-the-end`    | The game was over before this round                      | empty                                                        |
-| `unknown-player`   | An entry is for nobody in the game, named by `player`    | empty                                                        |
-| `not-an-entry`     | An entry does not have the game's shape                  | empty                                                        |
-| `unknown-card`     | Flip 7: the deck holds no such card                      | `card`, the card as given, or null for one that is not there |
-| `number-twice`     | Flip 7: a hand that did not bust holds a number twice    | `number`, the number                                         |
-| `modifier-twice`   | Flip 7: a hand holds a modifier twice                    | `modifier`, the modifier                                     |
-| `too-many-numbers` | Flip 7: a hand holds more numbers than end a round       | `max`, the most a hand holds                                 |
+| Code               | When                                                                                   | `data`                                                                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `not-json`         | The text handed to `scoreJson` is not JSON                                             | empty                                                                                                                                                    |
+| `not-a-game`       | What is handed over is not a game                                                      | `part`, the part it lacks or has wrong: `game`, `rules`, `options`, `players` or `rounds`. Empty when it is not an object at all                         |
+| `unknown-game`     | No game has the id                                                                     | `game`, the id given                                                                                                                                     |
+| `unknown-rules`    | The game has no rule set with the version                                              | `rules`, the version given                                                                                                                               |
+| `too-few-players`  | The game takes more players                                                            | `min`, the fewest it takes, and `given`, how many were listed                                                                                            |
+| `too-many-players` | The game takes fewer players                                                           | `max`, the most it takes, and `given`, how many were listed                                                                                              |
+| `player-twice`     | A player is listed more than once. Raised once for each such player, named by `player` | empty                                                                                                                                                    |
+| `unknown-option`   | The game has no such option                                                            | `option`, its name                                                                                                                                       |
+| `not-a-round`      | A round does not hold its entries                                                      | empty                                                                                                                                                    |
+| `round-unfinished` | A later round was entered before this one was played out                               | empty                                                                                                                                                    |
+| `after-a-gap`      | An earlier round has yet to be scored                                                  | empty                                                                                                                                                    |
+| `after-the-end`    | The game was over before this round                                                    | empty                                                                                                                                                    |
+| `unknown-player`   | An entry is for nobody in the game, named by `player`                                  | empty                                                                                                                                                    |
+| `not-an-entry`     | An entry does not have the game's shape                                                | Flip 7: `part`, the part it lacks: `bust`, `numbers` or `modifiers`. Empty when it is not an object at all                                               |
+| `unknown-card`     | Flip 7: the deck holds no such card, or the card is in the wrong list                  | `card`, the card as given when it is text, a number or true or false, and null for anything else, and `kind`, the list it was in: `number` or `modifier` |
+| `number-twice`     | Flip 7: a hand that did not bust holds a number twice                                  | `number`, the number                                                                                                                                     |
+| `modifier-twice`   | Flip 7: a hand that did not bust holds a modifier twice                                | `modifier`, the modifier                                                                                                                                 |
+| `too-many-numbers` | Flip 7: a hand that did not bust holds more numbers than end a round                   | `max`, the most a hand holds, and `given`, how many it held                                                                                              |
+
+Whatever is entered, `data` holds only text, numbers, true or false and null, so an answer always
+survives being written as JSON.
 
 ## Flip 7
 
@@ -112,11 +116,11 @@ leads.
 
 ## The cases
 
-`cases` holds the rules as JSON, one file for each game, which names the `game`, the version of
-its `rules` and a list of `cases`. Each case has a `name`, the answer to `expect`, and the game
-either as an `input`, as `score` takes it, or as `text`, where what is handed over is not a game
-at all. Either way a case is run by handing the game to `scoreJson` as text and reading the answer
-back. An expected problem holds its `code`, its `data`, its `round` and its `player` and never its sentence,
+`cases` holds the rules as JSON, one file for each game, which names the `game`, the version of its
+`rules` and a list of `cases`. Each case has a `name`, the answer to `expect`, and the game either
+as an `input`, as `score` takes it, or as `text`, where what is handed over is not a game at all.
+Either way a case is run by handing the game to `scoreJson` as text and reading the answer back. An
+expected problem holds its `code`, its `data`, its `round` and its `player` and never its sentence,
 which is this implementation's own wording.
 
 The cases are the contract. Anything else that scores these games, in any language, agrees with

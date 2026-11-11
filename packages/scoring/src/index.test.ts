@@ -103,9 +103,37 @@ describe('scoring a game', () => {
         ]);
         // A card that is not there has no value to carry, and null survives being written as
         // JSON where undefined would drop the field.
-        expect(result.problems[0]?.data).toEqual({ card: null });
+        expect(result.problems[0]?.data).toEqual({ card: null, kind: 'number' });
         expect(result.rounds[0]?.scores).toEqual({ ben: 9, cat: 8 });
     });
+
+    // A caller in the same runtime can hand over what JSON cannot hold. None of it makes the
+    // function throw, and none of it reaches the answer, which is still plain data.
+    it.each([
+        ['a function', () => 1],
+        ['a symbol', Symbol('card')],
+        ['a number too large to be a number', 10n],
+        ['a number that is not one', Number.NaN],
+        [
+            'an object that holds itself',
+            (() => {
+                const loop: Record<string, unknown> = {};
+                loop['self'] = loop;
+                return loop;
+            })(),
+        ],
+    ])(
+        'refuses %s for a card, and answers in data that survives being written as JSON',
+        (_, card) => {
+            const result = score(
+                game([{ entries: { ann: hand([card]), ben: hand([9]), cat: hand([8]) } }])
+            );
+            expect(result.problems.map(({ code, data }) => [code, data])).toEqual([
+                ['unknown-card', { card: null, kind: 'number' }],
+            ]);
+            expect(JSON.parse(JSON.stringify(result))).toStrictEqual(result);
+        }
+    );
 
     it('scores a game saved under a rule set by that rule set, and refuses one it never had', () => {
         expect(score({ ...game([FIRST]), rules: 1 }).problems).toEqual([]);

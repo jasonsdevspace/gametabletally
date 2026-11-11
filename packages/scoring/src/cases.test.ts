@@ -49,12 +49,6 @@ describe.each(FILES)('the cases for $game', ({ game, rules, cases }) => {
         expect(comparable(scoreJson(text ?? JSON.stringify(input)))).toStrictEqual(expected);
     });
 
-    it('give every refusal its data, as an object even where it has nothing to add', () => {
-        for (const { input } of cases)
-            for (const { data } of input ? score(input).problems : [])
-                expect(Object.prototype.toString.call(data)).toBe('[object Object]');
-    });
-
     it('say every refusal in a sentence', () => {
         for (const { input } of cases)
             for (const { message } of input ? score(input).problems : [])

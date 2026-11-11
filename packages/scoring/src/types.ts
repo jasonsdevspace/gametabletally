@@ -28,7 +28,7 @@ export interface Problem {
     readonly message: string;
     /**
      * What the problem is about, for a caller that words the reason itself: the card refused,
-     * the number a game takes. Which fields it holds depends on the code, and it is empty, never
+     * the number of players a game takes. Which fields it holds depends on the code, and it is empty, never
      * missing, where the code has nothing to add.
      */
     readonly data: Readonly<Record<string, unknown>>;
