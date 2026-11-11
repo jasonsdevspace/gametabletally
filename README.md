@@ -25,7 +25,8 @@ against the built script in a runtime that is not Node.
   Its [README](packages/scoring/README.md) says how a game is scored and how the rules are held
   to cases.
 - `apps/web` is the app, which reads the scoring package from its source, so nothing needs
-  building first.
+  building first. It keeps players and games on the phone in the shape
+  [docs/saved-games.md](docs/saved-games.md) describes.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the
