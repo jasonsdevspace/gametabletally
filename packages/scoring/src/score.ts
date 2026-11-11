@@ -1,12 +1,13 @@
 import { FLIP_7 } from './flip-7.js';
 import { isRecord, isWhole, problemAt, type Refusal, refusal, type Rules } from './rules.js';
+import { SKYJO } from './skyjo.js';
 import type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
 
 /**
  * Every rule set of every game, in the order an app offers the games. A game whose rules change
  * keeps its earlier versions here, so a game saved under one is still scored by it.
  */
-const RULES: readonly Rules[] = [FLIP_7];
+const RULES: readonly Rules[] = [FLIP_7, SKYJO];
 
 /** The newest rule set of each game, in the order an app offers them. */
 const NEWEST: readonly Rules[] = RULES.filter(
@@ -14,13 +15,16 @@ const NEWEST: readonly Rules[] = RULES.filter(
 );
 
 /** The games the package can score, in the order an app offers them. */
-export const GAMES: readonly Game[] = NEWEST.map(({ id, name, rules, minPlayers, maxPlayers }) => ({
-    id,
-    name,
-    rules,
-    minPlayers,
-    maxPlayers,
-}));
+export const GAMES: readonly Game[] = NEWEST.map(
+    ({ id, name, rules, ahead, minPlayers, maxPlayers }) => ({
+        id,
+        name,
+        rules,
+        ahead,
+        minPlayers,
+        maxPlayers,
+    })
+);
 
 /** What is not a game, naming the part it lacks where it lacks one. */
 const notGame = (message: string, part?: string): Refusal =>
@@ -132,7 +136,7 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
         );
     const { players, rounds } = input;
     const outcome = rules.scoreRound(rounds[index], { players, index });
-    const complete = players.every((player) => outcome.scores.has(player));
+    const { complete } = outcome;
     // The last round may still be in play. One with a round entered after it may not.
     const unfinished = !complete && outcome.problems.length === 0 && index < rounds.length - 1;
     const problems = unfinished
@@ -140,7 +144,7 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
               problemAt(
                   refusal(
                       'round-unfinished',
-                      'A later round was entered before every player had played this one.'
+                      'A later round was entered before this one was played out.'
                   ),
                   index
               ),
@@ -232,8 +236,8 @@ const scoreAny = (raw: unknown): ScoreResult => {
  * Nothing is kept between calls and nothing is read but what is passed in, so the same game
  * always gets the same answer, and changing an earlier round is scoring the game again with the
  * round changed. Whatever the rules refuse is reported in `problems` and counts toward no total.
- * A round is added to the totals once every player's entry is in and accepted, and only when
- * every round before it has been. It does not throw, whatever it is given.
+ * A round is added to the totals once it is whole, which is every player's entry in and accepted
+ * with whatever else the game needs of a round, and only when every round before it has been. It does not throw, whatever it is given.
  */
 export const score = (input: ScoreInput): ScoreResult => scoreAny(input);
 

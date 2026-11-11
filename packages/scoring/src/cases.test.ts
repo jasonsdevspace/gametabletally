@@ -3,7 +3,23 @@ import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import flip7 from '../cases/flip-7.json' with { type: 'json' };
-import { GAMES, score, scoreJson } from './index.js';
+import skyjo from '../cases/skyjo.json' with { type: 'json' };
+import { GAMES, score, type ScoreInput, scoreJson } from './index.js';
+
+/** One case: a game handed over as it is scored, or as text where it is not a game at all. */
+interface Case {
+    readonly name: string;
+    readonly input?: ScoreInput;
+    readonly text?: string;
+    readonly expect: unknown;
+}
+
+/** A game's cases, for one version of its rule set. */
+interface CaseFile {
+    readonly game: string;
+    readonly rules: number;
+    readonly cases: readonly Case[];
+}
 
 /**
  * The rules as cases: a game in, the answer out. They are the contract another implementation
@@ -13,7 +29,7 @@ import { GAMES, score, scoreJson } from './index.js';
  * Each file is imported by name, so its cases are typed as `score` takes them. The run outside
  * Node reads the folder, so a test holds this list to the folder.
  */
-const FILES = [flip7];
+const FILES: readonly CaseFile[] = [flip7, skyjo];
 
 it('runs every file of cases in the folder', () => {
     const folder = readdirSync(new URL('../cases', import.meta.url)).sort();

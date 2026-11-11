@@ -42,8 +42,10 @@ export interface Problem {
 /** One round as the rules read it. */
 export interface RoundResult {
     /**
-     * `scored` once every player's entry is in and the rules accept each. `open` while entries
-     * are missing. `refused` when something in the round itself was turned down. `skipped` when
+     * `scored` once the round is whole: every player's entry is in and accepted, with whatever
+     * else the game needs of a round, such as who ended it. `open` while entries are missing.
+     * `refused` when something in the round itself was turned down, which includes a round every
+     * player has entered that still lacks what the game needs. `skipped` when
      * the round was never read, for a reason outside it: an earlier round has yet to be scored,
      * the game was already over, or the game as a whole was refused.
      */
@@ -82,6 +84,11 @@ export interface Game {
     readonly name: string;
     /** The newest version of its rule set, which a new game is started under. */
     readonly rules: number;
+    /**
+     * Whether the highest or the lowest total is ahead, so a table of scores ranks every place
+     * the right way round.
+     */
+    readonly ahead: 'highest' | 'lowest';
     /** The fewest players it takes. */
     readonly minPlayers: number;
     /** The most players it takes, or null when the rules name no limit. */

@@ -14,6 +14,11 @@ export interface RoundOutcome {
     readonly scores: ReadonlyMap<string, number>;
     /** What the rules refused in the round. */
     readonly problems: readonly Problem[];
+    /**
+     * Whether everything the round needs is in. A game says so for itself, since a round can
+     * need more than an entry from each player, such as who ended it.
+     */
+    readonly complete: boolean;
 }
 
 /**
@@ -21,8 +26,6 @@ export interface RoundOutcome {
  * what is its own: what a round holds, what it scores, and when the game has ended.
  */
 export interface Rules extends Game {
-    /** Whether the highest or the lowest total is ahead. */
-    readonly ahead: 'highest' | 'lowest';
     /** What is wrong with the options, if anything. */
     readonly checkOptions: (options: Readonly<Record<string, unknown>>) => readonly Problem[];
     /** Reads one round as entered. */
@@ -73,3 +76,73 @@ export const plain = (value: unknown): string | number | boolean | null =>
     (typeof value === 'number' && Number.isFinite(value))
         ? value
         : null;
+
+/** A round's entries, read: the round itself when it holds them, the scores and the refusals. */
+export interface Entered {
+    /** The round as entered, or null when it does not hold its entries. */
+    readonly round: Readonly<Record<string, unknown>> | null;
+    readonly scores: Map<string, number>;
+    readonly problems: Problem[];
+    /**
+     * Whether every player has an entry the rules accept. A round is complete when this is so
+     * and the game has whatever else it needs, and never while it is not, so no player is
+     * scored for an entry they have yet to make.
+     */
+    readonly allIn: boolean;
+}
+
+/**
+ * Reads a round that holds each player's entry by player id, which is how every game here
+ * enters a round. An entry for nobody in the game is refused first, sorted by id, since the
+ * order an object's keys come in is one runtime's own. The players' entries follow in seat
+ * order, each read by the game, and a player with none has yet to play.
+ */
+export const readEntries = (
+    round: unknown,
+    { players, index }: RoundContext,
+    read: (entry: unknown) => number | Refusal
+): Entered => {
+    if (!isRecord(round) || !isRecord(round['entries']))
+        return {
+            round: null,
+            scores: new Map(),
+            problems: [
+                problemAt(refusal('not-a-round', 'The round does not hold its entries.'), index),
+            ],
+            allIn: false,
+        };
+    const { entries } = round;
+    const scores = new Map<string, number>();
+    const problems: Problem[] = Object.keys(entries)
+        .filter((id) => !players.includes(id))
+        .sort()
+        .map((id) =>
+            problemAt(refusal('unknown-player', 'The entry is for nobody in the game.'), index, id)
+        );
+    for (const player of players) {
+        // Asked of the entries themselves, so an id such as `toString` is not found on every object.
+        if (!Object.prototype.hasOwnProperty.call(entries, player)) continue;
+        const answer = read(entries[player]);
+        if (typeof answer === 'number') scores.set(player, answer);
+        else problems.push(problemAt(answer, index, player));
+    }
+    return { round, scores, problems, allIn: players.every((player) => scores.has(player)) };
+};
+
+/**
+ * The check of a game's options for a game that has none: each one given is refused by name.
+ */
+export const noOptions =
+    (game: string) =>
+    (options: Readonly<Record<string, unknown>>): readonly Problem[] =>
+        Object.keys(options).map((option) =>
+            problemAt(
+                refusal(
+                    'unknown-option',
+                    `${game} has no option named ${JSON.stringify(option)}.`,
+                    {
+                        option,
+                    }
+                )
+            )
+        );

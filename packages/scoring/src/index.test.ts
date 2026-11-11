@@ -44,14 +44,18 @@ describe('the games the package knows', () => {
         for (const { name } of GAMES) expect(name.trim()).not.toBe('');
     });
 
-    it('says which rule set a new game starts under and how many can play', () => {
-        expect(GAMES.find(({ id }) => id === 'flip-7')).toEqual({
-            id: 'flip-7',
-            name: 'Flip 7',
-            rules: 1,
-            minPlayers: 3,
-            maxPlayers: null,
-        });
+    it('says which rule set a new game starts under, which way is ahead and how many can play', () => {
+        expect(GAMES).toEqual([
+            {
+                id: 'flip-7',
+                name: 'Flip 7',
+                rules: 1,
+                ahead: 'highest',
+                minPlayers: 3,
+                maxPlayers: null,
+            },
+            { id: 'skyjo', name: 'Skyjo', rules: 1, ahead: 'lowest', minPlayers: 2, maxPlayers: 8 },
+        ]);
     });
 });
 
@@ -134,6 +138,18 @@ describe('scoring a game', () => {
             expect(JSON.parse(JSON.stringify(result))).toStrictEqual(result);
         }
     );
+
+    it('scores a zero written with a minus sign as zero, as the answer written as JSON does', () => {
+        const result = score({
+            game: 'skyjo',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+            rounds: [{ entries: { ann: { total: -0 }, ben: { total: 4 } }, ender: 'ann' }],
+        });
+        expect(Object.is(result.rounds[0]?.scores['ann'], 0)).toBe(true);
+        expect(Object.is(result.totals['ann'], 0)).toBe(true);
+    });
 
     it('scores a game saved under a rule set by that rule set, and refuses one it never had', () => {
         expect(score({ ...game([FIRST]), rules: 1 }).problems).toEqual([]);

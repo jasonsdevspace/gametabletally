@@ -1,15 +1,15 @@
 import {
     isRecord,
     isWhole,
+    noOptions,
     plain,
-    problemAt,
+    readEntries,
     type Refusal,
     refusal,
     type RoundContext,
     type RoundOutcome,
     type Rules,
 } from './rules.js';
-import type { Problem } from './types.js';
 
 /**
  * Flip 7, as published. A player ends a round holding number cards and modifier cards, or
@@ -141,32 +141,10 @@ const readPlayer = (raw: unknown): number | Refusal => {
     return (entry.bust ? null : handRefusal(entry)) ?? scoreEntry(entry);
 };
 
-const scoreRound = (round: unknown, { players, index }: RoundContext): RoundOutcome => {
-    if (!isRecord(round) || !isRecord(round['entries']))
-        return {
-            scores: new Map(),
-            problems: [
-                problemAt(refusal('not-a-round', 'The round does not hold its entries.'), index),
-            ],
-        };
-    const { entries } = round;
-    const scores = new Map<string, number>();
-    // Entries for nobody in the game come first, sorted by id, since the order an object's keys
-    // come in is one runtime's own. The players' entries follow in seat order.
-    const problems: Problem[] = Object.keys(entries)
-        .filter((id) => !players.includes(id))
-        .sort()
-        .map((id) =>
-            problemAt(refusal('unknown-player', 'The entry is for nobody in the game.'), index, id)
-        );
-    for (const player of players) {
-        // Asked of the entries themselves, so an id such as `toString` is not found on every object.
-        if (!Object.prototype.hasOwnProperty.call(entries, player)) continue;
-        const read = readPlayer(entries[player]);
-        if (typeof read === 'number') scores.set(player, read);
-        else problems.push(problemAt(read, index, player));
-    }
-    return { scores, problems };
+const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
+    // A round of Flip 7 needs an entry from each player and nothing more.
+    const { scores, problems, allIn } = readEntries(round, context, readPlayer);
+    return { scores, problems, complete: allIn };
 };
 
 /** The one player alone on the highest total, once it has reached the target. */
@@ -186,14 +164,7 @@ export const FLIP_7: Rules = {
     maxPlayers: null,
     ahead: 'highest',
     // The published rules are the only ones this version knows.
-    checkOptions: (options) =>
-        Object.keys(options).map((option) =>
-            problemAt(
-                refusal('unknown-option', `Flip 7 has no option named ${JSON.stringify(option)}.`, {
-                    option,
-                })
-            )
-        ),
+    checkOptions: noOptions('Flip 7'),
     scoreRound,
     winners,
 };

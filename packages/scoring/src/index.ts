@@ -5,4 +5,5 @@ export {
     type Flip7Round,
 } from './flip-7.js';
 export { GAMES, score, scoreJson } from './score.js';
+export type { SkyjoEntry, SkyjoRound } from './skyjo.js';
 export type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
