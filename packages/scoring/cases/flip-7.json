@@ -391,6 +391,71 @@
             }
         },
         {
+            "name": "an action card in a hand is refused, since an entry holds only the cards that score",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "modifiers": ["second chance"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": ["freeze"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": ["flip three"],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "ben"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
             "name": "a modifier held twice is refused, since the deck has one of each",
             "input": {
                 "game": "flip-7",

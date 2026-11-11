@@ -64,6 +64,11 @@ language. Text that is not JSON, or not a game, is answered with a problem like 
 A round's entry for each player is the number cards held, from 0 to 12, the modifier cards held,
 which are `+2`, `+4`, `+6`, `+8`, `+10` and `x2`, and whether the player bust.
 
+The deck's action cards, Freeze, Flip Three and Second Chance, change play and never a score.
+Freeze ends a player's round with what they hold, Flip Three makes a player take three more cards,
+and Second Chance cancels one repeated number. Each is settled at the table, so an entry leaves
+them out and holds only the cards that score. An entry that names one is refused.
+
 A round's score is the number cards added up, doubled by the x2 card, plus each plus card, plus
 fifteen for seven different numbers. Neither the plus cards nor the fifteen are doubled. A bust
 scores nothing. The game is for three or more players.

@@ -7,6 +7,11 @@ import type { Problem } from './types.js';
  * plus card, plus fifteen for seven different numbers. Neither the plus cards nor the fifteen
  * are ever doubled. A bust scores nothing. The game ends with the round in which a player
  * reaches two hundred, and the highest total wins. A tie at the top does not end it.
+ *
+ * The deck also holds three action cards: Freeze, Flip Three and Second Chance. They change who
+ * plays on and whether a repeated number is a bust, and never what a hand is worth, so an entry
+ * leaves them out. It holds what the player ended the round with that scores, and one naming an
+ * action card is refused like any card the entry has no place for.
  */
 
 /** The cards that change a score without being a number. The deck holds one of each. */
