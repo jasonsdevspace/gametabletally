@@ -1,0 +1,1582 @@
+{
+    "game": "flip-7",
+    "rules": 1,
+    "cases": [
+        {
+            "name": "a round's score is its number cards added up",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3, 5, 9],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [12],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [0],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 17,
+                            "ben": 12,
+                            "cat": 0
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 17,
+                    "ben": 12,
+                    "cat": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "the x2 card doubles the number cards, and the plus cards are added after",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3, 5, 9],
+                                "modifiers": ["x2", "+4"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [10, 7],
+                                "modifiers": ["+2", "+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": ["x2"],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 38,
+                            "ben": 29,
+                            "cat": 8
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 38,
+                    "ben": 29,
+                    "cat": 8
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "every plus card held is added",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": ["+2", "+4", "+6", "+8", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [],
+                                "modifiers": ["+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 31,
+                            "ben": 10,
+                            "cat": 0
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 31,
+                    "ben": 10,
+                    "cat": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "seven different numbers add fifteen, which the x2 card never doubles",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [0, 1, 2, 3, 4, 5, 6],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1, 2, 3, 4, 5, 6],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 36,
+                            "ben": 151,
+                            "cat": 21
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 36,
+                    "ben": 151,
+                    "cat": 21
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bust scores nothing whatever is held",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5, 5, 9],
+                                "modifiers": ["+10"],
+                                "bust": true
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [],
+                                "modifiers": [],
+                                "bust": true
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 0,
+                            "ben": 8,
+                            "cat": 0
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 8,
+                    "cat": 0
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a hand with the same number twice is refused, since it is a bust",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5, 5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 8,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "number-twice",
+                        "round": 0,
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a card the deck does not hold is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [13],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": ["+3"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1.5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "ben"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a modifier held twice is refused, since the deck has one of each",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "modifiers": ["+8", "+8"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 8,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "modifier-twice",
+                        "round": 0,
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "more than seven numbers is refused, since the round ends at seven",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [0, 1, 2, 3, 4, 5, 6, 7],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 8,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "too-many-numbers",
+                        "round": 0,
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry that is not an entry is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "modifiers": []
+                            },
+                            "ben": "bust",
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "not-an-entry",
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "round": 0,
+                        "player": "ben"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry for nobody in the game is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "dan": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 4,
+                            "ben": 8,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-player",
+                        "round": 0,
+                        "player": "dan"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round that does not hold its entries is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [5]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "not-a-round",
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round still being played counts toward no total",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 10,
+                            "ben": 9,
+                            "cat": 8
+                        }
+                    },
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 12
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 10,
+                    "ben": 9,
+                    "cat": 8
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round left unfinished behind a later one is reported and counts toward no total",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 10,
+                            "ben": 9
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 1,
+                            "ben": 2,
+                            "cat": 3
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 1,
+                    "ben": 2,
+                    "cat": 3
+                },
+                "leaders": ["cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "round-unfinished",
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "the game goes on while the round a player reaches two hundred in is still being played",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 10,
+                            "cat": 9
+                        }
+                    },
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 50
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 151,
+                    "ben": 10,
+                    "cat": 9
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "the game is over at the end of the round in which a player reaches two hundred",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 10,
+                            "cat": 9
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 1,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 201,
+                    "ben": 11,
+                    "cat": 11
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "problems": []
+            }
+        },
+        {
+            "name": "reaching exactly two hundred ends the game",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 7],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 10,
+                            "cat": 9
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 49,
+                            "ben": 1,
+                            "cat": 2
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 200,
+                    "ben": 11,
+                    "cat": 11
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "problems": []
+            }
+        },
+        {
+            "name": "the highest total wins when more than one player passes two hundred",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [12, 11, 10, 9, 8, 7],
+                                "modifiers": ["+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 141,
+                            "cat": 9
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 67,
+                            "cat": 1
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 201,
+                    "ben": 208,
+                    "cat": 10
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a tie at the top at two hundred or more does not end the game",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 151,
+                            "cat": 5
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 50,
+                            "cat": 1
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 201,
+                    "ben": 201,
+                    "cat": 6
+                },
+                "leaders": ["ann", "ben"],
+                "winners": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a tied game goes on by whole rounds until one player leads",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 151,
+                            "cat": 5
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 50,
+                            "cat": 1
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 3,
+                            "ben": 2,
+                            "cat": 1
+                        }
+                    }
+                ],
+                "totals": {
+                    "ann": 204,
+                    "ben": 203,
+                    "cat": 7
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round entered after the game is over is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [10],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "ben": 10,
+                            "cat": 9
+                        }
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 1,
+                            "cat": 2
+                        }
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 201,
+                    "ben": 11,
+                    "cat": 11
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "problems": [
+                    {
+                        "code": "after-the-end",
+                        "round": 2,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a game with fewer than three players is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [8],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {}
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0
+                },
+                "leaders": ["ann", "ben"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "too-few-players",
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a player in the game twice is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "ann"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0
+                },
+                "leaders": ["ann", "ben", "ann"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "player-twice",
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a rule set the game does not have is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 2,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 2,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-rules",
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an option the game does not have is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target": 100
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": [
+                    {
+                        "code": "unknown-option",
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a game with nothing entered is in play with every player level",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "problems": []
+            }
+        }
+    ]
+}

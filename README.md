@@ -18,15 +18,20 @@ npm run verify
 
 `npm run dev` serves the app with its changes as they are saved. `npm run verify` runs what CI
 runs on every pull request: the type check, the lint rules, the formatting, a prose check, a check
-that everything names the Node version in `.nvmrc`, the tests and the build.
+that everything names the Node version in `.nvmrc`, the tests, the build, and the scoring cases run
+against the built script in a runtime that is not Node.
 
 - `packages/scoring` is `@gametabletally/scoring`, the games' scoring rules with no dependencies.
+  Its [README](packages/scoring/README.md) says how a game is scored and how the rules are held
+  to cases.
 - `apps/web` is the app, which reads the scoring package from its source, so nothing needs
   building first.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the
 commit on main, and CI holds the title and the body to the same check.
+
+The choices with a real alternative are written down under [docs/decisions](docs/decisions/README.md).
 
 ## Names and trademarks
 
