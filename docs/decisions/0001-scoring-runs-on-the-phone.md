@@ -53,7 +53,7 @@ What makes that hold:
 - **A round counts only when every round before it is entered in full and accepted.** One
   entered behind a round that is unfinished or refused is skipped, and says so with a state of
   its own, so no game is called over on totals with a round missing and a screen can tell a round
-  with something wrong in it from one that is only waiting on another.
+  with something wrong in it from one that another round holds up.
 - **Scores are worked out from every round entered, never by adding a round to a kept total.**
   Changing or taking back an earlier round is scoring the game again, so there is no total to
   repair.
