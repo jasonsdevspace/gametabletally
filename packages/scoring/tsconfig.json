@@ -6,7 +6,9 @@
         // in a browser, in Node and in a phone's script runtime alike.
         "types": ["node"],
         "noEmit": true,
+        // The cases are JSON, which the tests import as they are.
+        "resolveJsonModule": true,
         "customConditions": ["@gametabletally/source"]
     },
-    "include": ["src"]
+    "include": ["src", "cases"]
 }

@@ -108,6 +108,7 @@ export default defineConfig(
                         'vitest.config.ts',
                         'source-condition.ts',
                         'apps/web/vite.config.ts',
+                        'packages/scoring/vite.config.ts',
                     ],
                 },
                 tsconfigRootDir: import.meta.dirname,
@@ -199,6 +200,7 @@ export default defineConfig(
                     devDependencies: [
                         '**/*.test.{ts,tsx}',
                         '**/*.config.{ts,js,mjs}',
+                        '**/scripts/**',
                         '**/vitest.setup.ts',
                     ],
                 },

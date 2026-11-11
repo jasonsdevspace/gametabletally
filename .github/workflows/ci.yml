@@ -62,3 +62,10 @@ jobs:
             # bundle is caught here.
             - name: Build
               run: npm run build
+
+            # The scoring package as a phone's script runtime would load it: the
+            # one built script, evaluated in QuickJS, which has none of Node's
+            # globals and none of a browser's, and held to every case the tests
+            # run against the source.
+            - name: Scoring cases outside Node
+              run: npm run cases:outside-node
