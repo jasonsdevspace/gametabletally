@@ -36,6 +36,25 @@ result.state; // 'in-play'
 or taking back an earlier round is scoring the game again with the round changed. The players' ids
 are the caller's own and never appear in a message.
 
+## Players out of a round
+
+Any round, in any game, may name `out`: the ids of the players who are out of it, because they
+left the table or stepped away for a hand. A player out of a round has no entry in it and scores
+nothing for it, which is not a score of zero, so their total stays what it was. The round is
+whole once every other player's entry is in, with whatever else the game needs, and a player can
+be out of one round and back for the next. Who is out is decided round by round, and nothing
+carries over by itself. A list given as null, or not given, names nobody.
+
+A round needs two players in it, whatever the game takes to start, so a table of three that loses
+one carries on as two. A round with one player in it is refused, and so is a list that names
+somebody not in the game, or a player twice. Such a round is read no further. An entry for a
+player the round names as out is refused too.
+
+A player who has been out of a scored round cannot win, since they did not play the game the
+others played. Their total is still kept and shown, and it can end the game when it reaches the
+end by the game's rules. Who is ahead, and who wins, is worked out among the players who have
+missed no round, and among everyone when every player has missed one.
+
 `GAMES` lists each game the package knows, with its id, its name, the version of its rule set a new
 game starts under, whether the highest or the lowest total is ahead, and how many can play.
 
@@ -45,15 +64,20 @@ game starts under, whether the highest or the lowest total is ahead, and how man
   is in and accepted, `open` while entries are missing, `refused` when something in the round
   itself was turned down, and `skipped` when it was never read for a reason outside it: an earlier
   round has yet to be scored, the game was already over, or the game as a whole was refused. Its
-  `scores` are what stands so far, and count toward a total only once the round is scored.
+  `scores` are what stands so far, and count toward a total only once the round is scored. Its
+  `out` names the players out of it, in seat order, and is empty for a round never read.
 - `totals` is each player's total over the scored rounds.
-- `leaders` is whoever is ahead, and `winners` is whoever won once `state` is `over`.
+- `leaders` is whoever is ahead, and `winners` is whoever won once `state` is `over`, each among
+  the players who have missed no scored round, or among everyone when every player has.
+- `missed` names everyone who has been out of a scored round, in seat order, so a table of scores
+  can mark them. It is empty when nobody has.
 - `problems` is everything the rules refused. Each has a `code` that never changes, a `message`
   that says the reason in a sentence, `data` that holds what it is about, and the `round`, counted
   from zero, and the `player` it is about, each null when the problem is wider than that. They
-  come in a set order: the rounds in order, and within a round the entries for nobody in the game,
-  sorted by id, then the players' in seat order. An entry is refused once, for the first thing
-  wrong with it.
+  come in a set order: the rounds in order, and within a round what is wrong with its players
+  out, then the entries for players out of it, in seat order, then the entries for nobody in the
+  game, sorted by id, then the players' in seat order. An entry is refused once, for the first
+  thing wrong with it.
 
 Nothing refused is ever scored, and `score` does not throw, whatever it is given. The game and
 each round are checked as they are read, so a caller with no type checker is told what is wrong.
@@ -83,31 +107,36 @@ card` may be undefined. A code this package adds later is not one known to the t
 built against an older version, so a caller keeps the `message` from before it narrows and words
 with it any code it does not handle.
 
-| Code               | When                                                                                   | `data`                                                                                                                                                                             |
-| ------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `not-json`         | The text handed to `scoreJson` is not JSON                                             | empty                                                                                                                                                                              |
-| `not-a-game`       | What is handed over is not a game                                                      | `part`, the part it lacks or has wrong: `game`, `rules`, `options`, `players` or `rounds`. Empty when it is not an object at all                                                   |
-| `unknown-game`     | No game has the id                                                                     | `game`, the id given                                                                                                                                                               |
-| `unknown-rules`    | The game has no rule set with the version                                              | `rules`, the version given                                                                                                                                                         |
-| `too-few-players`  | The game takes more players                                                            | `min`, the fewest it takes, and `given`, how many were listed                                                                                                                      |
-| `too-many-players` | The game takes fewer players                                                           | `max`, the most it takes, and `given`, how many were listed                                                                                                                        |
-| `player-twice`     | A player is listed more than once. Raised once for each such player, named by `player` | empty                                                                                                                                                                              |
-| `unknown-option`   | The game has no such option                                                            | `option`, its name                                                                                                                                                                 |
-| `not-a-round`      | A round does not hold its entries                                                      | empty                                                                                                                                                                              |
-| `round-unfinished` | A later round was entered before this one was played out                               | empty                                                                                                                                                                              |
-| `no-ender`         | Skyjo: every player has counted and the round does not say who ended it                | empty                                                                                                                                                                              |
-| `unknown-ender`    | Skyjo: the round was ended by nobody in the game                                       | `ender`, what was given when it is text, a number or true or false, and null for anything else                                                                                     |
-| `after-a-gap`      | An earlier round has yet to be scored                                                  | empty                                                                                                                                                                              |
-| `after-the-end`    | The game was over before this round                                                    | empty                                                                                                                                                                              |
-| `unknown-player`   | An entry is for nobody in the game, named by `player`                                  | empty                                                                                                                                                                              |
-| `not-an-entry`     | An entry does not have the game's shape                                                | `part`, the part at fault. Flip 7: `bust`, `numbers` or `modifiers`. Skyjo: `total`, `cards`, or `both` when it gives the two and takes one. Empty when it is not an object at all |
-| `unknown-card`     | The deck holds no such card. Flip 7: or the card is in the wrong list                  | `card`, the card as given when it is text, a number or true or false, and null for anything else. Flip 7 adds `kind`, the list it was in: `number` or `modifier`                   |
-| `number-twice`     | Flip 7: a hand that did not bust holds a number twice                                  | `number`, the number                                                                                                                                                               |
-| `modifier-twice`   | Flip 7: a hand that did not bust holds a modifier twice                                | `modifier`, the modifier                                                                                                                                                           |
-| `too-many-cards`   | Skyjo: a hand lists more cards than a grid holds                                       | `max`, the most a grid holds, and `given`, how many were listed                                                                                                                    |
-| `too-many-copies`  | Skyjo: a hand lists more of a card than the deck holds                                 | `card`, the card, `max`, how many the deck holds, and `given`, how many were listed                                                                                                |
-| `impossible-total` | Skyjo: a total is one no hand can come to                                              | `min` and `max`, the least and the most a hand comes to, and `given`, the total                                                                                                    |
-| `too-many-numbers` | Flip 7: a hand that did not bust holds more numbers than end a round                   | `max`, the most a hand holds, and `given`, how many it held                                                                                                                        |
+| Code               | When                                                                                          | `data`                                                                                                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `not-json`         | The text handed to `scoreJson` is not JSON                                                    | empty                                                                                                                                                                              |
+| `not-a-game`       | What is handed over is not a game                                                             | `part`, the part it lacks or has wrong: `game`, `rules`, `options`, `players` or `rounds`. Empty when it is not an object at all                                                   |
+| `unknown-game`     | No game has the id                                                                            | `game`, the id given                                                                                                                                                               |
+| `unknown-rules`    | The game has no rule set with the version                                                     | `rules`, the version given                                                                                                                                                         |
+| `too-few-players`  | The game takes more players                                                                   | `min`, the fewest it takes, and `given`, how many were listed                                                                                                                      |
+| `too-many-players` | The game takes fewer players                                                                  | `max`, the most it takes, and `given`, how many were listed                                                                                                                        |
+| `player-twice`     | A player is listed more than once. Raised once for each such player, named by `player`        | empty                                                                                                                                                                              |
+| `unknown-option`   | The game has no such option                                                                   | `option`, its name                                                                                                                                                                 |
+| `not-a-round`      | A round does not hold its entries, or lists its players out by something other than their ids | `part`, `out` when it is the list of players out. Empty when the round does not hold its entries                                                                                   |
+| `unknown-out`      | A round names as out somebody not in the game, named by `player`                              | empty                                                                                                                                                                              |
+| `out-twice`        | A round names a player as out more than once. Raised once for each such player                | empty                                                                                                                                                                              |
+| `too-few-in-round` | Fewer than two players are in a round                                                         | `min`, the fewest a round takes, and `given`, how many were in it                                                                                                                  |
+| `round-unfinished` | A later round was entered before this one was played out                                      | empty                                                                                                                                                                              |
+| `no-ender`         | Skyjo: every player has counted and the round does not say who ended it                       | empty                                                                                                                                                                              |
+| `unknown-ender`    | Skyjo: the round was ended by nobody in the game                                              | `ender`, what was given when it is text, a number or true or false, and null for anything else                                                                                     |
+| `ender-out`        | Skyjo: the round was ended by a player out of it, named by `player`                           | empty                                                                                                                                                                              |
+| `after-a-gap`      | An earlier round has yet to be scored                                                         | empty                                                                                                                                                                              |
+| `after-the-end`    | The game was over before this round                                                           | empty                                                                                                                                                                              |
+| `unknown-player`   | An entry is for nobody in the game, named by `player`                                         | empty                                                                                                                                                                              |
+| `out-with-entry`   | A round has an entry for a player it names as out, named by `player`                          | empty                                                                                                                                                                              |
+| `not-an-entry`     | An entry does not have the game's shape                                                       | `part`, the part at fault. Flip 7: `bust`, `numbers` or `modifiers`. Skyjo: `total`, `cards`, or `both` when it gives the two and takes one. Empty when it is not an object at all |
+| `unknown-card`     | The deck holds no such card. Flip 7: or the card is in the wrong list                         | `card`, the card as given when it is text, a number or true or false, and null for anything else. Flip 7 adds `kind`, the list it was in: `number` or `modifier`                   |
+| `number-twice`     | Flip 7: a hand that did not bust holds a number twice                                         | `number`, the number                                                                                                                                                               |
+| `modifier-twice`   | Flip 7: a hand that did not bust holds a modifier twice                                       | `modifier`, the modifier                                                                                                                                                           |
+| `too-many-cards`   | Skyjo: a hand lists more cards than a grid holds                                              | `max`, the most a grid holds, and `given`, how many were listed                                                                                                                    |
+| `too-many-copies`  | Skyjo: a hand lists more of a card than the deck holds                                        | `card`, the card, `max`, how many the deck holds, and `given`, how many were listed                                                                                                |
+| `impossible-total` | Skyjo: a total is one no hand can come to                                                     | `min` and `max`, the least and the most a hand comes to, and `given`, the total                                                                                                    |
+| `too-many-numbers` | Flip 7: a hand that did not bust holds more numbers than end a round                          | `max`, the most a hand holds, and `given`, how many it held                                                                                                                        |
 
 Whatever is entered, `data` holds only text, numbers, true or false and null, so an answer always
 survives being written as JSON.
@@ -127,7 +156,9 @@ fifteen for seven different numbers. Neither the plus cards nor the fifteen are 
 scores nothing. The game is for three or more players.
 It is over at the end of the round in which a player reaches two hundred, and the highest total
 wins. A tie at the top does not end it, and the game goes on by whole rounds until one player
-leads.
+leads. Any total that reaches two hundred ends the game, and the winner is the one player who
+leads the others who have missed no round. A tie among those plays on, whatever a player who
+missed one holds.
 
 ## Skyjo
 
@@ -143,9 +174,10 @@ come to, which is from -17 to 142.
 
 A round's score is what each player holds. The player who ended the round has to hold the least
 of it alone: when another player holds as little or less, and their own score is above zero, it is
-doubled. The game is for two to eight players. It is over at the end of the round in which a
-player reaches one hundred, and the lowest total wins. Players level on the lowest total share the
-win.
+doubled. The ender is compared only with the players in the round, and a round ended by a player
+out of it is refused. The game is for two to eight players. It is over at the end of the round in
+which a player reaches one hundred, whoever's total it is, and the lowest total of the players who
+have missed no round wins. Players level on it share the win.
 
 A round is `open` while a player has yet to count, whether or not it names its ender, and its
 `scores` then show what each holds with nothing doubled. Once every player has counted, a round

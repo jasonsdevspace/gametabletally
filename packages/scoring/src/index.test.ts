@@ -64,7 +64,7 @@ describe('scoring a game', () => {
         const result = score({ ...game([FIRST]), game: 'chess' });
         expect(result.problems.map(({ code }) => code)).toEqual(['unknown-game']);
         expect(result.totals).toEqual({ ann: 0, ben: 0, cat: 0 });
-        expect(result.rounds).toEqual([{ state: 'skipped', scores: {} }]);
+        expect(result.rounds).toEqual([{ state: 'skipped', scores: {}, out: [] }]);
     });
 
     it('names the rule set the scores were worked out under', () => {

@@ -1,4 +1,5 @@
 import {
+    contenders,
     isRecord,
     isWhole,
     noOptions,
@@ -10,6 +11,7 @@ import {
     type RoundContext,
     type RoundOutcome,
     type Rules,
+    type Standing,
 } from './rules.js';
 
 /**
@@ -18,7 +20,10 @@ import {
  * loses a column whenever its three cards match. The player who ended the round has to hold the
  * lowest score of it alone. If another player holds as little or less, and their own score is
  * above zero, it is doubled. The game ends with the round in which a player reaches one hundred,
- * and the lowest total wins.
+ * and the lowest total wins. Only the players in a round count toward it, so the player who ended
+ * it is compared with them, and a player out of it cannot have ended it. A player who has been out
+ * of a round can reach one hundred and end the game, and wins it only when every player has been
+ * out of one.
  *
  * Players count their own cards, and a cleared column leaves a hand with fewer of them, so an
  * entry is the total a player counted. It may be given as the cards themselves instead, which
@@ -38,6 +43,8 @@ export interface SkyjoRound {
     readonly entries: Readonly<Record<string, SkyjoEntry>>;
     /** The id of the player who ended the round. It is left out, or null, until that is known. */
     readonly ender?: string | null;
+    /** The ids of the players out of the round, who have no entry in it. */
+    readonly out?: readonly string[] | null;
 }
 
 const LOWEST_CARD = -2;
@@ -130,10 +137,23 @@ const withPenalty = (held: ReadonlyMap<string, number>, ender: string): Map<stri
 };
 
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
-    const { players, index } = context;
+    const { players, out, index } = context;
     const entered = readEntries(round, context, readPlayer);
     const { scores, problems, allIn } = entered;
     const ender = entered.round?.['ender'] ?? null;
+    if (typeof ender === 'string' && out.includes(ender))
+        return {
+            scores,
+            complete: false,
+            problems: [
+                ...problems,
+                problemAt(
+                    refusal('ender-out', 'The round was ended by a player out of it.', {}),
+                    index,
+                    ender
+                ),
+            ],
+        };
     // The entries' refusals come first, in their order, and the ender's after them.
     if (ender !== null && (typeof ender !== 'string' || !players.includes(ender)))
         return {
@@ -164,12 +184,16 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     return { scores: withPenalty(scores, ender), problems, complete: true };
 };
 
-/** Everyone on the lowest total, once any player has reached the target. */
-const winners = (totals: readonly number[]): readonly number[] | null => {
+/**
+ * Once any total has reached the target, whoever has played every round and holds the lowest
+ * total of those who have.
+ */
+const winners = ({ totals, missed }: Standing): readonly number[] | null => {
     if (Math.max(...totals) < TARGET) return null;
-    const lowest = Math.min(...totals);
+    const seats = contenders(missed);
+    const lowest = Math.min(...seats.map((seat) => totals[seat] ?? 0));
     // Players level on the lowest total share the win.
-    return totals.flatMap((total, seat) => (total === lowest ? [seat] : []));
+    return seats.filter((seat) => totals[seat] === lowest);
 };
 
 export const SKYJO: Rules = {

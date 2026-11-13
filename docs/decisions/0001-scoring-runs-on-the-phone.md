@@ -87,6 +87,10 @@ Nothing here changes for either.
 - A change to how a game scores is a new version of its rule set, with the old one kept for the
   games saved under it. A correction to a rule that was simply wrong may replace the version in
   place, and is the exception that is written down when it happens.
+- An addition that scores every game saved before it exactly as before stays in the version it is
+  added to, and anything else is a new one. Players out of a round came in this way: a game saved
+  before it has nobody out, so it scores as it did, and the cases written before it pass with
+  nothing changed but the two fields the answer gained.
 
 ## How it is tested
 
