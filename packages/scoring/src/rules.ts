@@ -67,6 +67,19 @@ export const contenders = (missed: readonly boolean[]): number[] => {
     return played.length > 0 ? played : seats;
 };
 
+/**
+ * The places among those given whose total is the best, the highest or the lowest, in seat order.
+ */
+export const bestAmong = (
+    totals: readonly number[],
+    seats: readonly number[],
+    ahead: Game['ahead']
+): number[] => {
+    const counted = seats.map((seat) => totals[seat] ?? 0);
+    const best = ahead === 'highest' ? Math.max(...counted) : Math.min(...counted);
+    return seats.filter((seat) => totals[seat] === best);
+};
+
 /** Whether a value is an object with named fields, which is what JSON calls an object. */
 export const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);

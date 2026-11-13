@@ -1,4 +1,5 @@
 import {
+    bestAmong,
     contenders,
     isRecord,
     isWhole,
@@ -159,9 +160,7 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
  */
 const winners = ({ totals, missed }: Standing): readonly number[] | null => {
     if (Math.max(...totals) < TARGET) return null;
-    const seats = contenders(missed);
-    const highest = Math.max(...seats.map((seat) => totals[seat] ?? 0));
-    const leading = seats.filter((seat) => totals[seat] === highest);
+    const leading = bestAmong(totals, contenders(missed), 'highest');
     // A tie at the top does not end the game. It goes on by whole rounds until one player leads.
     return leading.length === 1 ? leading : null;
 };

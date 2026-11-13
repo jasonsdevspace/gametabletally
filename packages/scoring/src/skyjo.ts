@@ -1,4 +1,5 @@
 import {
+    bestAmong,
     contenders,
     isRecord,
     isWhole,
@@ -190,10 +191,8 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
  */
 const winners = ({ totals, missed }: Standing): readonly number[] | null => {
     if (Math.max(...totals) < TARGET) return null;
-    const seats = contenders(missed);
-    const lowest = Math.min(...seats.map((seat) => totals[seat] ?? 0));
     // Players level on the lowest total share the win.
-    return seats.filter((seat) => totals[seat] === lowest);
+    return bestAmong(totals, contenders(missed), 'lowest');
 };
 
 export const SKYJO: Rules = {

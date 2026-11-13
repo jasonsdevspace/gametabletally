@@ -90,7 +90,7 @@ Nothing here changes for either.
 - An addition that scores every game saved before it exactly as before stays in the version it is
   added to, and anything else is a new one. Players out of a round came in this way: a game saved
   before it has nobody out, so it scores as it did, and the cases written before it pass with
-  nothing changed but the two fields the answer gained.
+  nothing changed but each round's `out` and the game's `missed`.
 
 ## How it is tested
 

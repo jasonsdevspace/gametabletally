@@ -3715,6 +3715,276 @@
                 "missed": ["ann", "ben", "cat"],
                 "problems": []
             }
+        },
+        {
+            "name": "the ender is doubled when a player still in the round holds less, with another player out",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 6
+                            },
+                            "ben": {
+                                "total": 2
+                            }
+                        },
+                        "ender": "ann",
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 12,
+                            "ben": 2
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 12,
+                    "ben": 2,
+                    "cat": 0
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round ended by a player out of it is refused while another player has yet to count",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 6
+                            }
+                        },
+                        "ender": "cat",
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 6
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "ender-out",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry for a player out and a refused entry come before the round's ender being out of it",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "cat": {
+                                "total": 3
+                            },
+                            "ben": {
+                                "total": 5
+                            },
+                            "ann": {
+                                "total": 200
+                            }
+                        },
+                        "ender": "cat",
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 5
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    },
+                    {
+                        "code": "impossible-total",
+                        "data": {
+                            "min": -17,
+                            "max": 142,
+                            "given": 200
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "ender-out",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round names its players out in seat order, whatever order they were listed in",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 3
+                            },
+                            "cat": {
+                                "total": 4
+                            }
+                        },
+                        "ender": "ann",
+                        "out": ["dan", "ben"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 3,
+                            "cat": 4
+                        },
+                        "out": ["ben", "dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 3,
+                    "ben": 0,
+                    "cat": 4,
+                    "dan": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["ben", "dan"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a list of players out that is not a list of ids is refused",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 3
+                            },
+                            "ben": {
+                                "total": 4
+                            }
+                        },
+                        "ender": "ann",
+                        "out": 5
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "not-a-round",
+                        "data": {
+                            "part": "out"
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
         }
     ]
 }

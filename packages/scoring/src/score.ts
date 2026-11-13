@@ -1,5 +1,6 @@
 import { FLIP_7 } from './flip-7.js';
 import {
+    bestAmong,
     contenders,
     FEWEST_IN_ROUND,
     isRecord,
@@ -102,10 +103,24 @@ const ahead = (
     totals: readonly number[],
     missed: readonly boolean[]
 ): string[] => {
+    return bestAmong(totals, contenders(missed), rules.ahead).flatMap(
+        (seat) => players[seat] ?? []
+    );
+};
+
+/**
+ * The winners a game's rules name, held to the players who can win. Each game picks among them
+ * itself, and this keeps a game that forgot from naming a player who missed a round while another
+ * missed none. A game whose winners were all of those goes on.
+ */
+const amongContenders = (
+    winners: readonly number[] | null,
+    missed: readonly boolean[]
+): readonly number[] | null => {
+    if (winners === null) return null;
     const seats = contenders(missed);
-    const counted = seats.map((seat) => totals[seat] ?? 0);
-    const best = rules.ahead === 'highest' ? Math.max(...counted) : Math.min(...counted);
-    return seats.filter((seat) => totals[seat] === best).flatMap((seat) => players[seat] ?? []);
+    const held = winners.filter((seat) => seats.includes(seat));
+    return held.length > 0 ? held : null;
 };
 
 /** The answer for a game nothing could be scored in. */
@@ -154,7 +169,9 @@ interface ReadOut {
 const readOut = (round: unknown, players: readonly string[], index: number): ReadOut => {
     const listed = isRecord(round) ? (round['out'] ?? undefined) : undefined;
     if (listed === undefined) return { out: [], problems: [] };
-    if (!Array.isArray(listed) || !listed.every((id): id is string => typeof id === 'string'))
+    // Copied first, so a hole in the list is read as nothing given and refused, as a player is.
+    const items: readonly unknown[] = Array.isArray(listed) ? Array.from(listed) : [];
+    if (!Array.isArray(listed) || !items.every((id): id is string => typeof id === 'string'))
         return {
             out: [],
             problems: [
@@ -166,7 +183,7 @@ const readOut = (round: unknown, players: readonly string[], index: number): Rea
                 ),
             ],
         };
-    const ids: readonly string[] = listed;
+    const ids = items.filter((id): id is string => typeof id === 'string');
     const unknown = [...new Set(ids.filter((id) => !players.includes(id)))].sort();
     const twice = players.filter((player) => ids.indexOf(player) !== ids.lastIndexOf(player));
     return {
@@ -257,7 +274,8 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
               ),
           ]
         : outcome.problems;
-    const scored = complete && problems.length === 0;
+    // A complete round has no problems, so it is never unfinished: it is the round scored.
+    const scored = complete;
     // A player out of a scored round scores nothing for it, which is not a score of zero.
     const totals = scored
         ? walked.totals.map((total, seat) => total + (outcome.scores.get(players[seat] ?? '') ?? 0))
@@ -265,7 +283,6 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
     const missed = scored
         ? walked.missed.map((before, seat) => before || out.includes(players[seat] ?? ''))
         : walked.missed;
-    const scoredSoFar = walked.rounds.length + (scored ? 1 : 0);
     return {
         rounds: [
             ...walked.rounds,
@@ -278,7 +295,10 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
         problems: [...walked.problems, ...problems],
         totals,
         missed,
-        winners: scored ? rules.winners({ totals, missed, rounds: scoredSoFar, options }) : null,
+        // Every round before this one was scored, so the count is this round's place plus one.
+        winners: scored
+            ? amongContenders(rules.winners({ totals, missed, rounds: index + 1, options }), missed)
+            : null,
     };
 };
 
@@ -358,8 +378,9 @@ const scoreAny = (raw: unknown): ScoreResult => {
  * Nothing is kept between calls and nothing is read but what is passed in, so the same game
  * always gets the same answer, and changing an earlier round is scoring the game again with the
  * round changed. Whatever the rules refuse is reported in `problems` and counts toward no total.
- * A round is added to the totals once it is whole, which is every player's entry in and accepted
- * with whatever else the game needs of a round, and only when every round before it has been. It does not throw, whatever it is given.
+ * A round is added to the totals once it is whole, which is the entry of every player in it in and
+ * accepted with whatever else the game needs of a round, and only when every round before it has
+ * been. It does not throw, whatever it is given.
  */
 export const score = (input: ScoreInput): ScoreResult => scoreAny(input);
 

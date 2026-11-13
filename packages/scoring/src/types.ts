@@ -124,12 +124,12 @@ export type ProblemOf<Code extends ProblemCode> = Extract<Problem, { readonly co
 /** One round as the rules read it. */
 export interface RoundResult {
     /**
-     * `scored` once the round is whole: every player's entry is in and accepted, with whatever
-     * else the game needs of a round, such as who ended it. `open` while entries are missing.
-     * `refused` when something in the round itself was turned down, which includes a round every
-     * player has entered that still lacks what the game needs. `skipped` when
-     * the round was never read, for a reason outside it: an earlier round has yet to be scored,
-     * the game was already over, or the game as a whole was refused.
+     * `scored` once the round is whole: the entry of every player in it is in and accepted, with
+     * whatever else the game needs of a round, such as who ended it. `open` while entries are
+     * missing. `refused` when something in the round itself was turned down, which includes a round
+     * every player has entered that still lacks what the game needs. `skipped` when the round was
+     * never read, for a reason outside it: an earlier round has yet to be scored, the game was
+     * already over, or the game as a whole was refused.
      */
     readonly state: 'scored' | 'open' | 'refused' | 'skipped';
     /**
@@ -137,7 +137,10 @@ export interface RoundResult {
      * that is not yet scored these are what stands so far, and they count toward no total.
      */
     readonly scores: Readonly<Record<string, number>>;
-    /** The players out of the round, in seat order. Empty for a round that was never read. */
+    /**
+     * The players out of the round who are in the game, in seat order. Empty for a round that was
+     * never read, or whose list of players out is not a list of ids.
+     */
     readonly out: readonly string[];
 }
 
@@ -160,7 +163,10 @@ export interface ScoreResult {
     readonly leaders: readonly string[];
     /** Whoever won, in seat order, once the game is over. Empty until then. */
     readonly winners: readonly string[];
-    /** Everyone who has been out of a scored round, in seat order. None of them can win. */
+    /**
+     * Everyone who has been out of a scored round, in seat order. None of them can win while
+     * another player has missed none.
+     */
     readonly missed: readonly string[];
     /** Everything the rules refused, in the order it was met. */
     readonly problems: readonly Problem[];
