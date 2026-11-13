@@ -20,24 +20,96 @@ export interface ScoreInput {
     readonly rounds: readonly unknown[];
 }
 
-/** Why something entered was refused, and where. */
-export interface Problem {
+/**
+ * A value a problem's data holds as it was entered: text, a whole or a fractional number, or true
+ * or false, and null for anything else, such as a card that is not there.
+ */
+export type Plain = string | number | boolean | null;
+
+/** What a problem carries where its code has nothing to add, so no field can be read from it. */
+type Nothing = Readonly<Record<never, never>>;
+
+/**
+ * What each problem carries, by its code, as the README's table of codes has it. A field's
+ * meaning is its code's own: `max` is a number of players under one code and of cards under
+ * another.
+ */
+export interface ProblemData {
+    readonly 'not-json': Nothing;
+    /** The part a game lacks or has wrong, or nothing when it is not an object at all. */
+    readonly 'not-a-game':
+        Nothing | { readonly part: 'game' | 'rules' | 'options' | 'players' | 'rounds' };
+    readonly 'unknown-game': { readonly game: string };
+    readonly 'unknown-rules': { readonly rules: number };
+    readonly 'too-few-players': { readonly min: number; readonly given: number };
+    readonly 'too-many-players': { readonly max: number; readonly given: number };
+    readonly 'player-twice': Nothing;
+    readonly 'unknown-option': { readonly option: string };
+    readonly 'not-a-round': Nothing;
+    readonly 'round-unfinished': Nothing;
+    readonly 'no-ender': Nothing;
+    readonly 'unknown-ender': { readonly ender: Plain };
+    readonly 'after-a-gap': Nothing;
+    readonly 'after-the-end': Nothing;
+    readonly 'unknown-player': Nothing;
+    /** The part of an entry at fault, or nothing when it is not an object at all. */
+    readonly 'not-an-entry':
+        | Nothing
+        | {
+              readonly part: 'bust' | 'numbers' | 'modifiers' | 'total' | 'cards' | 'both';
+          };
+    /** The card as given, and in Flip 7 the list it was in. */
+    readonly 'unknown-card': { readonly card: Plain; readonly kind?: 'number' | 'modifier' };
+    readonly 'number-twice': { readonly number: number };
+    readonly 'modifier-twice': { readonly modifier: string };
+    readonly 'too-many-cards': { readonly max: number; readonly given: number };
+    readonly 'too-many-copies': {
+        readonly card: number;
+        readonly max: number;
+        readonly given: number;
+    };
+    readonly 'impossible-total': {
+        readonly min: number;
+        readonly max: number;
+        readonly given: number;
+    };
+    readonly 'too-many-numbers': { readonly max: number; readonly given: number };
+}
+
+/** A name for a reason something is refused, one of those the README's table lists. */
+export type ProblemCode = keyof ProblemData;
+
+/** Why something entered was refused, and where, for one code. */
+export interface OneProblem<Code extends ProblemCode> {
     /** A name for the reason that never changes, for a caller that words the reason itself. */
-    readonly code: string;
+    readonly code: Code;
     /** The reason in a plain sentence. It is this package's own wording and may change. */
     readonly message: string;
     /**
      * What the problem is about, for a caller that words the reason itself: the card refused,
-     * the number of players a game takes. Which fields it holds depends on the code, and it is
-     * empty, never missing, where the code has nothing to add. It holds only text, numbers, true
-     * or false and null, whatever was entered.
+     * the number of players a game takes. Its fields are its code's, and it is empty, never
+     * missing, where the code has nothing to add. It holds only text, numbers, true or false and
+     * null, whatever was entered.
      */
-    readonly data: Readonly<Record<string, unknown>>;
+    readonly data: ProblemData[Code];
     /** The round it is in, counted from zero, or null when it is about the game as a whole. */
     readonly round: number | null;
     /** The player it is about, or null when it is about the round or the game. */
     readonly player: string | null;
 }
+
+/**
+ * Why something entered was refused, and where. Narrowing on its code gives its data's fields. A
+ * caller that meets a code it does not know, from a newer package, words it by the sentence it
+ * kept from before it narrowed.
+ */
+export type Problem = { [Code in ProblemCode]: OneProblem<Code> }[ProblemCode];
+
+/**
+ * A problem of the code given, or of any of the codes given, each still holding its own code's
+ * data, so narrowing on its code gives that code's fields.
+ */
+export type ProblemOf<Code extends ProblemCode> = Extract<Problem, { readonly code: Code }>;
 
 /** One round as the rules read it. */
 export interface RoundResult {

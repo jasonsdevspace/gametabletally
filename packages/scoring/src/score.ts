@@ -1,7 +1,7 @@
 import { FLIP_7 } from './flip-7.js';
 import { isRecord, isWhole, problemAt, type Refusal, refusal, type Rules } from './rules.js';
 import { SKYJO } from './skyjo.js';
-import type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
+import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
 
 /**
  * Every rule set of every game, in the order an app offers the games. A game whose rules change
@@ -27,8 +27,10 @@ export const GAMES: readonly Game[] = NEWEST.map(
 );
 
 /** What is not a game, naming the part it lacks where it lacks one. */
-const notGame = (message: string, part?: string): Refusal =>
-    refusal('not-a-game', message, part === undefined ? {} : { part });
+const notGame = (
+    message: string,
+    part?: Extract<ProblemData['not-a-game'], { part: unknown }>['part']
+): Refusal => refusal('not-a-game', message, part === undefined ? {} : { part });
 
 /**
  * Reads a game as handed over, or says what it lacks. A caller in another language passes text
@@ -76,7 +78,7 @@ const playerProblems = (rules: Rules, players: readonly string[]): readonly Prob
     return [
         ...count.map((problem) => problemAt(problem)),
         ...twice.map((player) =>
-            problemAt(refusal('player-twice', 'A player is in the game twice.'), null, player)
+            problemAt(refusal('player-twice', 'A player is in the game twice.', {}), null, player)
         ),
     ];
 };
@@ -127,12 +129,12 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
     if (walked.winners !== null)
         return passedOver(
             walked,
-            problemAt(refusal('after-the-end', 'The game was over before this round.'), index)
+            problemAt(refusal('after-the-end', 'The game was over before this round.', {}), index)
         );
     if (walked.rounds.some(({ state }) => state !== 'scored'))
         return passedOver(
             walked,
-            problemAt(refusal('after-a-gap', 'An earlier round has yet to be scored.'), index)
+            problemAt(refusal('after-a-gap', 'An earlier round has yet to be scored.', {}), index)
         );
     const { players, rounds } = input;
     const outcome = rules.scoreRound(rounds[index], { players, index });
@@ -144,7 +146,8 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
               problemAt(
                   refusal(
                       'round-unfinished',
-                      'A later round was entered before this one was played out.'
+                      'A later round was entered before this one was played out.',
+                      {}
                   ),
                   index
               ),
@@ -251,7 +254,9 @@ export const scoreJson = (game: string): string => {
     try {
         raw = JSON.parse(game);
     } catch {
-        return JSON.stringify(notAGame(refusal('not-json', 'The game is not written as JSON.')));
+        return JSON.stringify(
+            notAGame(refusal('not-json', 'The game is not written as JSON.', {}))
+        );
     }
     return JSON.stringify(scoreAny(raw));
 };

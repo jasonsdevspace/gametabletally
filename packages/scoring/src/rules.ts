@@ -1,4 +1,4 @@
-import type { Game, Problem } from './types.js';
+import type { Game, OneProblem, Plain, Problem, ProblemCode, ProblemData } from './types.js';
 
 /** What a game's rules are told about the round they are reading. */
 export interface RoundContext {
@@ -48,29 +48,47 @@ export const isRecord = (value: unknown): value is Readonly<Record<string, unkno
 export const isWhole = (value: unknown): value is number =>
     typeof value === 'number' && Number.isSafeInteger(value);
 
-/** Why something is refused, before it is placed: its code, its sentence and what it is about. */
-export type Refusal = Pick<Problem, 'code' | 'message' | 'data'>;
+/** Every field any of a union's members has. */
+type FieldsOf<Type> = Type extends unknown ? keyof Type : never;
 
-/** A refusal, with nothing to add unless its data is given. */
-export const refusal = (
-    code: string,
+/**
+ * Nothing but the fields a code's data may have, so data given with a field of its own fails,
+ * as it would not against a code that carries nothing, whose type an object of any fields fits.
+ */
+type Only<Data, Allowed> = { readonly [Field in Exclude<keyof Data, FieldsOf<Allowed>>]: never };
+
+/** Why something is refused for one code, before it is placed. */
+export type RefusalOf<Code extends ProblemCode> = Pick<
+    OneProblem<Code>,
+    'code' | 'message' | 'data'
+>;
+
+/** Why something is refused, before it is placed: its code, its sentence and what it is about. */
+export type Refusal = { [Code in ProblemCode]: RefusalOf<Code> }[ProblemCode];
+
+/**
+ * A refusal, with its code's own data, empty where the code carries nothing, so a code raised with
+ * data that is not its own fails the type check.
+ */
+export const refusal = <Code extends ProblemCode, Data extends ProblemData[Code]>(
+    code: Code,
     message: string,
-    data: Readonly<Record<string, unknown>> = {}
-): Refusal => ({ code, message, data });
+    data: Data & Only<Data, ProblemData[Code]>
+): RefusalOf<Code> => ({ code, message, data });
 
 /** A refusal placed in the game: at a round, about a player, or about the game as a whole. */
 export const problemAt = (
-    { code, message, data }: Refusal,
+    refused: Refusal,
     round: number | null = null,
     player: string | null = null
-): Problem => ({ code, message, data, round, player });
+): Problem => ({ ...refused, round, player });
 
 /**
  * A value as a problem's data holds it and its sentence shows it: text, a whole or a fractional
  * number, or true or false as given, and null for anything else, such as a card that is not
  * there. So what a problem carries always survives being written as JSON, whatever was entered.
  */
-export const plain = (value: unknown): string | number | boolean | null =>
+export const plain = (value: unknown): Plain =>
     typeof value === 'string' ||
     typeof value === 'boolean' ||
     (typeof value === 'number' && Number.isFinite(value))
@@ -107,7 +125,10 @@ export const readEntries = (
             round: null,
             scores: new Map(),
             problems: [
-                problemAt(refusal('not-a-round', 'The round does not hold its entries.'), index),
+                problemAt(
+                    refusal('not-a-round', 'The round does not hold its entries.', {}),
+                    index
+                ),
             ],
             allIn: false,
         };
@@ -117,7 +138,11 @@ export const readEntries = (
         .filter((id) => !players.includes(id))
         .sort()
         .map((id) =>
-            problemAt(refusal('unknown-player', 'The entry is for nobody in the game.'), index, id)
+            problemAt(
+                refusal('unknown-player', 'The entry is for nobody in the game.', {}),
+                index,
+                id
+            )
         );
     for (const player of players) {
         // Asked of the entries themselves, so an id such as `toString` is not found on every object.
