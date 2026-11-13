@@ -1,4 +1,4 @@
-import type { Game, Problem, ProblemCode, ProblemData, ProblemOf } from './types.js';
+import type { Game, OneProblem, Plain, Problem, ProblemCode, ProblemData } from './types.js';
 
 /** What a game's rules are told about the round they are reading. */
 export interface RoundContext {
@@ -59,7 +59,7 @@ type Only<Data, Allowed> = { readonly [Field in Exclude<keyof Data, FieldsOf<All
 
 /** Why something is refused for one code, before it is placed. */
 export type RefusalOf<Code extends ProblemCode> = Pick<
-    ProblemOf<Code>,
+    OneProblem<Code>,
     'code' | 'message' | 'data'
 >;
 
@@ -88,7 +88,7 @@ export const problemAt = (
  * number, or true or false as given, and null for anything else, such as a card that is not
  * there. So what a problem carries always survives being written as JSON, whatever was entered.
  */
-export const plain = (value: unknown): string | number | boolean | null =>
+export const plain = (value: unknown): Plain =>
     typeof value === 'string' ||
     typeof value === 'boolean' ||
     (typeof value === 'number' && Number.isFinite(value))

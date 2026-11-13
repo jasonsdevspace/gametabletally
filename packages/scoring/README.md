@@ -74,10 +74,14 @@ object, and is empty where the code has nothing to add. A field's meaning belong
 read it by code: `max` is a number of players under one code, a number of cards under another
 and a total under a third.
 
-In TypeScript a `Problem` is typed by its code, so narrowing on `code` gives its `data` with its
-fields, and reading a field the code does not carry fails the type check. `ProblemData` holds each
-code's data. A code this package adds later is not one an older caller's types know, so a caller
-words any code it does not handle by its `message`.
+In TypeScript a `Problem` is typed by its code, so narrowing on `code` gives its `data` with that
+code's fields, and reading a field the code does not carry fails the type check. `ProblemData` holds
+each code's data, and `ProblemOf` is a problem of one code, for a function that handles only that
+one. Where the table says `data` may be empty, the type says so too: the `part` of `not-a-game` and
+`not-an-entry` is read only after checking `'part' in problem.data`, and the `kind` of `unknown-
+card` may be undefined. A code this package adds later is not one known to the types of a caller
+built against an older version, so a caller keeps the `message` from before it narrows and words
+with it any code it does not handle.
 
 | Code               | When                                                                                   | `data`                                                                                                                                                                             |
 | ------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -80,7 +80,7 @@ export interface ProblemData {
 export type ProblemCode = keyof ProblemData;
 
 /** Why something entered was refused, and where, for one code. */
-export interface ProblemOf<Code extends ProblemCode> {
+export interface OneProblem<Code extends ProblemCode> {
     /** A name for the reason that never changes, for a caller that words the reason itself. */
     readonly code: Code;
     /** The reason in a plain sentence. It is this package's own wording and may change. */
@@ -100,9 +100,16 @@ export interface ProblemOf<Code extends ProblemCode> {
 
 /**
  * Why something entered was refused, and where. Narrowing on its code gives its data's fields. A
- * caller that meets a code it does not know, from a newer package, words it by its sentence.
+ * caller that meets a code it does not know, from a newer package, words it by the sentence it
+ * kept from before it narrowed.
  */
-export type Problem = { [Code in ProblemCode]: ProblemOf<Code> }[ProblemCode];
+export type Problem = { [Code in ProblemCode]: OneProblem<Code> }[ProblemCode];
+
+/**
+ * A problem of the code given, or of any of the codes given, each still holding its own code's
+ * data, so narrowing on its code gives that code's fields.
+ */
+export type ProblemOf<Code extends ProblemCode> = Extract<Problem, { readonly code: Code }>;
 
 /** One round as the rules read it. */
 export interface RoundResult {

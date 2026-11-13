@@ -1,7 +1,7 @@
 import { FLIP_7 } from './flip-7.js';
 import { isRecord, isWhole, problemAt, type Refusal, refusal, type Rules } from './rules.js';
 import { SKYJO } from './skyjo.js';
-import type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
+import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
 
 /**
  * Every rule set of every game, in the order an app offers the games. A game whose rules change
@@ -29,7 +29,7 @@ export const GAMES: readonly Game[] = NEWEST.map(
 /** What is not a game, naming the part it lacks where it lacks one. */
 const notGame = (
     message: string,
-    part?: 'game' | 'rules' | 'options' | 'players' | 'rounds'
+    part?: Extract<ProblemData['not-a-game'], { part: unknown }>['part']
 ): Refusal => refusal('not-a-game', message, part === undefined ? {} : { part });
 
 /**
