@@ -93,7 +93,7 @@ const readCards = (listed: readonly unknown[]): number | Refusal => {
 
 /** One player's entry read and checked: what they hold, or why it is refused. */
 const readPlayer = (raw: unknown): number | Refusal => {
-    if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.');
+    if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.', {});
     // A part given as null is a part not given, as a round's ender is, since a caller in
     // another language writes what it leaves out that way.
     const total = raw['total'] ?? undefined;
@@ -158,7 +158,7 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
             scores,
             complete: false,
             problems: [
-                problemAt(refusal('no-ender', 'The round does not say who ended it.'), index),
+                problemAt(refusal('no-ender', 'The round does not say who ended it.', {}), index),
             ],
         };
     return { scores: withPenalty(scores, ender), problems, complete: true };

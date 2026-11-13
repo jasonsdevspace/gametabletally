@@ -6,4 +6,14 @@ export {
 } from './flip-7.js';
 export { GAMES, score, scoreJson } from './score.js';
 export type { SkyjoEntry, SkyjoRound } from './skyjo.js';
-export type { Game, Problem, RoundResult, ScoreInput, ScoreResult } from './types.js';
+export type {
+    Game,
+    Plain,
+    Problem,
+    ProblemCode,
+    ProblemData,
+    ProblemOf,
+    RoundResult,
+    ScoreInput,
+    ScoreResult,
+} from './types.js';

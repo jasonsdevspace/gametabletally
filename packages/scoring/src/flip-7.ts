@@ -80,7 +80,7 @@ const unknownCard = (card: unknown, kind: 'number' | 'modifier'): Refusal =>
 
 /** Reads an entry as entered, or says why it is not one. */
 const readEntry = (raw: unknown): Flip7Entry | Refusal => {
-    if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.');
+    if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.', {});
     const { numbers, modifiers, bust } = raw;
     if (typeof bust !== 'boolean')
         return refusal('not-an-entry', 'The entry does not say whether the player bust.', {

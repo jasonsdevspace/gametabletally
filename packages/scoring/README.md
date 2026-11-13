@@ -74,6 +74,11 @@ object, and is empty where the code has nothing to add. A field's meaning belong
 read it by code: `max` is a number of players under one code, a number of cards under another
 and a total under a third.
 
+In TypeScript a `Problem` is typed by its code, so narrowing on `code` gives its `data` with its
+fields, and reading a field the code does not carry fails the type check. `ProblemData` holds each
+code's data. A code this package adds later is not one an older caller's types know, so a caller
+words any code it does not handle by its `message`.
+
 | Code               | When                                                                                   | `data`                                                                                                                                                                             |
 | ------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `not-json`         | The text handed to `scoreJson` is not JSON                                             | empty                                                                                                                                                                              |
