@@ -23,20 +23,33 @@
         U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/*
+ * A face drawn from a font the phone already has, sized and spaced to DM Sans's own measures, so a
+ * line set before DM Sans arrives keeps its width and height when it does, and the page does not
+ * move. Arial, or Liberation Sans, which shares its measures, where the system has it.
+ */
+@font-face {
+    font-family: 'DM Sans Fallback';
+    src: local('Arial'), local('ArialMT'), local('Liberation Sans');
+    size-adjust: 99.05%;
+    ascent-override: 100.15%;
+    descent-override: 31.3%;
+    line-gap-override: 0%;
+}
+
 :root {
     /* The kit's sans role, set to DM Sans. The numerals stay the kit's mono face. */
-    --dk-font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dk-font-sans:
+        'DM Sans', 'DM Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
     /*
      * The lip: a hard shadow straight under a key or a card, which reads as something to press.
-     * In the light theme it is the text color, faint. In the dark it is darker than the ground,
-     * so it never glows on it.
+     * In the light theme it is the kit's text color, faint. In the dark it is black, darker than
+     * every ground, so it never glows. Each is a plain color, which every browser the kit supports
+     * reads inside a shadow.
      */
     --gtt-lip-depth: 2px;
-    --gtt-lip-color: light-dark(
-        color-mix(in oklab, var(--dk-fg) 15%, transparent),
-        oklch(0 0 0 / 0.55)
-    );
+    --gtt-lip-color: light-dark(rgb(26 26 26 / 0.15), rgb(0 0 0 / 0.8));
     --gtt-lip: 0 var(--gtt-lip-depth) 0 var(--gtt-lip-color);
 
     /* The lip reaches the kit's buttons and keys through the properties the kit offers for it. */
@@ -44,7 +57,10 @@
     /* A press moves a key straight down by the lip's depth. */
     --dk-button-press: 0 var(--gtt-lip-depth);
 
-    /* The grounds of the game tiles, each with a light and a dark value. Flip 7 takes the accent. */
+    /*
+     * The grounds of the game tiles, each with a light and a dark value. Flip 7's tile takes the
+     * kit's highlight, `--dk-highlight`, which is the drawing's pale blue.
+     */
     --gtt-tile-sage: light-dark(oklch(0.94 0.03 145), oklch(0.26 0.04 145));
     --gtt-tile-gold: light-dark(oklch(0.96 0.04 90), oklch(0.28 0.04 90));
 }

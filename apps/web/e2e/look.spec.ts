@@ -8,10 +8,11 @@ import { expect, fontsReady, test } from './support.js';
  * on the kit's keys, and nothing asked of another origin.
  */
 
-test('no page asks another origin for anything', async ({ page, baseURL }) => {
+test('no page asks another origin for anything', async ({ page, context, baseURL }) => {
     const origin = new URL(baseURL ?? 'http://localhost').origin;
     const elsewhere: string[] = [];
-    page.on('request', (request) => {
+    // The context hears the page's requests and any a service worker makes for itself.
+    context.on('request', (request) => {
         const url = new URL(request.url());
         if (url.protocol.startsWith('http') && url.origin !== origin) elsewhere.push(request.url());
     });
@@ -75,21 +76,27 @@ test("gives the kit's keys the lip, and a press moves a key straight down by its
     page,
 }) => {
     await page.goto('/');
-    const look = await page.evaluate(() => {
+    await page.evaluate(() => {
         const key = document.createElement('button');
         key.className = 'dk-button';
+        key.id = 'key';
         key.textContent = 'Key';
-        document.body.append(key);
-        const style = getComputedStyle(key);
-        const root = getComputedStyle(document.documentElement);
-        const found = {
-            shadow: style.boxShadow,
-            press: root.getPropertyValue('--dk-button-press').trim(),
-        };
-        key.remove();
-        return found;
+        document.querySelector('main')?.append(key);
     });
-    expect(look.shadow).toMatch(/0px 2px 0px/);
-    // Straight down, by the lip's depth.
-    expect(look.press).toBe('0 2px');
+    const key = page.locator('#key');
+    const look = () =>
+        key.evaluate((element) => {
+            const style = getComputedStyle(element);
+            return { shadow: style.boxShadow, translate: style.translate };
+        });
+    const resting = await look();
+    expect(resting.shadow).toMatch(/0px 2px 0px 0px$|0px 2px 0px$/);
+    expect(resting.translate).toBe('none');
+    // Held down, the key drops onto where its lip was, and the lip is gone.
+    const box = await key.boundingBox();
+    if (!box) throw new Error('The key is not on the page.');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    expect(await look()).toEqual({ shadow: 'none', translate: '0px 2px' });
+    await page.mouse.up();
 });

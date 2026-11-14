@@ -26,7 +26,7 @@ export default defineConfig({
                     name: 'web',
                     environment: 'jsdom',
                     // A sheet read as text, as the app's style tests read theirs, comes back whole.
-                    css: { include: [/\.css(\?raw)?$/] },
+                    css: { include: [/\.css\?raw$/] },
                     include: ['apps/*/**/*.test.{ts,tsx}'],
                     setupFiles: ['apps/web/vitest.setup.ts'],
                 },

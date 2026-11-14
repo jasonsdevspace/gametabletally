@@ -1,7 +1,15 @@
 import tokens from '@jasonsdevspace/design-kit/tokens.css?raw';
 import { describe, expect, it } from 'vitest';
 
-import sheet from './app.css?raw';
+import page from '../../index.html?raw';
+
+/** Every sheet the app writes, as text. */
+const sheets = import.meta.glob<string>('../**/*.css', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+});
+const sheet = Object.values(sheets).join('\n');
 
 /*
  * The app's one sheet over the design kit: it sets no kit color role and names no kit class, its
@@ -42,7 +50,7 @@ const pair = (value: string): readonly [string, string] => {
     throw new Error(`${value} is not a light-dark() pair`);
 };
 
-/** A color's linear red, green and blue and its alpha, from hex or oklch. */
+/** A color's linear red, green and blue and its alpha, from hex, rgb or oklch. */
 const linear = (color: string): readonly [number, number, number, number] => {
     const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
     if (hex) {
@@ -51,6 +59,19 @@ const linear = (color: string): readonly [number, number, number, number] => {
             return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
         };
         return [channel(0), channel(2), channel(4), 1];
+    }
+    const rgb = /^rgb\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/.exec(color);
+    if (rgb) {
+        const channel = (value: number) => {
+            const v = value / 255;
+            return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        return [
+            channel(Number(rgb[1])),
+            channel(Number(rgb[2])),
+            channel(Number(rgb[3])),
+            Number(rgb[4] ?? 1),
+        ];
     }
     const ok = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/.exec(color);
     if (!ok) throw new Error(`${color} is not a color this test reads`);
@@ -91,10 +112,31 @@ const contrast = (one: string, two: string): number => {
 };
 
 describe("the app's sheet over the design kit", () => {
-    it('sets no kit color role', () => {
+    it('sets no kit color role, nor any kit property but the typeface and the two for the lip', () => {
+        expect(Object.keys(sheets).length).toBeGreaterThan(0);
+        expect([...app.keys()].filter((name) => name.startsWith('--dk-')).sort()).toEqual([
+            '--dk-button-press',
+            '--dk-button-shadow',
+            '--dk-font-sans',
+        ]);
         const colorRoles = [...kit].filter(([, value]) => isColor(value)).map(([name]) => name);
         expect(colorRoles.length).toBeGreaterThan(10);
-        expect([...app.keys()].filter((name) => colorRoles.includes(name))).toEqual([]);
+    });
+
+    it("names the browser's bar on the kit's own ground in each theme", () => {
+        const [light, dark] = pair(kit.get('--dk-bg') ?? '');
+        const bar = (scheme: string) =>
+            new RegExp(
+                `<meta name="theme-color" content="([^"]+)" media="\\(prefers-color-scheme: ${scheme}\\)"`
+            ).exec(page)?.[1];
+        expect([bar('light'), bar('dark')]).toEqual([light, dark]);
+    });
+
+    it('sets DM Sans with a fallback face sized to it, so the page does not move as it arrives', () => {
+        expect(app.get('--dk-font-sans')).toMatch(/^'DM Sans',\s*'DM Sans Fallback',/);
+        expect(rules).toMatch(
+            /font-family: 'DM Sans Fallback';[^}]*size-adjust: [\d.]+%;[^}]*ascent-override/
+        );
     });
 
     it('names no kit class in any rule', () => {
@@ -113,11 +155,21 @@ describe("the app's sheet over the design kit", () => {
         expect(kit.has('--dk-button-shadow') || tokens.includes('--dk-button-shadow')).toBe(false);
     });
 
-    it('never lightens a dark ground with the lip', () => {
-        const [, darkLip] = pair(app.get('--gtt-lip-color') ?? '');
-        const [, darkGround] = pair(kit.get('--dk-bg') ?? '');
-        expect(luminance(darkLip, darkGround)).toBeLessThan(luminance(darkGround));
-    });
+    it.each(['--dk-bg', '--dk-surface', '--dk-raised'])(
+        'draws the lip darker than the %s ground in each theme, and still to be seen there',
+        (ground) => {
+            const [lightLip, darkLip] = pair(app.get('--gtt-lip-color') ?? '');
+            const [light, dark] = pair(kit.get(ground) ?? '');
+            for (const [lip, under] of [
+                [lightLip, light],
+                [darkLip, dark],
+            ] as const) {
+                const shadowed = luminance(lip, under);
+                expect(shadowed).toBeLessThan(luminance(under));
+                expect((luminance(under) + 0.05) / (shadowed + 0.05)).toBeGreaterThanOrEqual(1.05);
+            }
+        }
+    );
 
     it.each(['--gtt-tile-sage', '--gtt-tile-gold'])(
         'holds text on the %s ground to WCAG AA in both themes',
