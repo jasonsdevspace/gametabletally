@@ -32,6 +32,37 @@ export interface SavedPlayer {
     readonly removed: boolean;
 }
 
+/** The parts of a round a step can be, across every game. */
+export const STEP_PARTS = ['entry', 'ender', 'bid', 'tricks'] as const;
+
+/** A part of a round: a player's entry, who ended it, a bid or a count of tricks. */
+export type StepPart = (typeof STEP_PARTS)[number];
+
+/**
+ * One step of a round: what is entered, and for which player, or null where the step is about the
+ * round, such as who ended it.
+ */
+export interface SavedStep {
+    readonly part: StepPart;
+    readonly player: string | null;
+}
+
+/**
+ * The round being entered or reopened, kept beside the saved rounds and never among them, so a
+ * hand half entered is never read as a whole one.
+ */
+export interface SavedDraft {
+    /**
+     * The round's place in the game, counted from zero: the number of saved rounds for the next
+     * round, and the place of a saved round that was reopened.
+     */
+    readonly index: number;
+    /** The round as entered so far, in the shape the game's rules read. */
+    readonly round: Readonly<Record<string, unknown>>;
+    /** The step it is at, or null once every step has been entered. */
+    readonly step: SavedStep | null;
+}
+
 /** A game, in play or finished: what was entered, and nothing worked out from it. */
 export interface SavedGame {
     readonly id: string;
@@ -43,8 +74,10 @@ export interface SavedGame {
     readonly options: Readonly<Record<string, unknown>>;
     /** The players' ids, in seat order. */
     readonly players: readonly string[];
-    /** Every round entered, in order, in the shape the game's rules read. */
+    /** Every round saved, in order, in the shape the game's rules read. */
     readonly rounds: readonly unknown[];
+    /** The round being entered or reopened, or null when there is none. */
+    readonly draft: SavedDraft | null;
     /** When it was started, as an ISO 8601 date and time in UTC. */
     readonly started: string;
     /** When it was last changed, as an ISO 8601 date and time in UTC. A merge keeps the later. */
@@ -99,6 +132,31 @@ export const readPlayer = (raw: unknown): SavedPlayer | null => {
     return { id, name, added, removed };
 };
 
+const isPart = (value: unknown): value is StepPart => STEP_PARTS.some((part) => part === value);
+
+/** Reads a step as saved, or undefined when what is there is not one. Null is no step. */
+const readStep = (raw: unknown): SavedStep | null | undefined => {
+    if (raw === null) return null;
+    if (!isRecord(raw)) return undefined;
+    const { part, player } = raw;
+    if (!isPart(part) || !(player === null || isText(player))) return undefined;
+    return { part, player };
+};
+
+/**
+ * Reads a game's draft as saved, or undefined when what is there is not one. Null is no draft.
+ * Its place is a saved round's, or the next round's, and nothing further on.
+ */
+const readDraft = (raw: unknown, saved: number): SavedDraft | null | undefined => {
+    if (raw === null) return null;
+    if (!isRecord(raw)) return undefined;
+    const { index, round } = raw;
+    const step = readStep(raw['step']);
+    if (typeof index !== 'number' || !Number.isSafeInteger(index)) return undefined;
+    if (index < 0 || index > saved || !isRecord(round) || step === undefined) return undefined;
+    return { index, round, step };
+};
+
 /** Reads a game as saved, or null when what is there is not a game. */
 export const readGame = (raw: unknown): SavedGame | null => {
     if (!isRecord(raw)) return null;
@@ -109,7 +167,9 @@ export const readGame = (raw: unknown): SavedGame | null => {
     if (!Array.isArray(players) || !Array.isArray(rounds)) return null;
     const ids = players.filter(isText);
     if (ids.length !== players.length) return null;
-    return { id, game, rules, options, players: ids, rounds, started, changed };
+    const draft = readDraft(raw['draft'], rounds.length);
+    if (draft === undefined) return null;
+    return { id, game, rules, options, players: ids, rounds, draft, started, changed };
 };
 
 const NOT_A_FILE: FileProblem = {
@@ -162,7 +222,7 @@ export const readFile = (text: string): SavedFile | FileProblem => {
     return { format: FORMAT, version: FORMAT_VERSION, exported, players, games };
 };
 
-/** A saved game as the scoring package takes it. */
+/** A saved game as the scoring package takes it: its saved rounds, and never its draft. */
 export const toScoreInput = ({ game, rules, options, players, rounds }: SavedGame): ScoreInput => ({
     game,
     rules,

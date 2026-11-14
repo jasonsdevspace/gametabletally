@@ -41,10 +41,17 @@ that lists many games scores each one to show its winner.
 
 `apps/web/src/store` is the only code that touches the database. It opens it, saves a player or a
 game, lists them, and reads and writes the one file a backup is. A game holds its id, the game
-played, the version of its rule set, its options, its players in seat order, every round entered,
-and when it was started and last changed. A game in play and a finished one are saved alike, and
+played, the version of its rule set, its options, its players in seat order, every round saved,
+the round being entered as its draft, and when it was started and last changed. A game in play and a finished one are saved alike, and
 whether it is over is worked out from its rounds.
 
+- **The round being entered is saved beside the rounds, never among them.** A game's draft holds
+  the round's place, what is entered so far and the step it is at, so a page closed in the middle
+  of a round opens again at the same step with the same entry. A hand half entered is never among
+  the rounds, since the scoring package would read it as a whole one and could end a game on a
+  player's first tap. Saving the round moves the draft into the rounds, whole, and a reopened
+  round leaves the saved one as it was until its draft is saved. The draft came with the first
+  version of the shape, since no phone held a saved game before the first deploy.
 - **Each thing the store does is one transaction, reads and writes together.** A game is saved
   again after every entry, whole, so a page closed in the middle of a round leaves the game as it
   was after the last entry. A merge of a file reads what is on the phone and writes in the same
