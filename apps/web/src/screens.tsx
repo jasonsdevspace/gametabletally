@@ -2,7 +2,7 @@ import { GAMES } from '@gametabletally/scoring';
 import type { ReactNode } from 'react';
 
 import { Link } from './navigation.js';
-import { type Route, type RouteName, ROUTES } from './routes.js';
+import { type Route, ROUTES } from './routes.js';
 
 /**
  * The screens, one for each address. Each is a plain page that holds its top heading and nothing
@@ -37,17 +37,14 @@ const Start = () => (
     </Page>
 );
 
-/** The screen for each address. A screen not written yet is its plain page. */
-const SCREENS: Partial<Record<RouteName, () => ReactNode>> = { start: Start };
-
-/** Whether a name is one of a screen with its own drawing. */
-const drawnFor = (name: string): (() => ReactNode) | undefined =>
-    Object.entries(SCREENS).find(([key]) => key === name)?.[1];
-
-/** The screen at a route. */
+/** The screen at a route. A screen not written yet is its plain page. */
 export const Screen = ({ route }: { readonly route: Route }) => {
-    // Called rather than drawn as an element, since the screen is chosen as the app draws.
-    return drawnFor(route.name)?.() ?? <Page title={route.title} />;
+    switch (route.name) {
+        case 'start':
+            return <Start />;
+        default:
+            return <Page title={route.title} />;
+    }
 };
 
 /** The page for an address that is not one, with a way to the start. */

@@ -19,6 +19,9 @@ describe('the addresses', () => {
         expect(routeAt('/players/')?.name).toBe('players');
         expect(routeAt('/players')).toBeNull();
         expect(routeAt('/player/p-ann/')).toBeNull();
+        // A page's own file is served for its address too.
+        expect(routeAt('/about/index.html')?.name).toBe('about');
+        expect(routeAt('/index.html')?.name).toBe('start');
     });
 
     it("title every page but the start with its heading and the app's name", () => {

@@ -45,12 +45,19 @@ for (const { path, title } of [
             if (message.type() === 'error') errors.push(message.text());
         });
         page.on('pageerror', (error) => errors.push(error.message));
+        // A script or file the page loads that is missing would leave the prerender in place and
+        // the app never running, so every failed request beside the page itself is an error.
+        page.on('response', (response) => {
+            if (response.status() >= 400 && response.request().resourceType() !== 'document')
+                errors.push(`${response.status()} ${response.url()}`);
+        });
         await page.goto(path);
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
         await audit(page);
         expect(await smallTargets(page)).toEqual([]);
-        // The not-found page's own 404 is the one error a browser reports there.
-        expect(errors.filter((text) => !/status of 404/.test(text))).toEqual([]);
+        // The not-found page's own 404 is the one error a browser reports, and only there.
+        const own = path === '/no-such-page/' ? /status of 404/ : null;
+        expect(errors.filter((text) => !own?.test(text))).toEqual([]);
     });
 
 test('every built page asks a phone for its safe areas', async ({ request }) => {
@@ -89,12 +96,35 @@ test('moves between screens with no reload, and Back returns to the screen befor
     expect(await page.evaluate(() => 'stayed' in window)).toBe(true);
 });
 
-test('every page fits the narrowest phone with no sideways scroll', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
-    for (const { path } of ADDRESSES) {
-        await page.goto(path);
-        await fontsReady(page);
-        const width = await page.evaluate(() => document.documentElement.scrollWidth);
-        expect(width, path).toBeLessThanOrEqual(320);
+for (const javaScriptEnabled of [true, false])
+    test.describe(javaScriptEnabled ? 'once it runs' : 'as prerendered', () => {
+        test.use({ javaScriptEnabled });
+
+        test('every page fits the narrowest phone with no sideways scroll', async ({ page }) => {
+            await page.setViewportSize({ width: 320, height: 568 });
+            for (const path of [...ADDRESSES.map((address) => address.path), '/no-such-page/']) {
+                await page.goto(path);
+                await fontsReady(page);
+                const width = await page.evaluate(() => document.documentElement.scrollWidth);
+                expect(width, path).toBeLessThanOrEqual(320);
+            }
+        });
+    });
+
+test('a page reached by its own file keeps the screen the build drew in it', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (message) => {
+        if (message.type() === 'error') errors.push(message.text());
+    });
+    for (const [file, title] of [
+        ['/index.html', ROUTES[0].title],
+        ['/about/index.html', 'About'],
+    ] as const) {
+        await page.goto(file);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+        // Once the app has taken over, the heading is still the one drawn into the page.
+        await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
     }
+    expect(errors).toEqual([]);
 });

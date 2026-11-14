@@ -23,23 +23,26 @@ class Boundary extends Component<{ readonly children: ReactNode }, { readonly fa
 
 /**
  * The app: the screen at the address, or the not-found page for one that is not an address. A
- * move inside the app sets the page's title and moves focus to the new screen's main region, as
- * a page load would, so a screen reader hears where it has arrived.
+ * move inside the app, to another screen or to the same screen about another thing, sets the
+ * page's title and moves focus to the new screen's main region, as a page load would, so a screen
+ * reader hears where it has arrived.
  */
 export const App = () => {
-    const { path } = usePlace();
+    const { path, search } = usePlace();
     const route = routeAt(path);
-    const first = useRef(true);
+    const place = `${path}${search}`;
+    // The place last arrived at, so the arrival is marked once for each move, and never for the
+    // page's first draw, even where a check in development runs the effect twice.
+    const arrived = useRef(place);
 
     useEffect(() => {
+        // The app has taken the page over once this runs, which the browser tests wait for.
+        document.documentElement.dataset['ready'] = 'true';
         document.title = titleOf(route?.title ?? 'Nothing at this address');
-        if (first.current) {
-            first.current = false;
-            return;
-        }
-        window.scrollTo(0, 0);
+        if (arrived.current === place) return;
+        arrived.current = place;
         document.getElementById('main')?.focus();
-    }, [route]);
+    }, [place, route]);
 
-    return <Boundary key={path}>{route ? <Screen route={route} /> : <NotFound />}</Boundary>;
+    return <Boundary key={place}>{route ? <Screen route={route} /> : <NotFound />}</Boundary>;
 };

@@ -127,8 +127,9 @@ try {
     }
     for (const path of MEASURED) {
         const measures = [await run(path, ['performance'])];
-        while (timing(middle(measures)).length > 0 && measures.length < TRACES)
-            measures.push(await run(path, ['performance']));
+        // A page that misses is traced until there are three, and judged on the middle one.
+        if (timing(measures[0]).length > 0)
+            while (measures.length < TRACES) measures.push(await run(path, ['performance']));
         const judged = middle(measures);
         console.log(
             `${path} on a first visit: performance ${Math.round(judged.performance * 100)}, largest paint ${Math.round(judged.paint)} ms, layout shift ${judged.shift.toFixed(3)}, script ${judged.script} bytes, style ${judged.style} bytes${measures.length > 1 ? `, the middle of ${measures.length}` : ''}`

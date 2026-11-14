@@ -54,9 +54,13 @@ const subscribe = (listener: () => void): (() => void) => {
 export const usePlace = (): Place =>
     useSyncExternalStore(subscribe, read, () => (typeof window === 'undefined' ? drawing : read()));
 
-/** Moves to an address inside the app with no reload, and leaves an entry Back returns to. */
+/**
+ * Moves to an address inside the app with no reload, at the top of the new screen, and leaves an
+ * entry Back returns to. Back and Forward leave the browser to put the scroll back where it was.
+ */
 export const navigate = (href: string): void => {
     window.history.pushState(null, '', href);
+    window.scrollTo(0, 0);
     notify();
 };
 

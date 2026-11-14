@@ -11,7 +11,7 @@
  */
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGzip } from 'node:zlib';
 
@@ -70,13 +70,15 @@ export const serve = (port) =>
             }
             const file = normalize(join(ROOT, path));
             // Nothing outside the build is served, whatever the path asks for.
-            if (!file.startsWith(ROOT)) {
+            if (file !== ROOT && !file.startsWith(`${ROOT}${sep}`)) {
                 send(request, response, 404, join(ROOT, '404.html'));
                 return;
             }
             const kind = kindOf(file);
             if (kind === 'folder' && !path.endsWith('/')) {
-                response.writeHead(301, { Location: `${path}/${url.search}` });
+                // The address as it was asked for, still encoded, so no decoded slash or
+                // character can turn it into an address elsewhere.
+                response.writeHead(301, { Location: `${url.pathname}/${url.search}` });
                 response.end();
             } else if (kind === 'folder' && kindOf(join(file, 'index.html')) === 'file') {
                 send(request, response, 200, join(file, 'index.html'));

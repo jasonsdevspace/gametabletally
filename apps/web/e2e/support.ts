@@ -4,7 +4,7 @@ import { IDBFactory } from 'fake-indexeddb';
 
 import { openPlay } from '../src/play/play.js';
 import { FORMAT_VERSION, type SavedGame } from '../src/store/format.js';
-import { DATABASE, GAMES, openStore, PLAYERS } from '../src/store/store.js';
+import { DATABASE, GAMES, openStore, SCHEMA } from '../src/store/store.js';
 
 /*
  * What the browser tests share: the test itself, an axe audit that names what it found, a check
@@ -24,6 +24,8 @@ export const fontsReady = (page: Page): Promise<unknown> =>
  * break it.
  */
 export const audit = async (page: Page): Promise<void> => {
+    // Contrast for large text depends on its size, so the fonts are in before axe measures.
+    await fontsReady(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(
         results.violations.map(
@@ -37,9 +39,11 @@ export const audit = async (page: Page): Promise<void> => {
 const TARGET = 24;
 
 /**
- * Every control on the page that misses WCAG 2.5.8's target size: one under 24 by 24 pixels
- * whose 24 pixel circle, around its center, meets another control's, and that is not a link
- * within a sentence. Each is named by its text, so a failure says which.
+ * Every control on the page that misses WCAG 2.5.8's target size, each named by its text, so a
+ * failure says which. A control passes when it is at least 24 by 24 pixels. One smaller passes
+ * when a circle 24 pixels across, around its center, meets no other control and no other small
+ * control's circle. A link set inline within a sentence is left out, as the rule leaves it, and so
+ * is a control drawn at a single pixel until it has focus, such as a skip link.
  */
 export const smallTargets = async (page: Page): Promise<string[]> => {
     await fontsReady(page);
@@ -48,25 +52,38 @@ export const smallTargets = async (page: Page): Promise<string[]> => {
             ...document.querySelectorAll<HTMLElement>(
                 'a[href], button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])'
             ),
-        ].filter((control) => control.getClientRects().length > 0);
+        ].filter((control) => {
+            const box = control.getBoundingClientRect();
+            return control.getClientRects().length > 0 && box.width > 1 && box.height > 1;
+        });
         const boxes = controls.map((control) => control.getBoundingClientRect());
         const centers = boxes.map(
             (box) => [box.x + box.width / 2, box.y + box.height / 2] as const
         );
-        /** Whether a link sits within a sentence, which WCAG leaves out of the rule. */
+        const small = boxes.map((box) => box.width < least || box.height < least);
+        /** How far a point is from the nearest edge of a box, nothing when it is inside. */
+        const gap = (box: DOMRect, x: number, y: number) =>
+            Math.hypot(
+                Math.max(box.left - x, 0, x - box.right),
+                Math.max(box.top - y, 0, y - box.bottom)
+            );
+        /** Whether a link is set inline among the words of a sentence. */
         const inSentence = (control: HTMLElement) =>
             control.tagName === 'A' &&
-            (control.parentElement?.textContent ?? '').trim() !== control.textContent.trim();
-        return controls.flatMap((control, at) => {
-            const box = boxes[at];
-            const center = centers[at];
-            if (!box || !center) return [];
-            if (box.width >= least && box.height >= least) return [];
-            if (inSentence(control)) return [];
-            const crowded = centers.some(
-                (other, near) =>
-                    near !== at && Math.hypot(other[0] - center[0], other[1] - center[1]) < least
+            getComputedStyle(control).display === 'inline' &&
+            [...(control.parentElement?.childNodes ?? [])].some(
+                (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== ''
             );
+        return controls.flatMap((control, at) => {
+            const center = centers[at];
+            if (!center || !small[at] || inSentence(control)) return [];
+            const [x, y] = center;
+            const crowded = boxes.some((other, near) => {
+                if (near === at) return false;
+                if (gap(other, x, y) < least / 2) return true;
+                const [ox, oy] = centers[near] ?? [Number.NaN, Number.NaN];
+                return small[near] === true && Math.hypot(ox - x, oy - y) < least;
+            });
             return crowded ? [(control.textContent || control.outerHTML).trim().slice(0, 40)] : [];
         });
     }, TARGET);
@@ -105,13 +122,14 @@ export const buildGame = async (
  */
 export const seed = async (page: Page, games: readonly SavedGame[]): Promise<void> => {
     await page.evaluate(
-        ({ name, version, players, stores, records }) =>
+        ({ name, version, schema, stores, records }) =>
             new Promise<void>((resolve, reject) => {
                 const opening = indexedDB.open(name, version);
                 opening.onupgradeneeded = () => {
-                    for (const kind of [players, stores])
+                    // The app's own schema, so a database seeded first is the one the app makes.
+                    for (const { name: kind, keyPath } of schema)
                         if (!opening.result.objectStoreNames.contains(kind))
-                            opening.result.createObjectStore(kind, { keyPath: 'id' });
+                            opening.result.createObjectStore(kind, { keyPath });
                 };
                 opening.onerror = () => {
                     reject(opening.error ?? new Error('The database could not be opened.'));
@@ -129,6 +147,6 @@ export const seed = async (page: Page, games: readonly SavedGame[]): Promise<voi
                     };
                 };
             }),
-        { name: DATABASE, version: FORMAT_VERSION, players: PLAYERS, stores: GAMES, records: games }
+        { name: DATABASE, version: FORMAT_VERSION, schema: SCHEMA, stores: GAMES, records: games }
     );
 };

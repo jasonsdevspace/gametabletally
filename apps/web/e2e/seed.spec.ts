@@ -1,5 +1,7 @@
+import { IDBFactory } from 'fake-indexeddb';
+
 import { hrefOf } from '../src/routes.js';
-import { DATABASE, GAMES } from '../src/store/store.js';
+import { DATABASE, GAMES, openStore } from '../src/store/store.js';
 import { buildGame, expect, seed, test } from './support.js';
 
 const hand = (numbers: readonly number[]) => ({ numbers, modifiers: [], bust: false });
@@ -40,4 +42,57 @@ test("seeds the browser's database with a game the app's model built, which the 
         { name: DATABASE, games: GAMES, id: game.id }
     );
     expect(read).toEqual(game);
+});
+
+/** A database's version and stores, each with its key and indexes, as a page or Node reads them. */
+const shapeOf = (database: IDBDatabase) => ({
+    version: database.version,
+    stores: [...database.objectStoreNames].sort().map((name) => {
+        const store = database.transaction(name).objectStore(name);
+        return { name, keyPath: store.keyPath, indexes: [...store.indexNames].sort() };
+    }),
+});
+
+test('seeds a database shaped exactly as the app makes it', async ({ page }) => {
+    const factory = new IDBFactory();
+    const store = await openStore(factory, DATABASE);
+    store.close();
+    const made = await new Promise<ReturnType<typeof shapeOf>>((resolve, reject) => {
+        const opening = factory.open(DATABASE);
+        opening.onerror = () => {
+            reject(opening.error ?? new Error('not opened'));
+        };
+        opening.onsuccess = () => {
+            resolve(shapeOf(opening.result));
+            opening.result.close();
+        };
+    });
+    await page.goto('/');
+    await seed(page, []);
+    const seeded = await page.evaluate(
+        (name) =>
+            new Promise((resolve, reject) => {
+                const opening = indexedDB.open(name);
+                opening.onerror = () => {
+                    reject(opening.error ?? new Error('not opened'));
+                };
+                opening.onsuccess = () => {
+                    const database = opening.result;
+                    resolve({
+                        version: database.version,
+                        stores: [...database.objectStoreNames].sort().map((store) => {
+                            const read = database.transaction(store).objectStore(store);
+                            return {
+                                name: store,
+                                keyPath: read.keyPath,
+                                indexes: [...read.indexNames].sort(),
+                            };
+                        }),
+                    });
+                    database.close();
+                };
+            }),
+        DATABASE
+    );
+    expect(seeded).toEqual(made);
 });

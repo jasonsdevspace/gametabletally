@@ -180,6 +180,20 @@ export default defineConfig(
             '@typescript-eslint/no-non-null-assertion': 'error',
         },
     },
+    // The browser tests wait on what the page does, never on a clock.
+    {
+        files: ['**/e2e/**/*.ts'],
+        rules: {
+            'no-restricted-properties': [
+                'error',
+                {
+                    property: 'waitForTimeout',
+                    message:
+                        'Wait for what the page does instead, so the test is quick and steady.',
+                },
+            ],
+        },
+    },
     // Each package imports only what its own manifest declares, beside the
     // tools the repository's root provides, so a package never works only
     // because another one happens to install what it uses. Imports of types

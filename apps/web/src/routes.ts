@@ -38,9 +38,14 @@ export type RouteName = (typeof ROUTES)[number]['name'];
 /** The page GitHub Pages serves for an address that is not one, with a 404 status. */
 export const NOT_FOUND_FILE = '404.html';
 
-/** The route at a path, or null when the path is not an address of the app. */
-export const routeAt = (path: string): Route | null =>
-    ROUTES.find((route) => route.path === path) ?? null;
+/**
+ * The route at a path, or null when the path is not an address of the app. A page's own file,
+ * `/about/index.html`, is served for its address too, so it is read as the address.
+ */
+export const routeAt = (path: string): Route | null => {
+    const address = path.replace(/\/index\.html$/, '/');
+    return ROUTES.find((route) => route.path === address) ?? null;
+};
 
 /** The address of a screen, with the id of the thing it is about where it takes one. */
 export const hrefOf = (name: RouteName, id?: string): string => {
