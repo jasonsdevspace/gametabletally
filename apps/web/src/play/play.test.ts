@@ -5,6 +5,7 @@ import type { SavedGame } from '../store/format.js';
 import { openStore, type Store } from '../store/store.js';
 import { type GameInPlay, type NewGame, openPlay, type Play } from './play.js';
 import playSource from './play.ts?raw';
+import { toDraftRound } from './steps.js';
 import stepsSource from './steps.ts?raw';
 
 /*
@@ -74,6 +75,13 @@ const raw = (factory: IDBFactory, id: string): Promise<unknown> =>
             };
         };
     });
+
+/**
+ * A record as it was entered, without the time it was saved at. Undo puts back what was entered
+ * and saves it at the time it is put back, so a backup taken before it does not win a merge.
+ */
+const entered = (record: unknown): unknown =>
+    typeof record === 'object' && record !== null ? { ...record, changed: 'any time' } : record;
 
 /** Enters a whole round of Flip 7, seat by seat, and saves it. */
 const flipRound = async (play: Play, id: string, hands: readonly unknown[]) => {
@@ -275,23 +283,24 @@ describe('undo', () => {
         await play.enter('g-1', hand([4]));
         expect(play.snapshot().undo).toEqual({ kind: 'entry', game: 'g-1' });
         await play.undo();
-        expect(shown(play, 'g-1').saved).toEqual(fresh);
-        expect(await raw(factory, 'g-1')).toEqual(fresh);
+        expect(entered(shown(play, 'g-1').saved)).toEqual(entered(fresh));
+        expect(entered(await raw(factory, 'g-1'))).toEqual(entered(fresh));
         expect(play.snapshot().undo).toBeNull();
+        expect(shown(play, 'g-1').saved.changed > fresh.changed).toBe(true);
 
         for (const entry of [hand([4]), hand([5]), hand([6])]) await play.enter('g-1', entry);
         const whole = shown(play, 'g-1').saved;
         await play.saveRound('g-1');
         expect(play.snapshot().undo).toEqual({ kind: 'round', game: 'g-1' });
         await play.undo();
-        expect(shown(play, 'g-1').saved).toEqual(whole);
+        expect(entered(shown(play, 'g-1').saved)).toEqual(entered(whole));
 
         await play.discard('g-1');
         expect(play.snapshot().games).toEqual([]);
         expect(await raw(factory, 'g-1')).toBeUndefined();
         await play.undo();
-        expect(shown(play, 'g-1').saved).toEqual(whole);
-        expect(await raw(factory, 'g-1')).toEqual(whole);
+        expect(entered(shown(play, 'g-1').saved)).toEqual(entered(whole));
+        expect(entered(await raw(factory, 'g-1'))).toEqual(entered(whole));
     });
 
     it('puts back a finished game that was deleted, and offers no undo after a reload', async () => {
@@ -306,7 +315,7 @@ describe('undo', () => {
         await play.discard('g-1');
         expect((await reopenFrom(factory)).snapshot().games).toEqual([]);
         await play.undo();
-        expect(await raw(factory, 'g-1')).toEqual(finished);
+        expect(entered(await raw(factory, 'g-1'))).toEqual(entered(finished));
 
         await play.discard('g-1');
         const again = await reopenFrom(factory);
@@ -446,6 +455,347 @@ describe('the module', () => {
         for (const source of [playSource, stepsSource]) {
             const imports = [...source.matchAll(/from '([^']+)'/g)].map((match) => match[1]);
             expect(imports.filter((name) => /react|\.tsx$/.test(name ?? ''))).toEqual([]);
+        }
+    });
+});
+
+describe('what each change keeps and refuses', () => {
+    it('saves two taps made without waiting in the order they were made', async () => {
+        const { factory, store } = await setUp();
+        let release = () => {};
+        let first = true;
+        const slow: Store = {
+            ...store,
+            saveGame: async (game: SavedGame) => {
+                if (
+                    first &&
+                    game.draft !== null &&
+                    Object.keys(toDraftRound(game.draft.round).entries).length === 1
+                ) {
+                    first = false;
+                    await new Promise<void>((resolve) => {
+                        release = resolve;
+                    });
+                }
+                await store.saveGame(game);
+            },
+        };
+        const play = openPlay(slow, clock());
+        await play.start(newGame('flip-7'));
+        const one = play.enter('g-1', hand([4]));
+        const two = play.enter('g-1', hand([5]));
+        await Promise.resolve();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        release();
+        await Promise.all([one, two]);
+        expect(shown(play, 'g-1').draft?.round).toMatchObject({
+            entries: { ann: hand([4]), ben: hand([5]) },
+        });
+        expect(shown(await reopenFrom(factory), 'g-1').draft?.round).toMatchObject({
+            entries: { ann: hand([4]), ben: hand([5]) },
+        });
+    });
+
+    it('moves past entries already made after a correction, to nothing left in a reopened round', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([5]), hand([6]), hand([7])]);
+        await play.reopen('g-1', 0);
+        await play.enter('g-1', hand([11]));
+        expect(shown(play, 'g-1').draft?.step).toBeNull();
+    });
+
+    it('goes on from a corrected step to the next seat, then back to the seat skipped', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.goTo('g-1', { part: 'entry', player: 'ben' });
+        await play.enter('g-1', hand([2]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.enter('g-1', hand([3]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
+    });
+
+    it('refuses to move to a step the round does not have', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await expect(play.goTo('g-1', { part: 'ender', player: null })).rejects.toThrow(
+            /no such step/
+        );
+    });
+
+    it('drops the claim that a player ended the round once that player is out', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('skyjo'));
+        for (const total of [3, 4, 5]) await play.enter('g-1', { total });
+        await play.enter('g-1', 'ann');
+        await play.setOut('g-1', ['ann']);
+        expect(shown(play, 'g-1').draft?.round).toMatchObject({ ender: null, out: ['ann'] });
+        expect(shown(play, 'g-1').draft?.ready).toBe(false);
+    });
+
+    it('moves on from a player put out at the step they were on', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.setOut('g-1', ['ann']);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
+    });
+
+    it('stays at the step it was on when someone else is put out', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.goTo('g-1', { part: 'entry', player: 'cat' });
+        await play.setOut('g-1', ['ann']);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+    });
+
+    it('refuses to save a round that is not whole, and keeps it as the draft', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([4]));
+        expect(await play.saveRound('g-1')).toMatchObject({ saved: false });
+        expect(shown(play, 'g-1').saved.rounds).toEqual([]);
+        expect(shown(play, 'g-1').draft?.round).toMatchObject({ entries: { ann: hand([4]) } });
+    });
+
+    it('waits while a round being entered names a player out', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([5]), hand([6]), hand([7])]);
+        await play.setOut('g-1', ['ann']);
+        await expect(play.reopen('g-1', 0)).rejects.toThrow(/round being entered/);
+    });
+
+    it('waits while a Skyjo round being entered names who ended it', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('skyjo', 'g-1', ['ann', 'ben']));
+        for (const entry of [{ total: 3 }, { total: 4 }, 'ann']) await play.enter('g-1', entry);
+        await play.saveRound('g-1');
+        await play.goTo('g-1', { part: 'ender', player: null });
+        await play.enter('g-1', 'ben');
+        await expect(play.reopen('g-1', 0)).rejects.toThrow(/round being entered/);
+    });
+
+    it('refuses to reopen a round that was never saved', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await expect(play.reopen('g-1', 0)).rejects.toThrow(/no saved round/);
+    });
+
+    it('puts back a reopened round that was let go', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([5]), hand([6]), hand([7])]);
+        await play.reopen('g-1', 0);
+        await play.enter('g-1', hand([11]));
+        const reopened = shown(play, 'g-1').saved;
+        await play.dropDraft('g-1');
+        expect(play.snapshot().undo).toEqual({ kind: 'draft', game: 'g-1' });
+        await play.undo();
+        expect(entered(shown(play, 'g-1').saved)).toEqual(entered(reopened));
+    });
+
+    it('puts back a player put out of the round', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([4]));
+        const before = shown(play, 'g-1').saved;
+        await play.setOut('g-1', ['ann']);
+        expect(play.snapshot().undo).toEqual({ kind: 'out', game: 'g-1' });
+        await play.undo();
+        expect(entered(shown(play, 'g-1').saved)).toEqual(entered(before));
+    });
+
+    it('clears a refused save once undo saves what was there', async () => {
+        const factory = new IDBFactory();
+        const real = await openStore(factory, 'play');
+        let refuse = false;
+        const store: Store = {
+            ...real,
+            saveGame: async (game: SavedGame) => {
+                if (refuse) throw new Error('full');
+                await real.saveGame(game);
+            },
+        };
+        const play = openPlay(store, clock());
+        await play.start(newGame('flip-7'));
+        refuse = true;
+        await play.enter('g-1', hand([4]));
+        refuse = false;
+        await play.undo();
+        expect(shown(play, 'g-1').error).toBeNull();
+    });
+
+    it('lists the game changed last first', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7', 'g-a'));
+        await play.start(newGame('flip-7', 'g-b'));
+        await play.enter('g-a', hand([1]));
+        expect(play.snapshot().games.map(({ saved }) => saved.id)).toEqual(['g-a', 'g-b']);
+    });
+
+    it('refuses a second game under an id already in play', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([1]));
+        await expect(play.start(newGame('wizard'))).rejects.toThrow(/already in progress/);
+        expect(shown(play, 'g-1').saved.game).toBe('flip-7');
+    });
+
+    it('drops a game discarded in another tab when the page is shown again', async () => {
+        const { factory, play } = await setUp();
+        await play.start(newGame('flip-7'));
+        const other = await reopenFrom(factory);
+        await other.discard('g-1');
+        await play.load();
+        expect(play.snapshot().games).toEqual([]);
+    });
+
+    it('keeps a change the store refused when the games are read again', async () => {
+        const factory = new IDBFactory();
+        const real = await openStore(factory, 'play');
+        let refuse = false;
+        const store: Store = {
+            ...real,
+            saveGame: async (game: SavedGame) => {
+                if (refuse) throw new Error('The phone is out of room.');
+                await real.saveGame(game);
+            },
+        };
+        const play = openPlay(store, clock());
+        await play.start(newGame('flip-7'));
+        refuse = true;
+        await play.enter('g-1', hand([4]));
+        await play.load();
+        expect(shown(play, 'g-1').draft?.round).toMatchObject({ entries: { ann: hand([4]) } });
+        expect(shown(play, 'g-1').error).toBe('The phone is out of room.');
+    });
+
+    it('says a round was not saved when the store refuses it, and keeps it to save again', async () => {
+        const factory = new IDBFactory();
+        const real = await openStore(factory, 'play');
+        let refuse = false;
+        const store: Store = {
+            ...real,
+            saveGame: async (game: SavedGame) => {
+                if (refuse) throw new Error('The phone is out of room.');
+                await real.saveGame(game);
+            },
+        };
+        const play = openPlay(store, clock());
+        await play.start(newGame('flip-7'));
+        for (const entry of [hand([4]), hand([5])]) await play.enter('g-1', entry);
+        refuse = true;
+        await play.enter('g-1', hand([6]));
+        expect(await play.saveRound('g-1')).toEqual({
+            saved: false,
+            problems: [],
+            error: 'The phone is out of room.',
+        });
+        expect(shown(play, 'g-1').saved.rounds).toHaveLength(1);
+        refuse = false;
+        await play.retry('g-1');
+        expect(shown(await reopenFrom(factory), 'g-1').saved.rounds).toHaveLength(1);
+    });
+
+    it('offers no undo once a change it does not take back comes after the one it would', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        for (const entry of [hand([4]), hand([5]), hand([6])]) await play.enter('g-1', entry);
+        await play.saveRound('g-1');
+        expect(play.snapshot().undo).toEqual({ kind: 'round', game: 'g-1' });
+        await play.reopen('g-1', 0);
+        expect(play.snapshot().undo).toBeNull();
+        await play.dropDraft('g-1');
+        await play.goTo('g-1', { part: 'entry', player: 'cat' });
+        expect(play.snapshot().undo).toBeNull();
+        await play.enter('g-1', hand([7]));
+        await play.start(newGame('skyjo', 'g-2'));
+        expect(play.snapshot().undo).toBeNull();
+    });
+
+    it('leaves a game changed since in another tab as it is, rather than undo over it', async () => {
+        const { factory, play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([4]));
+        const other = await reopenFrom(factory);
+        await other.enter('g-1', hand([5]));
+        expect(await play.undo()).toBe(false);
+        expect(play.snapshot().undo).toBeNull();
+        expect(shown(await reopenFrom(factory), 'g-1').draft?.round).toMatchObject({
+            entries: { ann: hand([4]), ben: hand([5]) },
+        });
+    });
+
+    it('reopens another round over a reopened one left as it was saved', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([5]), hand([6]), hand([7])]);
+        await flipRound(play, 'g-1', [hand([1]), hand([2]), hand([3])]);
+        await play.reopen('g-1', 0);
+        await play.reopen('g-1', 1);
+        expect(shown(play, 'g-1').draft).toMatchObject({ index: 1 });
+    });
+
+    it('reports a reopened change that ends a finished game at an earlier round', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('skyjo', 'g-1', ['ann', 'ben']));
+        for (const total of [40, 40, 40]) {
+            await play.enter('g-1', { total });
+            await play.enter('g-1', { total: 0 });
+            await play.enter('g-1', 'ben');
+            await play.saveRound('g-1');
+        }
+        expect(shown(play, 'g-1').result.state).toBe('over');
+        await play.reopen('g-1', 0);
+        await play.enter('g-1', { total: 100 });
+        expect(await play.saveRound('g-1')).toEqual({ saved: true, outcome: 'ended' });
+    });
+
+    it('saves a round as it was judged, with a list of players out read as ids', async () => {
+        const { factory, store } = await setUp();
+        const planted: SavedGame = {
+            id: 'g-1',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: PLAYERS,
+            rounds: [],
+            draft: {
+                index: 0,
+                round: { entries: { ann: hand([4]), ben: hand([5]), cat: hand([6]) }, out: [5] },
+                step: null,
+            },
+            started: '2026-11-14T09:00:00Z',
+            changed: '2026-11-14T09:00:00Z',
+        };
+        await store.saveGame(planted);
+        const play = openPlay(store, clock());
+        await play.load();
+        expect(await play.saveRound('g-1')).toEqual({ saved: true, outcome: null });
+        expect(await raw(factory, 'g-1')).toMatchObject({
+            rounds: [{ out: [] }],
+        });
+        expect(shown(play, 'g-1').result.rounds[0]?.state).toBe('scored');
+    });
+
+    it('scores again only the game that changed', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7', 'g-a'));
+        await play.start(newGame('flip-7', 'g-b'));
+        const before = shown(play, 'g-b');
+        await play.enter('g-a', hand([1]));
+        expect(shown(play, 'g-b')).toBe(before);
+        expect(shown(play, 'g-a')).not.toBe(before);
+    });
+
+    it('imports nothing but the scoring package and its own modules', () => {
+        for (const source of [playSource, stepsSource]) {
+            const imports = [...source.matchAll(/^import[^;]*?(?:from )?'([^']+)';/gms)].map(
+                (match) => match[1]
+            );
+            expect(imports.length).toBeGreaterThan(0);
+            for (const name of imports)
+                expect(name).toMatch(/^(@gametabletally\/scoring|\.\.?\/[^']+\.js)$/);
         }
     });
 });

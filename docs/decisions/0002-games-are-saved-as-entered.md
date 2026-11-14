@@ -41,17 +41,17 @@ that lists many games scores each one to show its winner.
 
 `apps/web/src/store` is the only code that touches the database. It opens it, saves a player or a
 game, lists them, and reads and writes the one file a backup is. A game holds its id, the game
-played, the version of its rule set, its options, its players in seat order, every round saved,
-the round being entered as its draft, and when it was started and last changed. A game in play and a finished one are saved alike, and
-whether it is over is worked out from its rounds.
+played, the version of its rule set, its options, its players in seat order, every round saved, the
+round being entered as its draft, and when it was started and last changed. A game in play and a
+finished one are saved alike, and whether it is over is worked out from its rounds.
 
 - **The round being entered is saved beside the rounds, never among them.** A game's draft holds
   the round's place, what is entered so far and the step it is at, so a page closed in the middle
   of a round opens again at the same step with the same entry. A hand half entered is never among
   the rounds, since the scoring package would read it as a whole one and could end a game on a
   player's first tap. Saving the round moves the draft into the rounds, whole, and a reopened
-  round leaves the saved one as it was until its draft is saved. The draft came with the first
-  version of the shape, since no phone held a saved game before the first deploy.
+  round leaves the saved one as it was until its draft is saved. The draft came into version 1 of
+  the shape rather than a new version, since no build had saved a game before it.
 - **Each thing the store does is one transaction, reads and writes together.** A game is saved
   again after every entry, whole, so a page closed in the middle of a round leaves the game as it
   was after the last entry. A merge of a file reads what is on the phone and writes in the same
@@ -87,6 +87,8 @@ whether it is over is worked out from its rounds.
   it. Two phones changing one game is rare with no sync, and the later clock wins.
 - A merge deletes nothing, so a game deleted on one phone returns from a file that still holds
   it.
+- The parts a step can be are part of the saved shape, so a game whose round is entered in a part
+  no other game has is a new version of it.
 
 ## How it is tested
 
@@ -100,7 +102,12 @@ whether it is over is worked out from its rounds.
   go when a newer build asks, and a connection that does not is reported. The answer to asking the
   browser to keep its storage is passed on.
 - `apps/web/src/store/format.test.ts` holds a saved game to its fields, with no total among them,
-  holds the readers to each rule a field has, and holds the file's reader to refusing a newer
-  file, a record twice and anything that is not a file of saved games.
+  holds the readers to each rule a field has, a draft's included, holds the scoring input to the
+  saved rounds and never the draft, and holds the file's reader to refusing a newer file, a record
+  twice and anything that is not a file of saved games.
+- `apps/web/src/play/play.test.ts` plays a game of each kind through the module alone and holds a
+  round half entered to scoring nothing and ending no game. A game opens again at the same round,
+  player and entry, a Wizard round is saved between its bids and its tricks, and a reopened round
+  left without saving changes no saved round.
 - A database on a real disk that outlives a closed tab is not proven by these tests, which run in
   memory.

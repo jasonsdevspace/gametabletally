@@ -24,17 +24,17 @@ whenever they are shown. No total is saved anywhere.
 
 ### A game
 
-| Field     | Holds                                                                 |
-| --------- | --------------------------------------------------------------------- |
-| `id`      | The game's id                                                         |
-| `game`    | The game played, by the scoring package's id for it, such as `flip-7` |
-| `rules`   | The version of the game's rule set it is played under                 |
-| `options` | The options it was started with, as an object                         |
-| `players` | The players' ids, in seat order                                       |
-| `rounds`  | Every round saved, in order, in the shape the game's rules read       |
-| `draft`   | The round being entered or reopened, or null when there is none       |
-| `started` | When it was started, as an ISO 8601 date and time                     |
-| `changed` | When it was last changed, as an ISO 8601 date and time                |
+| Field     | Holds                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| `id`      | The game's id                                                                             |
+| `game`    | The game played, by the scoring package's id for it, such as `flip-7`                     |
+| `rules`   | The version of the game's rule set it is played under                                     |
+| `options` | The options it was started with, as an object                                             |
+| `players` | The players' ids, in seat order                                                           |
+| `rounds`  | Every round saved, in order, in the shape the game's rules read                           |
+| `draft`   | The round being entered or reopened, or null when there is none, as once the game is over |
+| `started` | When it was started, as an ISO 8601 date and time                                         |
+| `changed` | When it was last changed, as an ISO 8601 date and time                                    |
 
 `game`, `rules`, `options`, `players` and `rounds` are what the scoring package's `score` takes, as
 they are. A game in play and a finished game are saved alike: whether a game is over is worked out
@@ -51,14 +51,16 @@ entered as a whole one. Saving the round moves it into `rounds`, whole.
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `index` | The round's place in the game, counted from zero: the number of saved rounds for the next round, or the place of a reopened saved round |
 | `round` | The round as entered so far, in the shape the game's rules read                                                                         |
-| `step`  | The step it is at, as `part` and `player`, or null once every step has been entered                                                     |
+| `step`  | The step it is at, as `part` and `player`, or null when no step is left to enter. A reopened round starts at its first step             |
 
 A step's `part` is `entry`, a player's entry, `ender`, who ended a Skyjo round, `bid` or `tricks`,
 a Wizard player's bid or count of tricks. Its `player` is the player's id, or null for `ender`.
 Flip 7 takes each seat's entry in turn. Skyjo takes each seat's entry and then who ended the round.
 Wizard takes every bid and then every count of tricks. A player the round names as `out` has no
 step. A reopened round leaves the saved one as it was until the draft is saved, so letting the
-draft go changes nothing saved.
+draft go changes no saved round. A saved round is reopened only while the round being entered
+holds nothing of its own, since a game has one draft. The steps of each game's round are in
+`apps/web/src/play/steps.ts`.
 
 ### What each field has to be
 

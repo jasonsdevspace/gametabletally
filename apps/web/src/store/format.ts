@@ -54,12 +54,15 @@ export interface SavedStep {
 export interface SavedDraft {
     /**
      * The round's place in the game, counted from zero: the number of saved rounds for the next
-     * round, and the place of a saved round that was reopened.
+     * round, or the place of a saved round that was reopened.
      */
     readonly index: number;
     /** The round as entered so far, in the shape the game's rules read. */
     readonly round: Readonly<Record<string, unknown>>;
-    /** The step it is at, or null once every step has been entered. */
+    /**
+     * The step it is at, or null when no step is left to enter. A reopened round starts at its
+     * first step.
+     */
     readonly step: SavedStep | null;
 }
 
@@ -76,7 +79,9 @@ export interface SavedGame {
     readonly players: readonly string[];
     /** Every round saved, in order, in the shape the game's rules read. */
     readonly rounds: readonly unknown[];
-    /** The round being entered or reopened, or null when there is none. */
+    /**
+     * The round being entered or reopened, or null when there is none, as once the game is over.
+     */
     readonly draft: SavedDraft | null;
     /** When it was started, as an ISO 8601 date and time in UTC. */
     readonly started: string;
@@ -100,7 +105,7 @@ export interface FileProblem {
     readonly message: string;
 }
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+export const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const isText = (value: unknown): value is string => typeof value === 'string' && value !== '';

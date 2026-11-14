@@ -85,6 +85,8 @@ describe('the saved shape', () => {
         ['a game that does not say whether it has a draft', { ...game, draft: undefined }],
         ['a draft past the next round', { ...game, draft: { ...game.draft, index: 2 } }],
         ['a draft before the first round', { ...game, draft: { ...game.draft, index: -1 } }],
+        ['a draft at a place that is not whole', { ...game, draft: { ...game.draft, index: 0.5 } }],
+        ['a draft at a place written as text', { ...game, draft: { ...game.draft, index: '1' } }],
         ['a draft whose round is a list', { ...game, draft: { ...game.draft, round: [] } }],
         [
             'a draft at a step that is no part of a round',

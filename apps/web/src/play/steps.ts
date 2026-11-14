@@ -1,4 +1,4 @@
-import type { SavedStep, StepPart } from '../store/format.js';
+import { isRecord, type SavedStep, type StepPart } from '../store/format.js';
 
 /**
  * The steps of a round, each game's own, and where each step's entry goes in the round the
@@ -10,7 +10,9 @@ import type { SavedStep, StepPart } from '../store/format.js';
  * it, so nothing here judges a value.
  */
 
-/** A round as a draft holds it: each player's entry by id, who is out, and anything the game adds. */
+/**
+ * A round as a draft holds it: each player's entry by id, who is out, and anything the game adds.
+ */
 export interface DraftRound {
     readonly entries: Readonly<Record<string, unknown>>;
     readonly out: readonly string[];
@@ -31,10 +33,6 @@ const FLOWS: Readonly<Record<string, Flow>> = {
     skyjo: { steps: (playing) => [...each('entry', playing), { part: 'ender', player: null }] },
     wizard: { steps: (playing) => [...each('bid', playing), ...each('tricks', playing)] },
 };
-
-/** Whether a value is an object with named fields, which is what JSON calls an object. */
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** Whether the app knows how a game's round is entered. */
 export const knowsGame = (game: string): boolean => Object.hasOwn(FLOWS, game);
@@ -120,4 +118,22 @@ export const withOut = (
     const ender = round['ender'];
     const keep = typeof ender === 'string' && seated.includes(ender) ? { ender: null } : {};
     return { ...round, entries, out: seated, ...keep };
+};
+
+/**
+ * Whether two values hold the same, as JSON would write them, whatever order their fields are in.
+ */
+export const sameValue = (first: unknown, second: unknown): boolean => {
+    if (Array.isArray(first) || Array.isArray(second))
+        return (
+            Array.isArray(first) &&
+            Array.isArray(second) &&
+            first.length === second.length &&
+            first.every((item, at) => sameValue(item, second[at]))
+        );
+    if (isRecord(first) && isRecord(second)) {
+        const keys = new Set([...Object.keys(first), ...Object.keys(second)]);
+        return [...keys].every((key) => sameValue(first[key] ?? null, second[key] ?? null));
+    }
+    return first === second;
 };
