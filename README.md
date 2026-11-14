@@ -68,6 +68,7 @@ which games the app can score. It holds none of their artwork, cards or rule boo
 
 ## License
 
-The code is under the [MIT License](LICENSE). DM Sans, the typeface the app serves, is under the
-SIL Open Font License, in `apps/web/public/fonts/OFL.txt`. The name Game Table Tally, its logo and the
-gametabletally.com domain are not covered by either license and stay reserved.
+The code is under the [MIT License](LICENSE). DM Sans and Instrument Serif, the typefaces the app
+serves, are each under the SIL Open Font License, in `apps/web/public/fonts/dm-sans-OFL.txt` and
+`apps/web/public/fonts/instrument-serif-OFL.txt`. The name Game Table Tally, its logo and the
+gametabletally.com domain are not covered by any of these licenses and stay reserved.

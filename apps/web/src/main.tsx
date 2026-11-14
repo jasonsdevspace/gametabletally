@@ -1,4 +1,5 @@
 import './styles/app.css';
+import './styles/website.css';
 
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';

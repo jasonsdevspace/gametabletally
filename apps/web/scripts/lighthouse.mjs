@@ -39,8 +39,11 @@ const TRACES = 3;
 const NOT_FOUND = `/${NOT_FOUND_FILE}`;
 /** Every page, for accessibility. */
 const PAGES = [...ROUTES.map(({ path }) => path), NOT_FOUND];
-/** The pages measured for performance: the start, a page about one thing, and the not-found page. */
-const MEASURED = ['/', '/game/', NOT_FOUND];
+/**
+ * The pages measured for performance: the website's pages, with their photograph and serif, a
+ * page about one thing, and the not-found page.
+ */
+const MEASURED = ['/', '/install/', '/about/', '/game/', NOT_FOUND];
 
 /** What a report measures of one visit. */
 const measureOf = (report) => {
