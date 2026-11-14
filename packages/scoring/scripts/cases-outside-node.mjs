@@ -48,7 +48,11 @@ let ran = 0;
 const failed = [];
 try {
     evaluate(readFileSync(BUNDLE, 'utf8'), 'scoring.global.js');
-    for (const file of readdirSync(CASES).filter((name) => name.endsWith('.json'))) {
+    // Each game has a folder, and each version of its rule set a file in it.
+    const files = readdirSync(CASES, { recursive: true, encoding: 'utf8' })
+        .filter((name) => name.endsWith('.json'))
+        .sort();
+    for (const file of files) {
         /** @type {{ cases: { name: string, input?: unknown, text?: string, expect: unknown }[] }} */
         const { cases } = JSON.parse(readFileSync(join(CASES, file), 'utf8'));
         for (const { name, input, text, expect } of cases) {

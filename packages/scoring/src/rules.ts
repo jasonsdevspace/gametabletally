@@ -145,7 +145,7 @@ export interface Entered {
     readonly scores: Map<string, number>;
     readonly problems: Problem[];
     /**
-     * Whether every player has an entry the rules accept. A round is complete when this is so
+     * Whether every player has an entry the rules accept and score. A round is complete when this is so
      * and the game has whatever else it needs, and never while it is not, so no player is
      * scored for an entry they have yet to make.
      */
@@ -157,12 +157,14 @@ export interface Entered {
  * enters a round. An entry for a player out of the round is refused first, in seat order, then
  * one for nobody in the game, sorted by id, since the order an object's keys come in is one
  * runtime's own. The entries of the players in the round follow in seat order, each read by the
- * game, and a player with none has yet to play.
+ * game, and a player with none has yet to play. The game reads an entry as its score, as why it
+ * is refused, or as null when the entry is accepted and holds nothing to score yet, such as a bid
+ * made before the hand is played. A player with such an entry has yet to play, as one with none has.
  */
 export const readEntries = (
     round: unknown,
     { players, out, index }: RoundContext,
-    read: (entry: unknown) => number | Refusal
+    read: (entry: unknown) => number | Refusal | null
 ): Entered => {
     if (!isRecord(round) || !isRecord(round['entries']))
         return {
@@ -205,7 +207,7 @@ export const readEntries = (
         if (!has(player)) continue;
         const answer = read(entries[player]);
         if (typeof answer === 'number') scores.set(player, answer);
-        else problems.push(problemAt(answer, index, player));
+        else if (answer !== null) problems.push(problemAt(answer, index, player));
     }
     return { round, scores, problems, allIn: players.every((player) => scores.has(player)) };
 };
