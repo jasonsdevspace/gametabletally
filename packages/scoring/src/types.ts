@@ -15,7 +15,8 @@ export interface ScoreInput {
     readonly players: readonly string[];
     /**
      * Every round so far, in order. What a round holds is the game's own, so each is checked as
-     * it is read, and one that does not have the game's shape is refused with the reason.
+     * it is read, and one that does not have the game's shape is refused with the reason. Any
+     * round may also name, as `out`, the ids of the players who are out of it.
      */
     readonly rounds: readonly unknown[];
 }
@@ -45,7 +46,16 @@ export interface ProblemData {
     readonly 'too-many-players': { readonly max: number; readonly given: number };
     readonly 'player-twice': Nothing;
     readonly 'unknown-option': { readonly option: string };
-    readonly 'not-a-round': Nothing;
+    /**
+     * `out` when the round's list of players out is not a list of ids, or nothing when the round
+     * does not hold its entries.
+     */
+    readonly 'not-a-round': Nothing | { readonly part: 'out' };
+    readonly 'unknown-out': Nothing;
+    readonly 'out-twice': Nothing;
+    readonly 'out-with-entry': Nothing;
+    readonly 'too-few-in-round': { readonly min: number; readonly given: number };
+    readonly 'ender-out': Nothing;
     readonly 'round-unfinished': Nothing;
     readonly 'no-ender': Nothing;
     readonly 'unknown-ender': { readonly ender: Plain };
@@ -114,12 +124,12 @@ export type ProblemOf<Code extends ProblemCode> = Extract<Problem, { readonly co
 /** One round as the rules read it. */
 export interface RoundResult {
     /**
-     * `scored` once the round is whole: every player's entry is in and accepted, with whatever
-     * else the game needs of a round, such as who ended it. `open` while entries are missing.
-     * `refused` when something in the round itself was turned down, which includes a round every
-     * player has entered that still lacks what the game needs. `skipped` when
-     * the round was never read, for a reason outside it: an earlier round has yet to be scored,
-     * the game was already over, or the game as a whole was refused.
+     * `scored` once the round is whole: the entry of every player in it is in and accepted, with
+     * whatever else the game needs of a round, such as who ended it. `open` while entries are
+     * missing. `refused` when something in the round itself was turned down, which includes a round
+     * every player has entered that still lacks what the game needs. `skipped` when the round was
+     * never read, for a reason outside it: an earlier round has yet to be scored, the game was
+     * already over, or the game as a whole was refused.
      */
     readonly state: 'scored' | 'open' | 'refused' | 'skipped';
     /**
@@ -127,6 +137,11 @@ export interface RoundResult {
      * that is not yet scored these are what stands so far, and they count toward no total.
      */
     readonly scores: Readonly<Record<string, number>>;
+    /**
+     * The players out of the round who are in the game, in seat order. Empty for a round that was
+     * never read, or whose list of players out is not a list of ids.
+     */
+    readonly out: readonly string[];
 }
 
 /** The game as the rules read it. */
@@ -140,10 +155,19 @@ export interface ScoreResult {
     readonly rounds: readonly RoundResult[];
     /** Each player's total over the scored rounds, by player id. */
     readonly totals: Readonly<Record<string, number>>;
-    /** Whoever is ahead on the totals, in seat order. Every player, before a round is scored. */
+    /**
+     * Whoever is ahead on the totals, in seat order, among the players who have missed no scored
+     * round, or among everyone when every player has missed one. Every player, before a round is
+     * scored.
+     */
     readonly leaders: readonly string[];
     /** Whoever won, in seat order, once the game is over. Empty until then. */
     readonly winners: readonly string[];
+    /**
+     * Everyone who has been out of a scored round, in seat order. None of them can win while
+     * another player has missed none.
+     */
+    readonly missed: readonly string[];
     /** Everything the rules refused, in the order it was met. */
     readonly problems: readonly Problem[];
 }

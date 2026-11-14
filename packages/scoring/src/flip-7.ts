@@ -1,4 +1,6 @@
 import {
+    bestAmong,
+    contenders,
     isRecord,
     isWhole,
     noOptions,
@@ -9,6 +11,7 @@ import {
     type RoundContext,
     type RoundOutcome,
     type Rules,
+    type Standing,
 } from './rules.js';
 
 /**
@@ -16,7 +19,9 @@ import {
  * having bust. The round's score is the number cards added up, doubled by the x2 card, plus each
  * plus card, plus fifteen for seven different numbers. Neither the plus cards nor the fifteen
  * are ever doubled. A bust scores nothing. The game ends with the round in which a player
- * reaches two hundred, and the highest total wins. A tie at the top does not end it.
+ * reaches two hundred, and the highest total wins. A tie at the top does not end it. A player who
+ * has been out of a round can reach the two hundred and end the game, and wins it only when every
+ * player has been out of one.
  *
  * The deck also holds three action cards: Freeze, Flip Three and Second Chance. They change who
  * plays on and whether a repeated number is a bust, and never what a hand is worth, so an entry
@@ -43,6 +48,8 @@ export interface Flip7Entry {
 /** A round as entered: each player's entry by player id. A player with none has yet to play. */
 export interface Flip7Round {
     readonly entries: Readonly<Record<string, Flip7Entry>>;
+    /** The ids of the players out of the round, who have no entry in it. */
+    readonly out?: readonly string[] | null;
 }
 
 const HIGHEST_NUMBER = 12;
@@ -147,11 +154,13 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     return { scores, problems, complete: allIn };
 };
 
-/** The one player alone on the highest total, once it has reached the target. */
-const winners = (totals: readonly number[]): readonly number[] | null => {
-    const highest = Math.max(...totals);
-    if (highest < TARGET) return null;
-    const leading = totals.flatMap((total, seat) => (total === highest ? [seat] : []));
+/**
+ * Once any total has reached the target, whoever has played every round and leads the others who
+ * have, alone.
+ */
+const winners = ({ totals, missed }: Standing): readonly number[] | null => {
+    if (Math.max(...totals) < TARGET) return null;
+    const leading = bestAmong(totals, contenders(missed), 'highest');
     // A tie at the top does not end the game. It goes on by whole rounds until one player leads.
     return leading.length === 1 ? leading : null;
 };

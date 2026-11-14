@@ -60,11 +60,28 @@ describe('the games the package knows', () => {
 });
 
 describe('scoring a game', () => {
+    it('refuses a list of players out with a hole in it, as JSON cannot write one', () => {
+        // A sparse array, which a caller in TypeScript can hand over and JSON never holds.
+        // eslint-disable-next-line no-sparse-arrays
+        const out = [, 'cat'];
+        const result = score({
+            game: 'skyjo',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben', 'cat'],
+            rounds: [{ entries: { ann: { total: 3 }, ben: { total: 4 } }, ender: 'ann', out }],
+        });
+        expect(result.problems.map(({ code, data }) => ({ code, data }))).toEqual([
+            { code: 'not-a-round', data: { part: 'out' } },
+        ]);
+        expect(result.rounds[0]?.state).toBe('refused');
+    });
+
     it('refuses a game it does not know, and scores nothing in it', () => {
         const result = score({ ...game([FIRST]), game: 'chess' });
         expect(result.problems.map(({ code }) => code)).toEqual(['unknown-game']);
         expect(result.totals).toEqual({ ann: 0, ben: 0, cat: 0 });
-        expect(result.rounds).toEqual([{ state: 'skipped', scores: {} }]);
+        expect(result.rounds).toEqual([{ state: 'skipped', scores: {}, out: [] }]);
     });
 
     it('names the rule set the scores were worked out under', () => {

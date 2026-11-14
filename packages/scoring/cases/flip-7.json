@@ -42,7 +42,8 @@
                             "ann": 17,
                             "ben": 12,
                             "cat": 0
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -52,6 +53,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -95,7 +97,8 @@
                             "ann": 38,
                             "ben": 29,
                             "cat": 8
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -105,6 +108,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -148,7 +152,8 @@
                             "ann": 31,
                             "ben": 10,
                             "cat": 0
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -158,6 +163,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -201,7 +207,8 @@
                             "ann": 36,
                             "ben": 151,
                             "cat": 21
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -211,6 +218,7 @@
                 },
                 "leaders": ["ben"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -254,7 +262,8 @@
                             "ann": 0,
                             "ben": 8,
                             "cat": 0
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -264,6 +273,7 @@
                 },
                 "leaders": ["ben"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -306,7 +316,8 @@
                         "scores": {
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -316,6 +327,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "number-twice",
@@ -364,7 +376,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -374,6 +387,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-card",
@@ -443,7 +457,8 @@
                         "state": "refused",
                         "scores": {
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -453,6 +468,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-card",
@@ -511,7 +527,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -521,6 +538,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-card",
@@ -591,7 +609,8 @@
                         "scores": {
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -601,6 +620,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "modifier-twice",
@@ -652,7 +672,8 @@
                         "scores": {
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -662,6 +683,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "too-many-numbers",
@@ -708,7 +730,8 @@
                         "state": "refused",
                         "scores": {
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -718,6 +741,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-an-entry",
@@ -772,7 +796,8 @@
                         "state": "refused",
                         "scores": {
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -782,6 +807,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-an-entry",
@@ -847,7 +873,8 @@
                             "ann": 4,
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -857,6 +884,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-player",
@@ -883,7 +911,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -893,6 +922,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-round",
@@ -923,7 +953,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -933,6 +964,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-round",
@@ -992,13 +1024,15 @@
                             "ann": 10,
                             "ben": 9,
                             "cat": 8
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "open",
                         "scores": {
                             "ann": 12
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1008,6 +1042,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1064,11 +1099,13 @@
                         "scores": {
                             "ann": 10,
                             "ben": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1078,6 +1115,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "round-unfinished",
@@ -1171,15 +1209,18 @@
                         "scores": {
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     },
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1189,6 +1230,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "number-twice",
@@ -1241,7 +1283,8 @@
                         "state": "open",
                         "scores": {
                             "cat": 4
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1251,6 +1294,7 @@
                 },
                 "leaders": ["toString", "constructor", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1303,13 +1347,15 @@
                             "ann": 151,
                             "ben": 10,
                             "cat": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "open",
                         "scores": {
                             "ann": 50
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1319,6 +1365,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1381,7 +1428,8 @@
                             "ann": 151,
                             "ben": 10,
                             "cat": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1389,7 +1437,8 @@
                             "ann": 50,
                             "ben": 1,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1399,6 +1448,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": ["ann"],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1461,7 +1511,8 @@
                             "ann": 151,
                             "ben": 10,
                             "cat": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1469,7 +1520,8 @@
                             "ann": 49,
                             "ben": 1,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1479,6 +1531,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": ["ann"],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1541,7 +1594,8 @@
                             "ann": 151,
                             "ben": 141,
                             "cat": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1549,7 +1603,8 @@
                             "ann": 50,
                             "ben": 67,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1559,6 +1614,7 @@
                 },
                 "leaders": ["ben"],
                 "winners": ["ben"],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1621,7 +1677,8 @@
                             "ann": 151,
                             "ben": 151,
                             "cat": 5
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1629,7 +1686,8 @@
                             "ann": 50,
                             "ben": 50,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1639,6 +1697,7 @@
                 },
                 "leaders": ["ann", "ben"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1720,7 +1779,8 @@
                             "ann": 151,
                             "ben": 151,
                             "cat": 5
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1728,7 +1788,8 @@
                             "ann": 50,
                             "ben": 50,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1736,7 +1797,8 @@
                             "ann": 3,
                             "ben": 2,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1746,6 +1808,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": ["ann"],
+                "missed": [],
                 "problems": []
             }
         },
@@ -1827,7 +1890,8 @@
                             "ann": 151,
                             "ben": 10,
                             "cat": 9
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -1835,11 +1899,13 @@
                             "ann": 50,
                             "ben": 1,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1849,6 +1915,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": ["ann"],
+                "missed": [],
                 "problems": [
                     {
                         "code": "after-the-end",
@@ -1890,7 +1957,8 @@
                 "rounds": [
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -1899,6 +1967,7 @@
                 },
                 "leaders": ["ann", "ben"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "too-few-players",
@@ -1932,6 +2001,7 @@
                 },
                 "leaders": ["ann", "ben", "ann"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "player-twice",
@@ -1963,6 +2033,7 @@
                 },
                 "leaders": ["ann", "ben", "ann", "cat", "ben", "ann"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "player-twice",
@@ -2000,6 +2071,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-rules",
@@ -2035,6 +2107,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-option",
@@ -2068,6 +2141,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2117,7 +2191,8 @@
                             "ben": 0,
                             "cat": 48,
                             "dee": 1
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2128,6 +2203,7 @@
                 },
                 "leaders": ["cat", "ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2167,7 +2243,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2177,6 +2254,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-card",
@@ -2244,7 +2322,8 @@
                 "rounds": [
                     {
                         "state": "refused",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2254,6 +2333,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "number-twice",
@@ -2321,7 +2401,8 @@
                         "state": "refused",
                         "scores": {
                             "ann": 0
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2331,6 +2412,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-card",
@@ -2407,7 +2489,8 @@
                         "scores": {
                             "ben": 8,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2417,6 +2500,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-player",
@@ -2467,7 +2551,8 @@
                 "rounds": [
                     {
                         "state": "skipped",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2477,6 +2562,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "unknown-game",
@@ -2533,7 +2619,8 @@
                             "ann": 17,
                             "ben": 12,
                             "cat": 0
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2543,6 +2630,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2624,7 +2712,8 @@
                             "ann": 151,
                             "ben": 151,
                             "cat": 141
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -2632,7 +2721,8 @@
                             "ann": 50,
                             "ben": 50,
                             "cat": 50
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -2640,7 +2730,8 @@
                             "ann": 0,
                             "ben": 0,
                             "cat": 12
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2650,6 +2741,7 @@
                 },
                 "leaders": ["cat"],
                 "winners": ["cat"],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2731,7 +2823,8 @@
                             "ann": 151,
                             "ben": 151,
                             "cat": 5
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -2739,7 +2832,8 @@
                             "ann": 50,
                             "ben": 50,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     },
                     {
                         "state": "scored",
@@ -2747,7 +2841,8 @@
                             "ann": 3,
                             "ben": 3,
                             "cat": 1
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2757,6 +2852,7 @@
                 },
                 "leaders": ["ann", "ben"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2781,6 +2877,7 @@
                 },
                 "leaders": ["ann", "ann"],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "too-few-players",
@@ -2848,7 +2945,8 @@
                             "ann": 87,
                             "ben": 1,
                             "cat": 2
-                        }
+                        },
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2858,6 +2956,7 @@
                 },
                 "leaders": ["ann"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2881,7 +2980,8 @@
                 "rounds": [
                     {
                         "state": "open",
-                        "scores": {}
+                        "scores": {},
+                        "out": []
                     }
                 ],
                 "totals": {
@@ -2891,6 +2991,7 @@
                 },
                 "leaders": ["ann", "ben", "cat"],
                 "winners": [],
+                "missed": [],
                 "problems": []
             }
         },
@@ -2905,6 +3006,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-json",
@@ -2926,6 +3028,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-game",
@@ -2947,6 +3050,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-game",
@@ -2970,6 +3074,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-game",
@@ -2993,6 +3098,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-game",
@@ -3016,6 +3122,7 @@
                 "totals": {},
                 "leaders": [],
                 "winners": [],
+                "missed": [],
                 "problems": [
                     {
                         "code": "not-a-game",
@@ -3026,6 +3133,1321 @@
                         "player": null
                     }
                 ]
+            }
+        },
+        {
+            "name": "a round is scored with a player out of it, for the two still in, in a game that takes three to start",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 5,
+                    "ben": 3,
+                    "cat": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a player out of one round scores in the next, and is not ahead while the others have missed none, though their total is the highest",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [9],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 2,
+                            "ben": 4,
+                            "cat": 9
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 7,
+                    "ben": 7,
+                    "cat": 9
+                },
+                "leaders": ["ann", "ben"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round names its players out in seat order, whatever order they were listed in",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["dan", "ann"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": ["ann", "dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 1,
+                    "cat": 2,
+                    "dan": 0
+                },
+                "leaders": ["cat"],
+                "winners": [],
+                "missed": ["ann", "dan"],
+                "problems": []
+            }
+        },
+        {
+            "name": "an entry for a player out of the round is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a player named as out twice is refused, and the round is read no further",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat", "cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-twice",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "naming as out somebody not in the game is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["zed"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "unknown-out",
+                        "data": {},
+                        "round": 0,
+                        "player": "zed"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a list of players out that is not a list of ids is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": "cat"
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "not-a-round",
+                        "data": {
+                            "part": "out"
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round with one player in it is refused, naming how many a round takes and how many were in it",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["ben", "cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["ben", "cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "too-few-in-round",
+                        "data": {
+                            "min": 2,
+                            "given": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a player who missed a round ends the game at two hundred and does not win it",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+8"],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 1,
+                            "ben": 2
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 3,
+                            "ben": 4,
+                            "cat": 151
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 1,
+                            "cat": 149
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 9,
+                    "ben": 7,
+                    "cat": 300
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a tie among the players who missed no round plays on, whatever a player who missed one holds",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+8"],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 1,
+                            "ben": 2
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 3,
+                            "ben": 4,
+                            "cat": 151
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3,
+                            "cat": 149
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 9,
+                    "ben": 9,
+                    "cat": 300
+                },
+                "leaders": ["ann", "ben"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "when every player has missed a round, the highest total of all is ahead and wins",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["ben"]
+                    },
+                    {
+                        "entries": {
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["ann"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+8"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 1,
+                            "ben": 2
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 151,
+                            "cat": 3
+                        },
+                        "out": ["ben"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ben": 4,
+                            "cat": 5
+                        },
+                        "out": ["ann"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 149,
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 301,
+                    "ben": 7,
+                    "cat": 10
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": ["ann", "ben", "cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a list of players out given as null names nobody",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": null
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3,
+                            "cat": 4
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 5,
+                    "ben": 3,
+                    "cat": 4
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round waiting on an entry with a player out is open, and nobody has missed it yet",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3
+                        },
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round left unfinished with a player out is refused and still names who was out, and a round after it is passed over with nobody out",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["ann"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 5
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "skipped",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "round-unfinished",
+                        "data": {},
+                        "round": 0,
+                        "player": null
+                    },
+                    {
+                        "code": "after-a-gap",
+                        "data": {},
+                        "round": 1,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round with every player out is refused, naming none in it",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {},
+                        "out": ["cat", "ann", "ben"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["ann", "ben", "cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "too-few-in-round",
+                        "data": {
+                            "min": 2,
+                            "given": 0
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "what is wrong with a round's players out comes in order: nobody in the game by id, then players named twice in seat order, then too few in the round",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["zed", "yan", "dan", "cat", "dan", "cat", "ben"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["ben", "cat", "dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "unknown-out",
+                        "data": {},
+                        "round": 0,
+                        "player": "yan"
+                    },
+                    {
+                        "code": "unknown-out",
+                        "data": {},
+                        "round": 0,
+                        "player": "zed"
+                    },
+                    {
+                        "code": "out-twice",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    },
+                    {
+                        "code": "out-twice",
+                        "data": {},
+                        "round": 0,
+                        "player": "dan"
+                    },
+                    {
+                        "code": "too-few-in-round",
+                        "data": {
+                            "min": 2,
+                            "given": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry for a player out comes before an entry for nobody in the game, and both before an entry refused for its cards",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "zed": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ann": {
+                                "numbers": [13],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 3
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    },
+                    {
+                        "code": "unknown-player",
+                        "data": {},
+                        "round": 0,
+                        "player": "zed"
+                    },
+                    {
+                        "code": "unknown-card",
+                        "data": {
+                            "card": 13,
+                            "kind": "number"
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a total held by a player out of the round ends the game once the tie among the others is broken",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+10"],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [6, 7, 8, 9, 10, 11, 12],
+                                "modifiers": ["x2", "+8"],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [5],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 1,
+                            "ben": 2
+                        },
+                        "out": ["cat"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 3,
+                            "ben": 4,
+                            "cat": 151
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 3,
+                            "cat": 149
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 5,
+                            "ben": 1
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 14,
+                    "ben": 10,
+                    "cat": 300
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": ["cat"],
+                "problems": []
             }
         }
     ]

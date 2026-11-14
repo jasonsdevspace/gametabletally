@@ -1,5 +1,15 @@
 import { FLIP_7 } from './flip-7.js';
-import { isRecord, isWhole, problemAt, type Refusal, refusal, type Rules } from './rules.js';
+import {
+    bestAmong,
+    contenders,
+    FEWEST_IN_ROUND,
+    isRecord,
+    isWhole,
+    problemAt,
+    type Refusal,
+    refusal,
+    type Rules,
+} from './rules.js';
 import { SKYJO } from './skyjo.js';
 import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
 
@@ -83,10 +93,34 @@ const playerProblems = (rules: Rules, players: readonly string[]): readonly Prob
     ];
 };
 
-/** The players ahead on the totals, in seat order. */
-const ahead = (rules: Rules, players: readonly string[], totals: readonly number[]): string[] => {
-    const best = rules.ahead === 'highest' ? Math.max(...totals) : Math.min(...totals);
-    return players.filter((_, seat) => totals[seat] === best);
+/**
+ * The players ahead on the totals, in seat order, among those who have missed no round, or among
+ * everyone when every player has missed one.
+ */
+const ahead = (
+    rules: Rules,
+    players: readonly string[],
+    totals: readonly number[],
+    missed: readonly boolean[]
+): string[] => {
+    return bestAmong(totals, contenders(missed), rules.ahead).flatMap(
+        (seat) => players[seat] ?? []
+    );
+};
+
+/**
+ * The winners a game's rules name, held to the players who can win. Each game picks among them
+ * itself, and this keeps a game that forgot from naming a player who missed a round while another
+ * missed none. A game whose winners were all of those goes on.
+ */
+const amongContenders = (
+    winners: readonly number[] | null,
+    missed: readonly boolean[]
+): readonly number[] | null => {
+    if (winners === null) return null;
+    const seats = contenders(missed);
+    const held = winners.filter((seat) => seats.includes(seat));
+    return held.length > 0 ? held : null;
 };
 
 /** The answer for a game nothing could be scored in. */
@@ -94,10 +128,11 @@ const unscored = (input: ScoreInput, problems: readonly Problem[]): ScoreResult 
     game: input.game,
     rules: input.rules,
     state: 'in-play',
-    rounds: input.rounds.map(() => ({ state: 'skipped', scores: {} })),
+    rounds: input.rounds.map(() => ({ state: 'skipped', scores: {}, out: [] })),
     totals: Object.fromEntries(input.players.map((player) => [player, 0])),
     leaders: [...input.players],
     winners: [],
+    missed: [],
     problems,
 });
 
@@ -107,6 +142,8 @@ interface Walked {
     readonly problems: readonly Problem[];
     /** Each player's total, in seat order. */
     readonly totals: readonly number[];
+    /** Whether each player has been out of a scored round, in seat order. */
+    readonly missed: readonly boolean[];
     /** Who has won, as places in the seat order, or null while the game goes on. */
     readonly winners: readonly number[] | null;
 }
@@ -114,9 +151,84 @@ interface Walked {
 /** A round that is never read, for a reason outside it. */
 const passedOver = (walked: Walked, problem: Problem): Walked => ({
     ...walked,
-    rounds: [...walked.rounds, { state: 'skipped', scores: {} }],
+    rounds: [...walked.rounds, { state: 'skipped', scores: {}, out: [] }],
     problems: [...walked.problems, problem],
 });
+
+/** Who a round names as out of it, in seat order, and what is wrong with the list. */
+interface ReadOut {
+    readonly out: readonly string[];
+    readonly problems: readonly Problem[];
+}
+
+/**
+ * Reads the players a round names as out of it, which any game's round may. A list given as
+ * null, or not given, names nobody. An id for nobody in the game is refused, sorted by id, and
+ * then each player named more than once, once, in seat order.
+ */
+const readOut = (round: unknown, players: readonly string[], index: number): ReadOut => {
+    const listed = isRecord(round) ? (round['out'] ?? undefined) : undefined;
+    if (listed === undefined) return { out: [], problems: [] };
+    // Copied first, so a hole in the list is read as nothing given and refused, as a player is.
+    const items: readonly unknown[] = Array.isArray(listed) ? Array.from(listed) : [];
+    if (!Array.isArray(listed) || !items.every((id): id is string => typeof id === 'string'))
+        return {
+            out: [],
+            problems: [
+                problemAt(
+                    refusal('not-a-round', 'The round does not list its players out by id.', {
+                        part: 'out',
+                    }),
+                    index
+                ),
+            ],
+        };
+    const ids = items.filter((id): id is string => typeof id === 'string');
+    const unknown = [...new Set(ids.filter((id) => !players.includes(id)))].sort();
+    const twice = players.filter((player) => ids.indexOf(player) !== ids.lastIndexOf(player));
+    return {
+        out: players.filter((player) => ids.includes(player)),
+        problems: [
+            ...unknown.map((id) =>
+                problemAt(
+                    refusal('unknown-out', 'The round names as out somebody not in the game.', {}),
+                    index,
+                    id
+                )
+            ),
+            ...twice.map((player) =>
+                problemAt(
+                    refusal('out-twice', 'The round names a player as out more than once.', {}),
+                    index,
+                    player
+                )
+            ),
+        ],
+    };
+};
+
+/** Who is in a round and who is out of it, and what is wrong with either. */
+interface Seated extends ReadOut {
+    /** The players in the round, in seat order. */
+    readonly playing: readonly string[];
+}
+
+/**
+ * Who a round is played by: everyone but the players it names as out. A table that loses players
+ * carries on while two are left, whatever the game takes to start, and a round with fewer is
+ * refused.
+ */
+const seat = (round: unknown, players: readonly string[], index: number): Seated => {
+    const named = readOut(round, players, index);
+    const playing = players.filter((player) => !named.out.includes(player));
+    if (playing.length >= FEWEST_IN_ROUND) return { ...named, playing };
+    const tooFew = refusal(
+        'too-few-in-round',
+        `A round takes ${FEWEST_IN_ROUND} players in it or more.`,
+        { min: FEWEST_IN_ROUND, given: playing.length }
+    );
+    return { ...named, playing, problems: [...named.problems, problemAt(tooFew, index)] };
+};
 
 /**
  * The game with one more round read.
@@ -136,9 +248,18 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
             walked,
             problemAt(refusal('after-a-gap', 'An earlier round has yet to be scored.', {}), index)
         );
-    const { players, rounds } = input;
-    const outcome = rules.scoreRound(rounds[index], { players, index });
-    const { complete } = outcome;
+    const { players, rounds, options } = input;
+    const round = rounds[index];
+    const seated = seat(round, players, index);
+    const { out, playing } = seated;
+    // A round whose players out are wrong, or too few, is read no further: who is in it is not
+    // settled, so nothing in it can be scored, or doubled, for anyone.
+    const read =
+        seated.problems.length === 0
+            ? rules.scoreRound(round, { players: playing, out, index, options })
+            : { scores: new Map<string, number>(), problems: [], complete: false };
+    const outcome = { ...read, problems: [...seated.problems, ...read.problems] };
+    const complete = read.complete && outcome.problems.length === 0;
     // The last round may still be in play. One with a round entered after it may not.
     const unfinished = !complete && outcome.problems.length === 0 && index < rounds.length - 1;
     const problems = unfinished
@@ -153,21 +274,31 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
               ),
           ]
         : outcome.problems;
-    const scored = complete && problems.length === 0;
+    // A complete round has no problems, so it is never unfinished: it is the round scored.
+    const scored = complete;
+    // A player out of a scored round scores nothing for it, which is not a score of zero.
     const totals = scored
         ? walked.totals.map((total, seat) => total + (outcome.scores.get(players[seat] ?? '') ?? 0))
         : walked.totals;
+    const missed = scored
+        ? walked.missed.map((before, seat) => before || out.includes(players[seat] ?? ''))
+        : walked.missed;
     return {
         rounds: [
             ...walked.rounds,
             {
                 state: scored ? 'scored' : problems.length > 0 ? 'refused' : 'open',
                 scores: Object.fromEntries(outcome.scores),
+                out,
             },
         ],
         problems: [...walked.problems, ...problems],
         totals,
-        winners: scored ? rules.winners(totals) : null,
+        missed,
+        // Every round before this one was scored, so the count is this round's place plus one.
+        winners: scored
+            ? amongContenders(rules.winners({ totals, missed, rounds: index + 1, options }), missed)
+            : null,
     };
 };
 
@@ -198,8 +329,14 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
     const { players } = input;
     const stopped = [...playerProblems(rules, players), ...rules.checkOptions(input.options)];
     if (stopped.length > 0) return unscored(input, stopped);
-    const start: Walked = { rounds: [], problems: [], totals: players.map(() => 0), winners: null };
-    const { rounds, problems, totals, winners } = input.rounds.reduce<Walked>(
+    const start: Walked = {
+        rounds: [],
+        problems: [],
+        totals: players.map(() => 0),
+        missed: players.map(() => false),
+        winners: null,
+    };
+    const { rounds, problems, totals, missed, winners } = input.rounds.reduce<Walked>(
         (walked, _, index) => step(rules, input, walked, index),
         start
     );
@@ -209,8 +346,9 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
         state: winners === null ? 'in-play' : 'over',
         rounds,
         totals: Object.fromEntries(players.map((player, seat) => [player, totals[seat] ?? 0])),
-        leaders: ahead(rules, players, totals),
+        leaders: ahead(rules, players, totals, missed),
         winners: (winners ?? []).flatMap((seat) => players[seat] ?? []),
+        missed: players.filter((_, seat) => missed[seat] === true),
         problems,
     };
 };
@@ -224,6 +362,7 @@ const notAGame = (problem: Refusal): ScoreResult => ({
     totals: {},
     leaders: [],
     winners: [],
+    missed: [],
     problems: [problemAt(problem)],
 });
 
@@ -239,8 +378,9 @@ const scoreAny = (raw: unknown): ScoreResult => {
  * Nothing is kept between calls and nothing is read but what is passed in, so the same game
  * always gets the same answer, and changing an earlier round is scoring the game again with the
  * round changed. Whatever the rules refuse is reported in `problems` and counts toward no total.
- * A round is added to the totals once it is whole, which is every player's entry in and accepted
- * with whatever else the game needs of a round, and only when every round before it has been. It does not throw, whatever it is given.
+ * A round is added to the totals once it is whole, which is the entry of every player in it in and
+ * accepted with whatever else the game needs of a round, and only when every round before it has
+ * been. It does not throw, whatever it is given.
  */
 export const score = (input: ScoreInput): ScoreResult => scoreAny(input);
 

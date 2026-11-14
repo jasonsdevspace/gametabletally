@@ -2,10 +2,26 @@ import type { Game, OneProblem, Plain, Problem, ProblemCode, ProblemData } from 
 
 /** What a game's rules are told about the round they are reading. */
 export interface RoundContext {
-    /** The players' ids in seat order. */
+    /** The ids of the players in the round, in seat order. Those out of it are not among them. */
     readonly players: readonly string[];
+    /** The ids of the players out of the round, in seat order. */
+    readonly out: readonly string[];
     /** The round's place in the game, counted from zero. */
     readonly index: number;
+    /** The game's options, already checked. */
+    readonly options: Readonly<Record<string, unknown>>;
+}
+
+/** What a game's rules are told when asked whether the game is over. */
+export interface Standing {
+    /** Each player's total after the rounds scored, in seat order. */
+    readonly totals: readonly number[];
+    /** Whether each player has been out of a scored round, in seat order. */
+    readonly missed: readonly boolean[];
+    /** How many rounds have been scored. */
+    readonly rounds: number;
+    /** The game's options, already checked. */
+    readonly options: Readonly<Record<string, unknown>>;
 }
 
 /** A round as a game's rules read it. */
@@ -28,14 +44,41 @@ export interface RoundOutcome {
 export interface Rules extends Game {
     /** What is wrong with the options, if anything. */
     readonly checkOptions: (options: Readonly<Record<string, unknown>>) => readonly Problem[];
-    /** Reads one round as entered. */
+    /** Reads one round as entered, for the players in it. */
     readonly scoreRound: (round: unknown, context: RoundContext) => RoundOutcome;
     /**
-     * Who has won, as places in the seat order, given each player's total after a scored round,
-     * or null while the game goes on.
+     * Who has won, as places in the seat order, after a scored round, or null while the game
+     * goes on. A player who has missed a round may end the game and may not win it while
+     * another player has missed none.
      */
-    readonly winners: (totals: readonly number[]) => readonly number[] | null;
+    readonly winners: (standing: Standing) => readonly number[] | null;
 }
+
+/** The fewest players a round can be scored with, whatever the game takes to start. */
+export const FEWEST_IN_ROUND = 2;
+
+/**
+ * The places, in seat order, of the players who can be ahead or win: those who have missed no
+ * round, or everyone when every player has missed one, since such a game still has a leader.
+ */
+export const contenders = (missed: readonly boolean[]): number[] => {
+    const seats = missed.map((_, seat) => seat);
+    const played = seats.filter((seat) => missed[seat] !== true);
+    return played.length > 0 ? played : seats;
+};
+
+/**
+ * The places among those given whose total is the best, the highest or the lowest, in seat order.
+ */
+export const bestAmong = (
+    totals: readonly number[],
+    seats: readonly number[],
+    ahead: Game['ahead']
+): number[] => {
+    const counted = seats.map((seat) => totals[seat] ?? 0);
+    const best = ahead === 'highest' ? Math.max(...counted) : Math.min(...counted);
+    return seats.filter((seat) => totals[seat] === best);
+};
 
 /** Whether a value is an object with named fields, which is what JSON calls an object. */
 export const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
@@ -111,13 +154,14 @@ export interface Entered {
 
 /**
  * Reads a round that holds each player's entry by player id, which is how every game here
- * enters a round. An entry for nobody in the game is refused first, sorted by id, since the
- * order an object's keys come in is one runtime's own. The players' entries follow in seat
- * order, each read by the game, and a player with none has yet to play.
+ * enters a round. An entry for a player out of the round is refused first, in seat order, then
+ * one for nobody in the game, sorted by id, since the order an object's keys come in is one
+ * runtime's own. The entries of the players in the round follow in seat order, each read by the
+ * game, and a player with none has yet to play.
  */
 export const readEntries = (
     round: unknown,
-    { players, index }: RoundContext,
+    { players, out, index }: RoundContext,
     read: (entry: unknown) => number | Refusal
 ): Entered => {
     if (!isRecord(round) || !isRecord(round['entries']))
@@ -134,19 +178,31 @@ export const readEntries = (
         };
     const { entries } = round;
     const scores = new Map<string, number>();
-    const problems: Problem[] = Object.keys(entries)
-        .filter((id) => !players.includes(id))
-        .sort()
-        .map((id) =>
-            problemAt(
-                refusal('unknown-player', 'The entry is for nobody in the game.', {}),
-                index,
-                id
-            )
-        );
+    // Asked of the entries themselves, so an id such as `toString` is not found on every object.
+    const has = (id: string): boolean => Object.prototype.hasOwnProperty.call(entries, id);
+    const problems: Problem[] = [
+        ...out
+            .filter(has)
+            .map((id) =>
+                problemAt(
+                    refusal('out-with-entry', 'The entry is for a player out of the round.', {}),
+                    index,
+                    id
+                )
+            ),
+        ...Object.keys(entries)
+            .filter((id) => !players.includes(id) && !out.includes(id))
+            .sort()
+            .map((id) =>
+                problemAt(
+                    refusal('unknown-player', 'The entry is for nobody in the game.', {}),
+                    index,
+                    id
+                )
+            ),
+    ];
     for (const player of players) {
-        // Asked of the entries themselves, so an id such as `toString` is not found on every object.
-        if (!Object.prototype.hasOwnProperty.call(entries, player)) continue;
+        if (!has(player)) continue;
         const answer = read(entries[player]);
         if (typeof answer === 'number') scores.set(player, answer);
         else problems.push(problemAt(answer, index, player));
