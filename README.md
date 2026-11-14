@@ -33,6 +33,9 @@ against the built script in a runtime that is not Node.
   caches every file of the build on the first visit and answers every page from that cache after,
   so the app opens with no connection. A newer build's worker installs and waits for the visitor
   to take it.
+  It is drawn from [`@jasonsdevspace/design-kit`](https://www.npmjs.com/package/@jasonsdevspace/design-kit)
+  with the kit's colors as they are, and lays its own typeface, the lip under a key and the
+  grounds of the game tiles over it in one sheet, `apps/web/src/styles/app.css`.
 
 Two more checks run in CI beside `verify`, each building the app first:
 
@@ -65,5 +68,6 @@ which games the app can score. It holds none of their artwork, cards or rule boo
 
 ## License
 
-The code is under the [MIT License](LICENSE). The name Game Table Tally, its logo and the
-gametabletally.com domain are not covered by that license and stay reserved.
+The code is under the [MIT License](LICENSE). DM Sans, the typeface the app serves, is under the
+SIL Open Font License, in `apps/web/public/fonts/OFL.txt`. The name Game Table Tally, its logo and the
+gametabletally.com domain are not covered by either license and stay reserved.

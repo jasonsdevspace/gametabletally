@@ -28,6 +28,7 @@ const TYPES = {
     '.ico': 'image/x-icon',
     '.webmanifest': 'application/manifest+json',
     '.woff2': 'font/woff2',
+    '.txt': 'text/plain; charset=utf-8',
 };
 
 /** What sits at a path under the build, or null when nothing does. */
@@ -41,7 +42,16 @@ const kindOf = (path) => {
 };
 
 /** Text that Pages sends compressed when the browser accepts it, as every browser does. */
-const COMPRESSED = new Set(['.html', '.js', '.css', '.json', '.map', '.svg', '.webmanifest']);
+const COMPRESSED = new Set([
+    '.html',
+    '.js',
+    '.css',
+    '.json',
+    '.map',
+    '.svg',
+    '.webmanifest',
+    '.txt',
+]);
 
 const send = (request, response, status, file) => {
     const type = TYPES[extname(file)] ?? 'application/octet-stream';
