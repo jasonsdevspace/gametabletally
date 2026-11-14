@@ -48,6 +48,7 @@ const game = (id: string, rounds: readonly unknown[], changed: string): SavedGam
     options: {},
     players: ['p-ann', 'p-ben', 'p-cat'],
     rounds,
+    draft: null,
     started: '2026-11-01T10:05:00Z',
     changed,
 });

@@ -24,20 +24,43 @@ whenever they are shown. No total is saved anywhere.
 
 ### A game
 
-| Field     | Holds                                                                 |
-| --------- | --------------------------------------------------------------------- |
-| `id`      | The game's id                                                         |
-| `game`    | The game played, by the scoring package's id for it, such as `flip-7` |
-| `rules`   | The version of the game's rule set it is played under                 |
-| `options` | The options it was started with, as an object                         |
-| `players` | The players' ids, in seat order                                       |
-| `rounds`  | Every round entered, in order, in the shape the game's rules read     |
-| `started` | When it was started, as an ISO 8601 date and time                     |
-| `changed` | When it was last changed, as an ISO 8601 date and time                |
+| Field     | Holds                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| `id`      | The game's id                                                                             |
+| `game`    | The game played, by the scoring package's id for it, such as `flip-7`                     |
+| `rules`   | The version of the game's rule set it is played under                                     |
+| `options` | The options it was started with, as an object                                             |
+| `players` | The players' ids, in seat order                                                           |
+| `rounds`  | Every round saved, in order, in the shape the game's rules read                           |
+| `draft`   | The round being entered or reopened, or null when there is none, as once the game is over |
+| `started` | When it was started, as an ISO 8601 date and time                                         |
+| `changed` | When it was last changed, as an ISO 8601 date and time                                    |
 
 `game`, `rules`, `options`, `players` and `rounds` are what the scoring package's `score` takes, as
 they are. A game in play and a finished game are saved alike: whether a game is over is worked out
 from its rounds.
+
+### The round being entered
+
+A round is entered a step at a time, and each step is saved as it is made, so a page closed in the
+middle of a round opens again at the same step. Until the round is saved it is the game's `draft`,
+kept beside `rounds` and never among them, since the scoring package would read a hand half
+entered as a whole one. Saving the round moves it into `rounds`, whole.
+
+| Field   | Holds                                                                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `index` | The round's place in the game, counted from zero: the number of saved rounds for the next round, or the place of a reopened saved round |
+| `round` | The round as entered so far, in the shape the game's rules read                                                                         |
+| `step`  | The step it is at, as `part` and `player`, or null when no step is left to enter. A reopened round starts at its first step             |
+
+A step's `part` is `entry`, a player's entry, `ender`, who ended a Skyjo round, `bid` or `tricks`,
+a Wizard player's bid or count of tricks. Its `player` is the player's id, or null for `ender`.
+Flip 7 takes each seat's entry in turn. Skyjo takes each seat's entry and then who ended the round.
+Wizard takes every bid and then every count of tricks. A player the round names as `out` has no
+step. A reopened round leaves the saved one as it was until the draft is saved, so letting the
+draft go changes no saved round. A saved round is reopened only while the round being entered
+holds nothing of its own, since a game has one draft. The steps of each game's round are in
+`apps/web/src/play/steps.ts`.
 
 ### What each field has to be
 
@@ -50,6 +73,9 @@ Every field is required. A record that breaks one of these is not a player or a 
 - `options` is an object, never a list.
 - `players` and `rounds` are lists, and either may be empty. What a round holds is the game's own
   and is not checked here: the scoring package checks it when the game is scored.
+- `draft` is null or an object. Its `index` is a whole number from 0 to the number of saved
+  rounds, its `round` is an object, and its `step` is null or an object whose `part` is one of the
+  four above and whose `player` is text that is not empty, or null.
 - A game may name a player the file or the phone does not hold. It is shown with no name.
 - A field this page does not name is dropped when a record is read.
 
@@ -83,6 +109,11 @@ One JSON object holding everything saved:
             "options": {},
             "players": ["p-ann", "p-ben", "p-cat"],
             "rounds": [],
+            "draft": {
+                "index": 0,
+                "round": { "entries": {}, "out": [] },
+                "step": { "part": "entry", "player": "p-ann" }
+            },
             "started": "2026-11-01T10:05:00Z",
             "changed": "2026-11-01T10:20:00Z"
         }

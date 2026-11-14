@@ -36,6 +36,11 @@ const game: SavedGame = {
             },
         },
     ],
+    draft: {
+        index: 1,
+        round: { entries: { 'p-ann': { numbers: [4], modifiers: [], bust: false } }, out: [] },
+        step: { part: 'entry', player: 'p-ben' },
+    },
     started: '2026-11-01T10:05:00Z',
     changed: '2026-11-01T10:20:00Z',
 };
@@ -77,14 +82,48 @@ describe('the saved shape', () => {
         ['a game with a player named by a number', { ...game, players: ['p-ann', 2] }],
         ['a game with no rounds', { ...game, rounds: undefined }],
         ['a game that does not say when it was changed', { ...game, changed: undefined }],
+        ['a game that does not say whether it has a draft', { ...game, draft: undefined }],
+        ['a draft past the next round', { ...game, draft: { ...game.draft, index: 2 } }],
+        ['a draft before the first round', { ...game, draft: { ...game.draft, index: -1 } }],
+        ['a draft at a place that is not whole', { ...game, draft: { ...game.draft, index: 0.5 } }],
+        ['a draft at a place written as text', { ...game, draft: { ...game.draft, index: '1' } }],
+        ['a draft whose round is a list', { ...game, draft: { ...game.draft, round: [] } }],
+        [
+            'a draft at a step that is no part of a round',
+            { ...game, draft: { ...game.draft, step: { part: 'deal', player: 'p-ben' } } },
+        ],
+        [
+            'a draft at a step with a player named by a number',
+            { ...game, draft: { ...game.draft, step: { part: 'entry', player: 7 } } },
+        ],
     ])('does not read %s as a game', (_, raw) => {
         expect(readGame(raw)).toBeNull();
     });
 
     it('holds no total, so a game is scored from what was entered every time', () => {
         expect(Object.keys(game).sort()).toEqual(
-            ['changed', 'game', 'id', 'options', 'players', 'rounds', 'rules', 'started'].sort()
+            [
+                'changed',
+                'draft',
+                'game',
+                'id',
+                'options',
+                'players',
+                'rounds',
+                'rules',
+                'started',
+            ].sort()
         );
+    });
+
+    it('reads a game with no draft, and a draft that reopens a saved round at no step', () => {
+        expect(readGame({ ...game, draft: null })).toEqual({ ...game, draft: null });
+        const reopened = { ...game, draft: { index: 0, round: { entries: {} }, step: null } };
+        expect(readGame(reopened)).toEqual(reopened);
+    });
+
+    it('hands the scoring package the saved rounds and never the draft', () => {
+        expect(toScoreInput(game).rounds).toEqual(game.rounds);
     });
 
     it('hands a game to the scoring package under the rule set it names', () => {
