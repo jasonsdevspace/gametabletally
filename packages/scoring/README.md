@@ -87,7 +87,7 @@ game starts under, whether the highest or the lowest total is ahead, and how man
   players out of it, in seat order, the entries for nobody in the game, sorted by id, and the
   entries of the players in it, in seat order. In Skyjo what is wrong with the ender comes last.
   In Wizard a round whose tricks do not come to the cards dealt comes last, and is checked only
-  when nothing else in the round is refused and every player in it has given their tricks.
+  when nothing else in the round is refused.
   An entry is refused once, for the first thing wrong with it.
 
 Nothing refused is ever scored, and `score` does not throw, whatever it is given. The game and
@@ -214,11 +214,10 @@ player has missed one. Players level on it share the win.
 
 A round is `open` while a player has yet to bid, and once every bid is in, while a player's tricks
 are not, so the bids can be saved before the hand is played. Its `scores` then show the players whose
-tricks are in. Once every player in the round has given their tricks, the tricks have to come to the
-cards dealt to each, and a round where they do not is `refused`. What each bid came to still stands in its `scores`, and counts toward no total.
+tricks are in. Once every player in the round has given their tricks, the tricks have to come to the cards dealt to each, and a round where they do not is `refused`. A round whose tricks already come to more than the cards dealt is refused before then, since no tricks still to come can put it right. What each bid came to still stands in its `scores`, and counts toward no total.
 
 A player out of a round changes neither the cards it deals nor the number of rounds, which are both
-fixed when the game starts, and the tricks of the players in it come to the cards dealt. An entry for a player who is then out of the round is passed over when it holds no tricks, since it is at most a bid made before they left, and a bid with no tricks behind it is nobody's score. One that holds tricks, or is not an object, is refused, as any other entry for a player out of a round is.
+fixed when the game starts, and the tricks of the players in it come to the cards dealt. A bid made by a player who is then out of the round is passed over, since a bid with no tricks behind it is nobody's score. That is an entry that would be taken as a bid with no tricks yet. Any other entry for a player out of a round is refused, as it is in every game.
 
 ## The cases
 

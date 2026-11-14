@@ -40,9 +40,8 @@ export interface WizardEntry {
 export interface WizardRound {
     readonly entries: Readonly<Record<string, WizardEntry>>;
     /**
-     * The ids of the players out of the round. An entry one of them holds with no tricks is passed
-     * over, since it is at most a bid made before they left, and a bid with no tricks behind it is
-     * nobody's score.
+     * The ids of the players out of the round. A bid one of them made before they left, with no
+     * tricks, is passed over, since a bid with no tricks behind it is nobody's score.
      */
     readonly out?: readonly string[] | null;
 }
@@ -72,11 +71,10 @@ const outOfRange = (
 
 /**
  * One player's entry read and checked against the cards dealt: its score once the tricks are in,
- * null while only the bid is, or why it is refused. Each trick count accepted is handed to
- * `taken`, so the round can add them up.
+ * null while only the bid is, or why it is refused.
  */
 const readPlayer =
-    (dealt: number, taken: (tricks: number) => void) =>
+    (dealt: number) =>
     (raw: unknown): number | Refusal | null => {
         if (!isRecord(raw)) return refusal('not-an-entry', 'The entry is not an object.', {});
         // A part given as null is a part not given, since a caller in another language writes
@@ -99,38 +97,45 @@ const readPlayer =
             );
         if (tricks < 0 || tricks > dealt)
             return outOfRange('impossible-tricks', 'takes', tricks, dealt);
-        taken(tricks);
-        // A zero written with a minus sign is zero, here and once the answer is written as JSON.
-        return scoreBid(bid, tricks) || 0;
+        return scoreBid(bid, tricks);
     };
 
 /**
- * The round with every entry of a player out of it that holds no tricks passed over, since such an
- * entry is at most a bid made before the player left. One that holds tricks, or is not an object,
- * is left in and refused, since nobody out of a round played its hand.
+ * The round's entries with the bid of each player out of it passed over: an entry that would be
+ * accepted as a bid with no tricks, which is one made before the player left. Any other entry for
+ * a player out is left in and refused, since nobody out of a round played its hand.
  */
-const withoutBidsOfThoseOut = (round: unknown, out: readonly string[]): unknown => {
+const withoutBidsOfThoseOut = (round: unknown, out: readonly string[], dealt: number): unknown => {
     if (!isRecord(round) || !isRecord(round['entries'])) return round;
     const { entries } = round;
     const left = Object.entries(entries).filter(
-        ([id, entry]) => !out.includes(id) || !isRecord(entry) || (entry['tricks'] ?? null) !== null
+        ([id, entry]) => !out.includes(id) || readPlayer(dealt)(entry) !== null
     );
     return { ...round, entries: Object.fromEntries(left) };
+};
+
+/** The tricks the players in a round have given so far, added up. */
+const tricksGiven = (round: unknown, players: readonly string[]): number => {
+    const entries = isRecord(round) && isRecord(round['entries']) ? round['entries'] : {};
+    return players.reduce((sum, player) => {
+        const entry = Object.prototype.hasOwnProperty.call(entries, player)
+            ? entries[player]
+            : undefined;
+        const tricks = isRecord(entry) ? entry['tricks'] : undefined;
+        return sum + (isWhole(tricks) ? tricks : 0);
+    }, 0);
 };
 
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     // The first round deals one card, and each round after one more, whoever plays it.
     const dealt = context.index + 1;
-    const tricks: number[] = [];
-    const { scores, problems, allIn } = readEntries(
-        withoutBidsOfThoseOut(round, context.out),
-        context,
-        readPlayer(dealt, (taken) => tricks.push(taken))
-    );
-    if (problems.length > 0 || !allIn) return { scores, problems, complete: false };
-    // Every player in the round has played the hand, so between them they took every trick.
-    const given = tricks.reduce((sum, taken) => sum + taken, 0);
-    if (given !== dealt)
+    const read = withoutBidsOfThoseOut(round, context.out, dealt);
+    const { scores, problems, allIn } = readEntries(read, context, readPlayer(dealt));
+    if (problems.length > 0) return { scores, problems, complete: false };
+    // Once every player in the round has played the hand, between them they took every trick. Before
+    // then, tricks that already come to more than were dealt can never be right.
+    const given = tricksGiven(read, context.players);
+    if (allIn ? given !== dealt : given > dealt)
         return {
             scores,
             complete: false,
@@ -138,14 +143,14 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
                 problemAt(
                     refusal(
                         'trick-total',
-                        `The tricks taken come to ${given}, and the round dealt ${dealt} cards to each player.`,
+                        `The tricks taken come to ${given}, and the round dealt ${dealt} ${dealt === 1 ? 'card' : 'cards'} to each player.`,
                         { dealt, given }
                     ),
                     context.index
                 ),
             ],
         };
-    return { scores, problems, complete: true };
+    return { scores, problems, complete: allIn };
 };
 
 /**

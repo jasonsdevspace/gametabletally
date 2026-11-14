@@ -442,6 +442,124 @@
             }
         },
         {
+            "name": "tricks that already come to more than the cards dealt refuse a round still being played",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 30
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "trick-total",
+                        "data": {
+                            "dealt": 1,
+                            "given": 2
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "tricks that come to the cards dealt before every player has given theirs leave the round open",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
             "name": "a bid below nothing or above the cards dealt is refused, for each player in seat order",
             "input": {
                 "game": "wizard",
@@ -4406,6 +4524,116 @@
                                 "tricks": 0
                             },
                             "cat": 5
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a bid from a player then out of the round, with tricks given as nothing, is passed over",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": null
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bid the round could not take, from a player out of it, is refused and not passed over",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 2
+                            }
                         },
                         "out": ["cat"]
                     }

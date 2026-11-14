@@ -45,14 +45,20 @@ const evaluate = (code, name) => {
 };
 
 let ran = 0;
+/** @type {string[]} */
+const ranFiles = [];
+/** @type {{ id: string, rules: number }[] | undefined} */
+let offered;
 const failed = [];
 try {
     evaluate(readFileSync(BUNDLE, 'utf8'), 'scoring.global.js');
+    offered = JSON.parse(String(evaluate('JSON.stringify(GameTableTallyScoring.GAMES)', 'GAMES')));
     // Each game has a folder, and each version of its rule set a file in it.
     const files = readdirSync(CASES, { recursive: true, encoding: 'utf8' })
         .filter((name) => name.endsWith('.json'))
         .sort();
     for (const file of files) {
+        ranFiles.push(file);
         /** @type {{ cases: { name: string, input?: unknown, text?: string, expect: unknown }[] }} */
         const { cases } = JSON.parse(readFileSync(join(CASES, file), 'utf8'));
         for (const { name, input, text, expect } of cases) {
@@ -88,6 +94,11 @@ try {
 }
 
 if (ran === 0) failed.push('FAIL no cases were found to run');
+// Each game the built script offers has a file of cases for the rule set a new game starts under,
+// so a folder the walk passed over is a failure and not a quieter run.
+for (const { id, rules } of offered ?? [])
+    if (!ranFiles.includes(join(id, `${rules}.json`)))
+        failed.push(`FAIL no cases were run for ${id}, rule set ${rules}`);
 for (const failure of failed) console.error(failure);
 if (failed.length > 0) process.exit(1);
 console.log('Every case passed against the built script in QuickJS.');

@@ -1,5 +1,5 @@
 import { readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
@@ -44,8 +44,9 @@ const placeOf = ({ game, rules }: Pick<CaseFile, 'game' | 'rules'>): string =>
 it('runs every file of cases in the folders, each kept where its game and version say', () => {
     const root = fileURLToPath(new URL('../cases', import.meta.url));
     const kept = readdirSync(root, { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile())
-        .map((entry) => relative(root, join(entry.parentPath, entry.name)))
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+        // Written with forward slashes, as the files are named here, whatever the system's own.
+        .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
         .sort();
     expect(FILES.map(placeOf).sort()).toEqual(kept);
 });
