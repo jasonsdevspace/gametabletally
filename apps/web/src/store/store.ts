@@ -18,9 +18,10 @@ import {
  * entry.
  */
 
-const DATABASE = 'gametabletally';
-const PLAYERS = 'players';
-const GAMES = 'games';
+/** The database on the phone, and its stores, which the browser tests' seeding writes to too. */
+export const DATABASE = 'gametabletally';
+export const PLAYERS = 'players';
+export const GAMES = 'games';
 
 /** What a page shows when the phone's games were saved by a newer build than this one. */
 export const NEWER_DATABASE =

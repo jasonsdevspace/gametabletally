@@ -67,7 +67,7 @@ export default defineConfig(
     {
         // The builds in dist are checked where they are written from, the sources. ESLint leaves
         // node_modules out on its own.
-        ignores: ['**/dist'],
+        ignores: ['**/dist', '**/dist-ssr'],
     },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -103,7 +103,7 @@ export default defineConfig(
         languageOptions: {
             parserOptions: {
                 projectService: {
-                    // The two files at the root, which no tsconfig includes.
+                    // The files at the root of each package, which no tsconfig.json includes.
                     allowDefaultProject: [
                         'vitest.config.ts',
                         'source-condition.ts',
@@ -202,6 +202,7 @@ export default defineConfig(
                         '**/*.config.{ts,js,mjs}',
                         '**/scripts/**',
                         '**/vitest.setup.ts',
+                        '**/e2e/**',
                     ],
                 },
             ],

@@ -26,7 +26,24 @@ against the built script in a runtime that is not Node.
   to cases.
 - `apps/web` is the app, which reads the scoring package from its source, so nothing needs
   building first. It keeps players and games on the phone in the shape
-  [docs/saved-games.md](docs/saved-games.md) describes.
+  [docs/saved-games.md](docs/saved-games.md) describes. Its addresses are one list in
+  `apps/web/src/routes.ts`, and the build writes each as a page drawn ahead of time, so every
+  address reads with no script, with `404.html` for any other path, as GitHub Pages serves it.
+
+Two more checks run in CI beside `verify`, each building the app first:
+
+```bash
+npx playwright install chromium
+npm run e2e
+npm run lighthouse
+```
+
+`npm run e2e` runs the browser tests on a desktop and a phone profile, against the built files
+served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
+an axe audit and a target size check of each page, and the move between screens. `npm run
+lighthouse` holds every page to a hundred for accessibility, and the start, a page about one game
+and the not-found page to ninety for performance, a good largest paint and layout shift, and a
+budget for the script and style each carries.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the
