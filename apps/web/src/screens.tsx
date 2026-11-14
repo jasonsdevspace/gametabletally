@@ -9,13 +9,16 @@ import { Website } from './website/Website.js';
 
 /**
  * The screens, one for each address. The website's pages, the first visit, the install page and
- * the about page, are drawn in the website's frame. A screen for keeping score not drawn yet is a
- * plain page that holds its top heading, so its own piece fills it in. A screen about one thing
+ * the about page, are drawn in the website's frame. A screen for keeping score is a plain
+ * page that holds its top heading, so every address has a heading to prerender and to focus. A screen about one thing
  * reads its id once it is running, never in the prerender, so the prerendered page holds the
  * frame and the heading and never the phone's own data.
  */
 
-/** A page: its main region, which the skip to content lands on, and its one top heading. */
+/**
+ * A screen for keeping score: its main region, which focus moves to on arrival, and its one top
+ * heading.
+ */
 export const Page = ({
     title,
     children,
@@ -29,7 +32,7 @@ export const Page = ({
     </main>
 );
 
-/** The screen at a route. A screen not written yet is its plain page. */
+/** The screen at a route, or its plain page, so every address draws a heading. */
 export const Screen = ({ route }: { readonly route: Route }) => {
     switch (route.name) {
         case 'start':
@@ -69,7 +72,10 @@ export const NotFound = () => (
  */
 export const ErrorPage = () => (
     <Notice title="Something went wrong">
-        <p>The screen could not be shown. What was saved is still saved.</p>
+        <p>
+            This page could not be shown. Your saved games are still on this phone. Go back to the
+            start and try again.
+        </p>
         <p>
             <a href={ROUTES[0].path}>Back to the start</a>
         </p>

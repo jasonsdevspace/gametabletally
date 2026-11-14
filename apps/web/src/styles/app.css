@@ -1,8 +1,8 @@
 /*
- * The app's look: the design kit's, with the few things the app adds laid over it in this one
- * sheet, through the kit's own roles. The kit's colors stay as they are, so no rule here sets a
- * kit color role, and no rule names a kit class. What the app adds is its typeface, the lip under
- * a key and the grounds of the game tiles.
+ * The app's look: the design kit's, with the few things the app adds laid over it through the
+ * kit's own roles. The kit's colors stay as they are, so no rule here sets a kit color role, and
+ * no rule names a kit class. This sheet adds the typeface, the lip under a key and the grounds of
+ * the game tiles, and website.css lays out the website's pages.
  */
 @import '@jasonsdevspace/design-kit/tokens.css';
 @import '@jasonsdevspace/design-kit/base.css';

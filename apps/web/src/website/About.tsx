@@ -18,8 +18,8 @@ export const About = () => {
             <div className="gtt-page">
                 <h1 className="gtt-display gtt-display-page">About</h1>
                 <p className="gtt-lead">
-                    Game Table Tally keeps score at the game table. One phone is passed around, each
-                    round is tapped in, and the app adds it up by the game&apos;s own rules.
+                    Game Table Tally keeps score at the game table. Pass one phone around, tap in
+                    each round, and the app adds it up by the game&apos;s own rules.
                 </p>
                 <dl className="gtt-facts">
                     <div>
@@ -32,15 +32,15 @@ export const About = () => {
                     <div>
                         <dt>Whose games these are</dt>
                         <dd>
-                            {NOT_AFFILIATED} Each game is named in plain words so a table can find
-                            its own, and none of their artwork is used.
+                            {NOT_AFFILIATED} The games are named only so you can find yours. None of
+                            their artwork is used here.
                         </dd>
                     </div>
                 </dl>
                 <section aria-labelledby="look">
                     <h2 id="look">Light and dark</h2>
                     <div ref={theme}>
-                        <ThemeSwitch noscript="With scripts on, a switch for light and dark sits here." />
+                        <ThemeSwitch noscript="Turn on JavaScript to switch between light and dark." />
                     </div>
                 </section>
                 <p>

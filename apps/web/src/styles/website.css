@@ -125,7 +125,10 @@
     text-underline-offset: 0.3em;
 }
 
-/* The main region and its bands, each lined up with the kit's column. */
+/*
+ * The main region takes focus only from the skip link and from a move between screens, and it is
+ * not something to press, so it draws no focus ring. Its bands line up with the kit's column.
+ */
 .gtt-site:focus {
     outline: none;
 }
@@ -273,7 +276,8 @@
 
 /*
  * A mark drawn large and faint, which says nothing a reader needs. It is drawn by the sheet, with
- * no words for a screen reader, so it is neither read aloud nor held to the contrast of text.
+ * no words for a screen reader, so it is neither read aloud nor held to the contrast of text. The
+ * first content is for a browser that cannot read the empty alternative text and drops the second.
  */
 .gtt-tile::before {
     content: attr(data-mark);

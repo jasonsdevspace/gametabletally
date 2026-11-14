@@ -13,9 +13,9 @@ const sheets = import.meta.glob<string>('../**/*.css', {
 const sheet = Object.values(sheets).join('\n');
 
 /*
- * The app's one sheet over the design kit: it sets no kit color role and names no kit class, its
- * lip reaches the kit's keys by the kit's own properties, and its tile grounds and lip hold up in
- * both themes.
+ * The app's sheets over the design kit: they set no kit color role and name no kit class, their
+ * lip reaches the kit's keys by the kit's own properties, and their tile grounds and lip hold up
+ * in both themes.
  */
 
 /** The sheet with its comments taken out, so a word in a comment is never read as a rule. */

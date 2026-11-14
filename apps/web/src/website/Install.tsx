@@ -19,22 +19,28 @@ interface Step {
 const IPHONE: readonly Step[] = [
     {
         title: 'Open gametabletally.com in Safari.',
-        note: 'The address is the same on every phone.',
+        note: 'Reading this on a laptop? Type the address into Safari on your phone.',
     },
     {
         title: 'Tap the Share button.',
-        note: 'It is in the toolbar, or under the More button, three dots, on newer versions.',
+        note: 'It is a square with an arrow. If you do not see it, tap the three dots beside the address, then Share.',
     },
     { title: 'Tap Add to Home Screen.', note: 'Scroll down the list if it is not in sight.' },
-    { title: 'Tap Add.', note: "The app's icon is on your home screen, ready for the next game." },
+    {
+        title: 'Tap Add.',
+        note: "If you see Open as Web App, leave it on. The app's icon is on your home screen.",
+    },
 ];
 
 const ANDROID: readonly Step[] = [
     {
         title: 'Open gametabletally.com in Chrome.',
-        note: 'The address is the same on every phone.',
+        note: 'Reading this on a laptop? Type the address into Chrome on your phone.',
     },
-    { title: 'Tap the menu.', note: 'It is the three dots at the top right.' },
+    {
+        title: 'Tap the menu.',
+        note: 'It is the three dots beside the address, at the top or bottom of the screen.',
+    },
     { title: 'Tap Install app.', note: 'On some phones it says Add to home screen.' },
     { title: 'Tap Install.', note: "The app's icon is on your home screen and with your apps." },
 ];

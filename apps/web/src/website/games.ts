@@ -18,7 +18,10 @@ const CARDS: Readonly<Record<string, GameCard>> = {
     wizard: { line: 'Call your tricks, then take them.', mark: '✦' },
 };
 
-/** What the website says about a game, or a plain card for one it has no words for yet. */
+/**
+ * What the website says about a game, or a plain card, so a game added to the scoring package
+ * still gets a tile.
+ */
 export const cardOf = (id: string): GameCard => CARDS[id] ?? { line: '', mark: '' };
 
 /** Whether the website has words for a game. */

@@ -4,11 +4,13 @@
  *   npm run lighthouse
  *
  * Runs after a build, in two passes. Every address, and the not-found page, must score a hundred
- * for accessibility. Then the start, a page about one thing and the not-found page are measured as
+ * for accessibility. Then the website's pages, a page about one thing and the not-found page are
+ * measured as
  * a phone on a slow network loads them on a first visit: each must score at least ninety for
  * performance, paint its largest content within the time a visit counts as good, shift its layout
  * no more than that either, and carry no more script or style than its budget. Every page loads
- * the one script the build writes, so those three stand for the rest, and the pass stays within
+ * the one script the build writes, so a page about one thing stands for the screens for keeping
+ * score, and the pass stays within
  * the job's time. One trace on a shared machine can be slow for reasons of its own, so a page that
  * misses on performance is measured twice more and judged on the middle of the three.
  *
@@ -30,8 +32,11 @@ const PERFORMANCE = 0.9;
 const LARGEST_PAINT_MS = 2500;
 /** The layout shift past which a visit no longer counts as good. */
 const LAYOUT_SHIFT = 0.1;
-/** The most script and style a page may carry, in bytes sent over the network. */
-/** Script is what the build sends today, near 72 KB, with room for the screens to come. */
+/**
+ * The most script and style a page may carry, in bytes sent over the network. Every screen ships
+ * in the one script, so its budget leaves room above what the build sends for the screens that
+ * keep score.
+ */
 const BUDGET = { Script: 120_000, Stylesheet: 30_000 };
 /** How many traces a page that misses is judged on. */
 const TRACES = 3;
@@ -40,8 +45,8 @@ const NOT_FOUND = `/${NOT_FOUND_FILE}`;
 /** Every page, for accessibility. */
 const PAGES = [...ROUTES.map(({ path }) => path), NOT_FOUND];
 /**
- * The pages measured for performance: the website's pages, with their photograph and serif, a
- * page about one thing, and the not-found page.
+ * The pages measured for performance: the website's pages, which load the serif and, on the
+ * start, the photograph, a page about one thing, and the not-found page.
  */
 const MEASURED = ['/', '/install/', '/about/', '/game/', NOT_FOUND];
 

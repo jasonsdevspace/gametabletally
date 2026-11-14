@@ -18,11 +18,11 @@ const NAMES = listOf(
     'or'
 );
 
-/** What sets the app apart, in three short points. */
+/** What sets the app apart, each in a line a visitor reads at a glance. */
 const POINTS = [
     {
         title: 'One phone for the table',
-        text: 'Pass it around. Each player taps in their own round.',
+        text: 'Pass it around the table and tap in each round as you go.',
     },
     {
         title: 'No connection needed',
@@ -50,7 +50,7 @@ export const Start = () => (
                         className="dk-button dk-button-accent dk-button-large"
                         href={hrefOf('play')}
                     >
-                        Start a game
+                        Open the app
                     </Link>
                     <Link className="dk-button dk-button-large" href={hrefOf('install')}>
                         Install the app
@@ -117,7 +117,7 @@ export const Start = () => (
             </div>
             <p className="gtt-actions">
                 <Link className="dk-button dk-button-accent dk-button-large" href={hrefOf('play')}>
-                    Pull up a seat
+                    Open the app
                 </Link>
             </p>
         </section>

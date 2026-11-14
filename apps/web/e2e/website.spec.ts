@@ -10,7 +10,7 @@ import { audit, expect, fontsReady, test } from './support.js';
  */
 
 const PAGES = ['/', '/install/', '/about/', '/no-such-page/'] as const;
-const LINKS = ['Get the app', 'About', 'Start scoring'] as const;
+const LINKS = ['Install', 'About', 'Open the app'] as const;
 
 test.describe('with no script', () => {
     test.use({ javaScriptEnabled: false });
@@ -97,7 +97,7 @@ test('marks the current page in the header by more than its color', async ({ pag
                     line: drawn.textDecorationLine,
                 };
             });
-    const [current, other] = await Promise.all([style('About'), style('Get the app')]);
+    const [current, other] = await Promise.all([style('About'), style('Install')]);
     expect(current.current).toBe('page');
     expect(other.current).toBeNull();
     expect(current.weight).toBeGreaterThan(other.weight);

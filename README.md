@@ -34,8 +34,9 @@ against the built script in a runtime that is not Node.
   so the app opens with no connection. A newer build's worker installs and waits for the visitor
   to take it.
   It is drawn from [`@jasonsdevspace/design-kit`](https://www.npmjs.com/package/@jasonsdevspace/design-kit)
-  with the kit's colors as they are, and lays its own typeface, the lip under a key and the
-  grounds of the game tiles over it in one sheet, `apps/web/src/styles/app.css`.
+  with the kit's colors as they are. `apps/web/src/styles/app.css` lays the app's typeface, the
+  lip under a key and the grounds of the game tiles over the kit, and
+  `apps/web/src/styles/website.css` lays out the website's pages and sets their display serif.
 
 Two more checks run in CI beside `verify`, each building the app first:
 
@@ -50,8 +51,8 @@ served as GitHub Pages serves them: every address with no script, the not-found 
 an axe audit and a target size check of each page, the move between screens, and every address
 opening with the connection off after one visit. Service workers are blocked in every browser test
 but those of the worker, so no other test reads a cached page. `npm run
-lighthouse` holds every page to a hundred for accessibility, and the start, a page about one game
-and the not-found page to ninety for performance, a good largest paint and layout shift, and a
+lighthouse` holds every page to a hundred for accessibility, and the website's pages, a page about
+one game and the not-found page to ninety for performance, a good largest paint and layout shift, and a
 budget for the script and style each carries.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
@@ -68,7 +69,8 @@ which games the app can score. It holds none of their artwork, cards or rule boo
 
 ## License
 
-The code is under the [MIT License](LICENSE). DM Sans and Instrument Serif, the typefaces the app
-serves, are each under the SIL Open Font License, in `apps/web/public/fonts/dm-sans-OFL.txt` and
-`apps/web/public/fonts/instrument-serif-OFL.txt`. The name Game Table Tally, its logo and the
-gametabletally.com domain are not covered by any of these licenses and stay reserved.
+The code is under the [MIT License](LICENSE). The app's typefaces, DM Sans and Instrument Serif,
+are each under the SIL Open Font License, with the license texts in
+`apps/web/public/fonts/dm-sans-OFL.txt` and `apps/web/public/fonts/instrument-serif-OFL.txt`. The
+name Game Table Tally, its logo and the gametabletally.com domain are not covered by these licenses,
+and all rights to them are reserved.

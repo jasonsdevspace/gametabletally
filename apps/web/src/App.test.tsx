@@ -101,7 +101,7 @@ describe("the website's pages", () => {
 
     it.each([
         ['/', null],
-        ['/install/', 'Get the app'],
+        ['/install/', 'Install'],
         ['/about/', 'About'],
     ] as const)(
         'draws %s in the header with all three links, the current one marked',
@@ -112,9 +112,9 @@ describe("the website's pages", () => {
             );
             const links = nav.getAllByRole('link');
             expect(links.map((link) => link.textContent)).toEqual([
-                'Get the app',
+                'Install',
                 'About',
-                'Start scoring',
+                'Open the app',
             ]);
             expect(
                 links
@@ -135,7 +135,7 @@ describe("the website's pages", () => {
     it('points the first visit to opening the app and to installing it', () => {
         at('/');
         const main = within(screen.getByRole('main'));
-        expect(main.getByRole('link', { name: 'Start a game' })).toHaveAttribute(
+        expect(main.getAllByRole('link', { name: 'Open the app' })[0]).toHaveAttribute(
             'href',
             hrefOf('play')
         );
@@ -152,10 +152,9 @@ describe("the website's pages", () => {
             expect(within(section).getAllByRole('listitem').length).toBeGreaterThan(1);
         }
         expect(screen.queryByRole('button', { name: 'Install the app' })).toBeNull();
-        expect(screen.getByRole('link', { name: 'Open the app' })).toHaveAttribute(
-            'href',
-            hrefOf('play')
-        );
+        expect(
+            within(screen.getByRole('main')).getByRole('link', { name: 'Open the app' })
+        ).toHaveAttribute('href', hrefOf('play'));
     });
 
     it("offers the browser's own prompt on the install page once the browser makes one", () => {

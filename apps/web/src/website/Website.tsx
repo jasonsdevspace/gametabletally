@@ -10,7 +10,8 @@ import { listOf } from './games.js';
  * The website's frame, around the pages a visitor reads before they keep score: the first visit,
  * the install page, the about page, and the pages for an address that is not one and for an
  * error. It is the design kit's skip link, strip and footer, with the app's own header between
- * the strip and the page. The screens for keeping score are drawn in the app's frame instead.
+ * the strip and the page. A screen for keeping score is drawn without it, so play keeps the whole
+ * screen.
  */
 
 /** The repository, which the strip and the footer link to. */
@@ -24,9 +25,9 @@ export const NOT_AFFILIATED = `Game Table Tally is not affiliated with the publi
 
 /** The header's links, each always in view, with no menu to open. */
 const LINKS = [
-    { name: 'install', label: 'Get the app' },
+    { name: 'install', label: 'Install' },
     { name: 'about', label: 'About' },
-    { name: 'play', label: 'Start scoring' },
+    { name: 'play', label: 'Open the app' },
 ] as const satisfies readonly { readonly name: RouteName; readonly label: string }[];
 
 /** The app's mark: four tally strokes and the fifth across them, on the accent. */
