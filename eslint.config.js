@@ -108,6 +108,7 @@ export default defineConfig(
                         'vitest.config.ts',
                         'source-condition.ts',
                         'apps/web/vite.config.ts',
+                        'apps/web/vite.worker.config.ts',
                         'packages/scoring/vite.config.ts',
                     ],
                 },

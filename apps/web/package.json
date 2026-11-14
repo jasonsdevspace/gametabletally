@@ -6,9 +6,9 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p e2e",
+        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p e2e && tsc -p worker && tsc -p scripts",
         "dev": "vite",
-        "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+        "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && vite build --config vite.worker.config.ts && node scripts/precache.mjs",
         "e2e": "playwright test --config e2e/playwright.config.ts",
         "lighthouse": "node scripts/lighthouse.mjs"
     },

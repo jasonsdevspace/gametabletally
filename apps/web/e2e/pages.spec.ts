@@ -128,3 +128,22 @@ test('a page reached by its own file keeps the screen the build drew in it', asy
     }
     expect(errors).toEqual([]);
 });
+
+test('runs with no service worker, so no test here reads a page a worker cached', async ({
+    page,
+}) => {
+    await page.goto('/');
+    // The app asks for its worker on load. Asked again here, and waited on, the answer settles.
+    const outcome = await page.evaluate(async () => {
+        if (!('serviceWorker' in navigator)) return 'no workers';
+        try {
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        } catch {
+            return 'refused';
+        }
+        return (await navigator.serviceWorker.getRegistrations()).length > 0
+            ? 'registered'
+            : 'none';
+    });
+    expect(outcome).not.toBe('registered');
+});

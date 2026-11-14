@@ -1,0 +1,11 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        // The worker runs in a service worker's scope, which has no document.
+        "lib": ["ES2023", "WebWorker"],
+        "types": [],
+        "skipLibCheck": true,
+        "noEmit": true
+    },
+    "include": ["*.ts"]
+}
