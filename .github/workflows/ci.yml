@@ -112,8 +112,8 @@ jobs:
               with:
                   name: playwright-report
                   path: |
-                      apps/web/e2e/playwright-report
-                      apps/web/e2e/test-results
+                      apps/web/playwright-report
+                      apps/web/test-results
                   retention-days: 7
 
     # Lighthouse as a phone on a slow network loads each page: a hundred for accessibility,

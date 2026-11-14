@@ -7,17 +7,33 @@ import { ErrorPage, NotFound, Screen } from './screens.js';
 /**
  * Catches a screen that throws while it draws and shows the error page in its place, so a
  * failure is said in words and never leaves a blank page. A move to another screen starts
- * afresh, since the boundary is drawn anew for each address.
+ * afresh, since the boundary is drawn anew for each address. It sets the page's title too, so a
+ * screen that failed is titled as the error page and not as the screen it was.
  */
-class Boundary extends Component<{ readonly children: ReactNode }, { readonly failed: boolean }> {
+class Boundary extends Component<
+    { readonly children: ReactNode; readonly title: string },
+    { readonly failed: boolean }
+> {
     override state = { failed: false };
 
     static getDerivedStateFromError(): { readonly failed: boolean } {
         return { failed: true };
     }
 
+    override componentDidMount(): void {
+        this.setTitle();
+    }
+
+    override componentDidUpdate(): void {
+        this.setTitle();
+    }
+
     override render(): ReactNode {
         return this.state.failed ? <ErrorPage /> : this.props.children;
+    }
+
+    private setTitle(): void {
+        document.title = titleOf(this.state.failed ? 'Something went wrong' : this.props.title);
     }
 }
 
@@ -38,11 +54,14 @@ export const App = () => {
     useEffect(() => {
         // The app has taken the page over once this runs, which the browser tests wait for.
         document.documentElement.dataset['ready'] = 'true';
-        document.title = titleOf(route?.title ?? 'Nothing at this address');
         if (arrived.current === place) return;
         arrived.current = place;
         document.getElementById('main')?.focus();
     }, [place, route]);
 
-    return <Boundary key={place}>{route ? <Screen route={route} /> : <NotFound />}</Boundary>;
+    return (
+        <Boundary key={place} title={route?.title ?? 'Nothing at this address'}>
+            {route ? <Screen route={route} /> : <NotFound />}
+        </Boundary>
+    );
 };

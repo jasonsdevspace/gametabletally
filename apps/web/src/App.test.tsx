@@ -78,6 +78,7 @@ describe('the app', () => {
         const { App: Failing } = await import('./App.js');
         render(<Failing />);
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Something went wrong');
+        expect(document.title).toBe('Something went wrong, Game Table Tally');
         expect(screen.getByRole('link', { name: 'Back to the start' })).toHaveAttribute(
             'href',
             '/'
