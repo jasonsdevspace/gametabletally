@@ -12,7 +12,8 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         emptyOutDir: true,
-        // No source maps, since every file the build writes is one the worker caches on a phone.
-        sourcemap: false,
+        // Source maps are served beside the scripts for reading a failure back to the source, and
+        // the service worker leaves them out of what it caches on a phone.
+        sourcemap: true,
     },
 });

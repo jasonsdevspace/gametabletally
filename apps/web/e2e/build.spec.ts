@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { precacheOf } from '../scripts/precache.mjs';
 import { readPrecache } from '../worker/answer.js';
 import { expect, test } from './support.js';
 
@@ -69,13 +70,55 @@ test("every file in the build is in the service worker's list", () => {
         .map(
             (entry) => `/${relative(DIST, join(entry.parentPath, entry.name)).split(sep).join('/')}`
         )
-        .filter((path) => path !== '/sw.js');
+        .filter((path) => path !== '/sw.js' && !path.endsWith('.map'));
     const worker = readFileSync(join(DIST, 'sw.js'), 'utf8');
     const embedded = /JSON\.parse\(("(?:[^"\\]|\\.)*")\)/.exec(worker)?.[1];
     expect(embedded, 'the list in the worker').toBeDefined();
     const text: unknown = JSON.parse(embedded ?? '""');
     if (typeof text !== 'string') throw new Error('The worker holds no list as text.');
-    const { files: listed } = readPrecache(JSON.parse(text));
+    const { files: listed, version } = readPrecache(JSON.parse(text));
     expect([...listed].sort()).toEqual([...files].sort());
+    // A list written before the last file changed would name an older cache.
+    expect(version).toBe(precacheOf(DIST).version);
     expect(files.length).toBeGreaterThan(0);
+});
+
+/** Every file the worker caches, read from the worker the build wrote. */
+const listedFiles = (): readonly string[] => {
+    const worker = readFileSync(join(DIST, 'sw.js'), 'utf8');
+    const embedded = /JSON\.parse\(("(?:[^"\\]|\\.)*")\)/.exec(worker)?.[1] ?? '""';
+    const text: unknown = JSON.parse(embedded);
+    if (typeof text !== 'string') throw new Error('The worker holds no list as text.');
+    return readPrecache(JSON.parse(text)).files;
+};
+
+test('the worker caches every file a page asks for, and each is served, as its install fetches it', async ({
+    request,
+}) => {
+    const listed = new Set(listedFiles());
+    for (const file of listed) {
+        const response = await request.get(file);
+        expect(response.status(), file).toBe(200);
+    }
+    // Each page's own files, read from the page rather than from a walk of the folder.
+    for (const page of [...listed].filter((file) => file.endsWith('.html'))) {
+        const html = readFileSync(join(DIST, page), 'utf8');
+        for (const [, path] of html.matchAll(/(?:src|href)="(\/[^"#?]*)"/g))
+            if (path && path !== '/')
+                expect(listed.has(path), `${page} asks for ${path}`).toBe(true);
+    }
+});
+
+test('every page carries each tag an install reads once', () => {
+    for (const page of listedFiles().filter((file) => file.endsWith('.html'))) {
+        const html = readFileSync(join(DIST, page), 'utf8');
+        for (const tag of [
+            /<link rel="manifest"/g,
+            /<meta name="theme-color"/g,
+            /<link rel="icon"/g,
+            /<link rel="apple-touch-icon"/g,
+            /<meta name="viewport"/g,
+        ])
+            expect(html.match(tag)?.length ?? 0, `${page} ${tag.source}`).toBe(1);
+    }
 });

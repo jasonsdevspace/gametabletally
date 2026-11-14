@@ -21,7 +21,15 @@ const CACHE = `game-table-tally-${PRECACHE.version}`;
 const FILES = new Set(PRECACHE.files);
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE.files)));
+    // Each file straight from the server, past the browser's own cache, which could still hold a
+    // page of the build before and leave this worker caching two builds at once.
+    event.waitUntil(
+        caches
+            .open(CACHE)
+            .then((cache) =>
+                cache.addAll(PRECACHE.files.map((file) => new Request(file, { cache: 'reload' })))
+            )
+    );
 });
 
 self.addEventListener('activate', (event) => {
@@ -61,6 +69,8 @@ self.addEventListener('fetch', (event) => {
         );
         return;
     }
-    // A file of the build from the cache. Anything else the page asks for goes to the network.
-    if (FILES.has(url.pathname)) event.respondWith(cached(url.pathname));
+    // A file of the build from the cache, a page asked for by its address among them, as a
+    // prefetch asks. Anything else the page asks for goes to the network.
+    const answer = answerFor(url.pathname, FILES);
+    if (answer.kind === 'page') event.respondWith(cached(answer.file));
 });

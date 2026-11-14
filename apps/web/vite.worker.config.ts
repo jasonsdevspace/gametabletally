@@ -11,6 +11,8 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         emptyOutDir: false,
+        // The pages' build has copied the public files already.
+        copyPublicDir: false,
         sourcemap: false,
         lib: {
             entry: 'worker/sw.ts',

@@ -133,9 +133,17 @@ test('runs with no service worker, so no test here reads a page a worker cached'
     page,
 }) => {
     await page.goto('/');
-    await page.waitForFunction(() => document.readyState === 'complete');
-    const workers = await page.evaluate(async () =>
-        'serviceWorker' in navigator ? (await navigator.serviceWorker.getRegistrations()).length : 0
-    );
-    expect(workers).toBe(0);
+    // The app asks for its worker on load. Asked again here, and waited on, the answer settles.
+    const outcome = await page.evaluate(async () => {
+        if (!('serviceWorker' in navigator)) return 'no workers';
+        try {
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        } catch {
+            return 'refused';
+        }
+        return (await navigator.serviceWorker.getRegistrations()).length > 0
+            ? 'registered'
+            : 'none';
+    });
+    expect(outcome).not.toBe('registered');
 });
