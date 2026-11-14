@@ -18,9 +18,19 @@ import {
  * entry.
  */
 
-const DATABASE = 'gametabletally';
-const PLAYERS = 'players';
-const GAMES = 'games';
+/** The database on the phone, and its stores, which the browser tests' seeding writes to too. */
+export const DATABASE = 'gametabletally';
+export const PLAYERS = 'players';
+export const GAMES = 'games';
+
+/**
+ * The stores the database holds, each keyed by its records' id. Opening the database makes any
+ * that are missing, here and in the browser tests' seeding, so the two never differ.
+ */
+export const SCHEMA = [
+    { name: PLAYERS, keyPath: 'id' },
+    { name: GAMES, keyPath: 'id' },
+] as const;
 
 /** What a page shows when the phone's games were saved by a newer build than this one. */
 export const NEWER_DATABASE =
@@ -252,9 +262,9 @@ export const openStore = async (
     const opening = factory.open(name, version);
     opening.onupgradeneeded = () => {
         const database = opening.result;
-        for (const kind of [PLAYERS, GAMES])
+        for (const { name: kind, keyPath } of SCHEMA)
             if (!database.objectStoreNames.contains(kind))
-                database.createObjectStore(kind, { keyPath: 'id' });
+                database.createObjectStore(kind, { keyPath });
     };
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
         opening.onsuccess = () => {

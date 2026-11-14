@@ -1,0 +1,15 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        // The browser tests run in Node and drive a browser, so they have Node's types and the
+        // DOM's, and import the app's own modules to build what they seed.
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "types": ["node"],
+        "jsx": "react-jsx",
+        "skipLibCheck": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "customConditions": ["@gametabletally/source"]
+    },
+    "include": ["."]
+}

@@ -67,7 +67,7 @@ export default defineConfig(
     {
         // The builds in dist are checked where they are written from, the sources. ESLint leaves
         // node_modules out on its own.
-        ignores: ['**/dist'],
+        ignores: ['**/dist', '**/dist-ssr'],
     },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -103,7 +103,7 @@ export default defineConfig(
         languageOptions: {
             parserOptions: {
                 projectService: {
-                    // The two files at the root, which no tsconfig includes.
+                    // The files at the root of each package, which no tsconfig.json includes.
                     allowDefaultProject: [
                         'vitest.config.ts',
                         'source-condition.ts',
@@ -180,6 +180,20 @@ export default defineConfig(
             '@typescript-eslint/no-non-null-assertion': 'error',
         },
     },
+    // The browser tests wait on what the page does, never on a clock.
+    {
+        files: ['**/e2e/**/*.ts'],
+        rules: {
+            'no-restricted-properties': [
+                'error',
+                {
+                    property: 'waitForTimeout',
+                    message:
+                        'Wait for what the page does instead, so the test is quick and steady.',
+                },
+            ],
+        },
+    },
     // Each package imports only what its own manifest declares, beside the
     // tools the repository's root provides, so a package never works only
     // because another one happens to install what it uses. Imports of types
@@ -202,6 +216,7 @@ export default defineConfig(
                         '**/*.config.{ts,js,mjs}',
                         '**/scripts/**',
                         '**/vitest.setup.ts',
+                        '**/e2e/**',
                     ],
                 },
             ],

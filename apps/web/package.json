@@ -6,9 +6,11 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
+        "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p e2e",
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+        "e2e": "playwright test --config e2e/playwright.config.ts",
+        "lighthouse": "node scripts/lighthouse.mjs"
     },
     "dependencies": {
         "@gametabletally/scoring": "0.0.0",
