@@ -145,9 +145,9 @@ export interface Entered {
     readonly scores: Map<string, number>;
     readonly problems: Problem[];
     /**
-     * Whether every player has an entry the rules accept and score. A round is complete when this is so
-     * and the game has whatever else it needs, and never while it is not, so no player is
-     * scored for an entry they have yet to make.
+     * Whether every player has an entry the rules accept and score. A round is complete when
+     * this is so and the game has whatever else it needs, and never while it is not, so no player
+     * is scored for an entry they have yet to make.
      */
     readonly allIn: boolean;
 }

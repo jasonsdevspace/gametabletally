@@ -20,7 +20,7 @@ import {
  * scores twenty and ten for each trick taken, and a bid missed loses ten for each trick over or
  * under. The game is for three to six players and lasts sixty rounds divided by how many play,
  * which uses the whole deck in the last round. It is over after that round, and the highest total
- * wins, shared by players level on it.
+ * of the players who have missed no round wins, shared by players level on it.
  *
  * A round is dealt by its number whoever plays it, and the game keeps the number of rounds it
  * started with, so a player out of a round changes neither. The tricks of the players in a round
@@ -40,8 +40,9 @@ export interface WizardEntry {
 export interface WizardRound {
     readonly entries: Readonly<Record<string, WizardEntry>>;
     /**
-     * The ids of the players out of the round. A bid one of them made before they left is passed
-     * over, since a bid with no tricks behind it is nobody's score.
+     * The ids of the players out of the round. An entry one of them holds with no tricks is passed
+     * over, since it is at most a bid made before they left, and a bid with no tricks behind it is
+     * nobody's score.
      */
     readonly out?: readonly string[] | null;
 }
@@ -104,16 +105,15 @@ const readPlayer =
     };
 
 /**
- * The round with the entries of the players out of it that hold no tricks passed over: each is a
- * bid made before the player left. One that holds tricks is left in, and refused, since nobody out
- * of a round played its hand.
+ * The round with every entry of a player out of it that holds no tricks passed over, since such an
+ * entry is at most a bid made before the player left. One that holds tricks, or is not an object,
+ * is left in and refused, since nobody out of a round played its hand.
  */
 const withoutBidsOfThoseOut = (round: unknown, out: readonly string[]): unknown => {
     if (!isRecord(round) || !isRecord(round['entries'])) return round;
     const { entries } = round;
     const left = Object.entries(entries).filter(
-        ([id, entry]) =>
-            !out.includes(id) || (isRecord(entry) && (entry['tricks'] ?? null) !== null)
+        ([id, entry]) => !out.includes(id) || !isRecord(entry) || (entry['tricks'] ?? null) !== null
     );
     return { ...round, entries: Object.fromEntries(left) };
 };
@@ -148,9 +148,12 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     return { scores, problems, complete: true };
 };
 
-/** After the last round, whoever has played every round and holds the highest total of them. */
+/**
+ * After the last round, the highest total among the players who have missed no round, or among
+ * everyone when every player has missed one.
+ */
 const winners = ({ totals, missed, rounds }: Standing): readonly number[] | null => {
-    // The game takes three to six players, each of whom divides the deck exactly.
+    // The game takes three to six players, and each of those counts divides the deck exactly.
     if (rounds < DECK / totals.length) return null;
     // Players level on the highest total share the win.
     return bestAmong(totals, contenders(missed), 'highest');

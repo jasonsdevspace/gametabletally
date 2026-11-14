@@ -4388,6 +4388,62 @@
             }
         },
         {
+            "name": "an entry for a player out of the round that is not an object is refused, and not passed over as a bid",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": 5
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
             "name": "the tricks of the players in a round with a player out come to the cards dealt",
             "input": {
                 "game": "wizard",
