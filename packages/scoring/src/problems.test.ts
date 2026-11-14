@@ -44,6 +44,9 @@ const CODES = {
     'too-many-copies': true,
     'impossible-total': true,
     'too-many-numbers': true,
+    'impossible-bid': true,
+    'impossible-tricks': true,
+    'trick-total': true,
 } as const satisfies Record<ProblemCode, true>;
 
 /** The codes the README's table of codes lists, in its first column. */

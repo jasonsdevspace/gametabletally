@@ -1,0 +1,5421 @@
+{
+    "game": "wizard",
+    "rules": 1,
+    "cases": [
+        {
+            "name": "a bid met exactly scores twenty and ten for each trick taken, and a bid of nothing met scores twenty",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": -10
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": -10
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bid missed loses ten for each trick over or under",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 2
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": -10
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": -20,
+                            "ben": -20,
+                            "cat": -10
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 10,
+                    "ben": 0,
+                    "cat": -20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round with every bid in and no tricks is open and scores nothing yet",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round is open while a player has yet to bid",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round with some tricks in is open, and shows what stands for those whose tricks are in",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 30
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "tricks given as nothing are not given",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": null
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a played round whose tricks come to more than the cards dealt is refused, and counts toward no total",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 30,
+                            "cat": -10
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "trick-total",
+                        "data": {
+                            "dealt": 1,
+                            "given": 3
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a played round whose tricks come to fewer than the cards dealt is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": -10,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "trick-total",
+                        "data": {
+                            "dealt": 1,
+                            "given": 0
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "tricks that already come to more than the cards dealt refuse a round still being played",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 30
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "trick-total",
+                        "data": {
+                            "dealt": 1,
+                            "given": 2
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "tricks that come to the cards dealt before every player has given theirs leave the round open",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bid below nothing or above the cards dealt is refused, for each player in seat order",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2
+                            },
+                            "ben": {
+                                "bid": -1
+                            },
+                            "cat": {
+                                "bid": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "impossible-bid",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": 2
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "impossible-bid",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": -1
+                        },
+                        "round": 0,
+                        "player": "ben"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "tricks below nothing or above the cards dealt are refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 2
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": -1
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "cat": 30
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "impossible-tricks",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": 2
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "impossible-tricks",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": -1
+                        },
+                        "round": 0,
+                        "player": "ben"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "the cards dealt grow by one each round, and a bid or tricks of all of them is taken",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 3,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": -10
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 40,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": -30,
+                            "ben": -30,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 40,
+                    "ben": 10,
+                    "cat": 30
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a refused entry is reported, and the tricks are not added up beside it",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "impossible-bid",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": 2
+                        },
+                        "round": 0,
+                        "player": "ann"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry that is not an entry is refused, and names the part at fault",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": 3,
+                            "ben": {
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 1.5
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": "1"
+                            },
+                            "eve": {
+                                "bid": null
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0,
+                    "eve": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan", "eve"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "not-an-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "ann"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "bid"
+                        },
+                        "round": 0,
+                        "player": "ben"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "bid"
+                        },
+                        "round": 0,
+                        "player": "cat"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "tricks"
+                        },
+                        "round": 0,
+                        "player": "dan"
+                    },
+                    {
+                        "code": "not-an-entry",
+                        "data": {
+                            "part": "bid"
+                        },
+                        "round": 0,
+                        "player": "eve"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round entered behind one still being bid is skipped, and the first is reported",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    },
+                    {
+                        "state": "skipped",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "round-unfinished",
+                        "data": {},
+                        "round": 0,
+                        "player": null
+                    },
+                    {
+                        "code": "after-a-gap",
+                        "data": {},
+                        "round": 1,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "three players play 20 rounds, and the game is over after the last with the highest total the winner",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 11,
+                                "tricks": 11
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 12,
+                                "tricks": 12
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 13,
+                                "tricks": 13
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 14,
+                                "tricks": 14
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 15,
+                                "tricks": 15
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 16,
+                                "tricks": 16
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 17,
+                                "tricks": 17
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 18,
+                                "tricks": 18
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 19,
+                                "tricks": 19
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 20,
+                                "tricks": 20
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 130,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 140,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 150,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 160,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 170,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 180,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 190,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 200,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 210,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 220,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 400,
+                    "ben": 2500,
+                    "cat": 400
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "four players play 15 rounds, and the game is over after the last with the highest total the winner",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 11,
+                                "tricks": 11
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 12,
+                                "tricks": 12
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 13,
+                                "tricks": 13
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 14,
+                                "tricks": 14
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 15,
+                                "tricks": 15
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 130,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 140,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 150,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 160,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 170,
+                            "cat": 20,
+                            "dan": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 300,
+                    "ben": 1500,
+                    "cat": 300,
+                    "dan": 300
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "five players play 12 rounds, and the game is over after the last with the highest total the winner",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 11,
+                                "tricks": 11
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 12,
+                                "tricks": 12
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 130,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 140,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 240,
+                    "ben": 1020,
+                    "cat": 240,
+                    "dan": 240,
+                    "eve": 240
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "six players play 10 rounds, and the game is over after the last with the highest total the winner",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve", "fay"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 200,
+                    "ben": 750,
+                    "cat": 200,
+                    "dan": 200,
+                    "eve": 200,
+                    "fay": 200
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "three players go on after nineteen rounds",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 11,
+                                "tricks": 11
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 12,
+                                "tricks": 12
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 13,
+                                "tricks": 13
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 14,
+                                "tricks": 14
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 15,
+                                "tricks": 15
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 16,
+                                "tricks": 16
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 17,
+                                "tricks": 17
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 18,
+                                "tricks": 18
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 19,
+                                "tricks": 19
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 130,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 140,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 150,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 160,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 170,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 180,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 190,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 200,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 210,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 380,
+                    "ben": 2280,
+                    "cat": 380
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a round entered after the last is skipped",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve", "fay"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 10,
+                                "tricks": 10
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 40,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 60,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 70,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 80,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 110,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 120,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "skipped",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 200,
+                    "ben": 750,
+                    "cat": 200,
+                    "dan": 200,
+                    "eve": 200,
+                    "fay": 200
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "after-the-end",
+                        "data": {},
+                        "round": 10,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "players level on the highest total after the last round share the win, in seat order",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve", "fay"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 4,
+                                "tricks": 4
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 6,
+                                "tricks": 6
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 7,
+                                "tricks": 7
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 8,
+                                "tricks": 8
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 9,
+                                "tricks": 9
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "ben": {
+                                "bid": 5,
+                                "tricks": 5
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "eve": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "fay": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 30,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 40,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 50,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 60,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 70,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 80,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 90,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 100,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 110,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 70,
+                            "ben": 70,
+                            "cat": 20,
+                            "dan": 20,
+                            "eve": 20,
+                            "fay": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 400,
+                    "ben": 400,
+                    "cat": 350,
+                    "dan": 200,
+                    "eve": 200,
+                    "fay": 200
+                },
+                "leaders": ["ann", "ben"],
+                "winners": ["ann", "ben"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a player out of a round has no score for it, and the round is dealt by its number",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 20,
+                    "dan": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["dan"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bid made by a player who is then out of the round is passed over, and the round scores the others",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2,
+                                "tricks": 2
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": -10
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 40,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 70,
+                    "ben": 40,
+                    "cat": -10
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "tricks for a player out of the round are refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an entry for a player out of the round that is not an object is refused, and not passed over as a bid",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": 5
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a bid from a player then out of the round, with tricks given as nothing, is passed over",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": null
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 0
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": ["cat"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a bid the round could not take, from a player out of it, is refused and not passed over",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 2
+                            }
+                        },
+                        "out": ["cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20
+                        },
+                        "out": ["cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "out-with-entry",
+                        "data": {},
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "the tricks of the players in a round with a player out come to the cards dealt",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": -10,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "trick-total",
+                        "data": {
+                            "dealt": 1,
+                            "given": 0
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a round with one player in it is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        },
+                        "out": ["ben", "cat"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["ben", "cat"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "too-few-in-round",
+                        "data": {
+                            "min": 2,
+                            "given": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a player out of a round leaves the number of rounds as it was, and does not win though their total is the highest",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 2,
+                                "tricks": 2
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 3,
+                                "tricks": 3
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        },
+                        "out": ["dan"]
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 4,
+                                "tricks": 4
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 5,
+                                "tricks": 5
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 6,
+                                "tricks": 6
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 7,
+                                "tricks": 7
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 8,
+                                "tricks": 8
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 9,
+                                "tricks": 9
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 10,
+                                "tricks": 10
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 11,
+                                "tricks": 11
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 12,
+                                "tricks": 12
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 13,
+                                "tricks": 13
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 14,
+                                "tricks": 14
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "dan": {
+                                "bid": 15,
+                                "tricks": 15
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 30
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 40
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 50,
+                            "cat": 20
+                        },
+                        "out": ["dan"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 60
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 70
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 80
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 90
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 100
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 110
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 120
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 130
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 140
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 150
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 160
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 20,
+                            "dan": 170
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 300,
+                    "ben": 330,
+                    "cat": 300,
+                    "dan": 1450
+                },
+                "leaders": ["ben"],
+                "winners": ["ben"],
+                "missed": ["dan"],
+                "problems": []
+            }
+        },
+        {
+            "name": "a game with nothing entered is in play with every player level",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a game with two players is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "skipped",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0
+                },
+                "leaders": ["ann", "ben"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "too-few-players",
+                        "data": {
+                            "min": 3,
+                            "given": 2
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a game with more than six players is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {},
+                "players": ["ann", "ben", "cat", "dan", "eve", "fay", "gus"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0,
+                    "eve": 0,
+                    "fay": 0,
+                    "gus": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan", "eve", "fay", "gus"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "too-many-players",
+                        "data": {
+                            "max": 6,
+                            "given": 7
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an option the game does not have is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "unknown-option",
+                        "data": {
+                            "option": "canadian"
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        }
+    ]
+}

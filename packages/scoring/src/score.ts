@@ -12,12 +12,13 @@ import {
 } from './rules.js';
 import { SKYJO } from './skyjo.js';
 import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
+import { WIZARD } from './wizard.js';
 
 /**
  * Every rule set of every game, in the order an app offers the games. A game whose rules change
  * keeps its earlier versions here, so a game saved under one is still scored by it.
  */
-const RULES: readonly Rules[] = [FLIP_7, SKYJO];
+export const RULES: readonly Rules[] = [FLIP_7, SKYJO, WIZARD];
 
 /** The newest rule set of each game, in the order an app offers them. */
 const NEWEST: readonly Rules[] = RULES.filter(

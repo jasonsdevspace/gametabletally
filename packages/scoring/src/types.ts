@@ -27,6 +27,9 @@ export interface ScoreInput {
  */
 export type Plain = string | number | boolean | null;
 
+/** A count given outside the least and the most it can be, with both. */
+type Range = { readonly min: number; readonly max: number; readonly given: number };
+
 /** What a problem carries where its code has nothing to add, so no field can be read from it. */
 type Nothing = Readonly<Record<never, never>>;
 
@@ -66,7 +69,8 @@ export interface ProblemData {
     readonly 'not-an-entry':
         | Nothing
         | {
-              readonly part: 'bust' | 'numbers' | 'modifiers' | 'total' | 'cards' | 'both';
+              readonly part:
+                  'bust' | 'numbers' | 'modifiers' | 'total' | 'cards' | 'both' | 'bid' | 'tricks';
           };
     /** The card as given, and in Flip 7 the list it was in. */
     readonly 'unknown-card': { readonly card: Plain; readonly kind?: 'number' | 'modifier' };
@@ -78,12 +82,11 @@ export interface ProblemData {
         readonly max: number;
         readonly given: number;
     };
-    readonly 'impossible-total': {
-        readonly min: number;
-        readonly max: number;
-        readonly given: number;
-    };
+    readonly 'impossible-total': Range;
     readonly 'too-many-numbers': { readonly max: number; readonly given: number };
+    readonly 'impossible-bid': Range;
+    readonly 'impossible-tricks': Range;
+    readonly 'trick-total': { readonly dealt: number; readonly given: number };
 }
 
 /** A name for a reason something is refused, one of those the README's table lists. */

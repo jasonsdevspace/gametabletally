@@ -55,6 +55,14 @@ describe('the games the package knows', () => {
                 maxPlayers: null,
             },
             { id: 'skyjo', name: 'Skyjo', rules: 1, ahead: 'lowest', minPlayers: 2, maxPlayers: 8 },
+            {
+                id: 'wizard',
+                name: 'Wizard',
+                rules: 1,
+                ahead: 'highest',
+                minPlayers: 3,
+                maxPlayers: 6,
+            },
         ]);
     });
 });

@@ -1,10 +1,14 @@
 import { readdirSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import flip7 from '../cases/flip-7.json' with { type: 'json' };
-import skyjo from '../cases/skyjo.json' with { type: 'json' };
-import { GAMES, score, type ScoreInput, scoreJson } from './index.js';
+import flip7 from '../cases/flip-7/1.json' with { type: 'json' };
+import skyjo from '../cases/skyjo/1.json' with { type: 'json' };
+import wizard from '../cases/wizard/1.json' with { type: 'json' };
+import { score, type ScoreInput, scoreJson } from './index.js';
+import { RULES } from './score.js';
 
 /** One case: a game handed over as it is scored, or as text where it is not a game at all. */
 interface Case {
@@ -26,14 +30,31 @@ interface CaseFile {
  * of a game's rules has to pass, so they are run here as they are written, and again against
  * the built script in a runtime that is not Node.
  *
- * Each file is imported by name, so its cases are typed as `score` takes them. The run outside
- * Node reads the folder, so a test holds this list to the folder.
+ * Each game has a folder, and each version of its rule set a file in it named by the version, so
+ * a game saved under an earlier version is still held to the cases it was scored by. Each file is
+ * imported by name, so its cases are typed as `score` takes them. The run outside Node reads the
+ * folders, so a test holds this list to them.
  */
-const FILES: readonly CaseFile[] = [flip7, skyjo];
+const FILES: readonly CaseFile[] = [flip7, skyjo, wizard];
 
-it('runs every file of cases in the folder', () => {
-    const folder = readdirSync(new URL('../cases', import.meta.url)).sort();
-    expect(FILES.map(({ game }) => `${game}.json`).sort()).toEqual(folder);
+/** Where a file of cases is kept, by the game and the version of its rule set it names. */
+const placeOf = ({ game, rules }: Pick<CaseFile, 'game' | 'rules'>): string =>
+    `${game}/${rules}.json`;
+
+it('runs every file of cases in the folders, each kept where its game and version say', () => {
+    const root = fileURLToPath(new URL('../cases', import.meta.url));
+    const kept = readdirSync(root, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+        // Written with forward slashes, as the files are named here, whatever the system's own.
+        .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
+        .sort();
+    expect(FILES.map(placeOf).sort()).toEqual(kept);
+});
+
+it('has a file of cases for every rule set of every game the package holds', () => {
+    expect(FILES.map(placeOf).sort()).toEqual(
+        RULES.map(({ id, rules }) => placeOf({ game: id, rules })).sort()
+    );
 });
 
 /**
@@ -48,11 +69,7 @@ const comparable = (answer: string): unknown => {
     return read;
 };
 
-describe.each(FILES)('the cases for $game', ({ game, rules, cases }) => {
-    it('are written for the rule set the package holds', () => {
-        expect(GAMES.find((known) => known.id === game)?.rules).toBe(rules);
-    });
-
+describe.each(FILES)('the cases for $game, rule set $rules', ({ cases }) => {
     it('each have a name of their own', () => {
         const names = cases.map(({ name }) => name);
         expect(new Set(names).size).toBe(names.length);
