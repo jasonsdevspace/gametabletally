@@ -128,3 +128,14 @@ test('a page reached by its own file keeps the screen the build drew in it', asy
     }
     expect(errors).toEqual([]);
 });
+
+test('runs with no service worker, so no test here reads a page a worker cached', async ({
+    page,
+}) => {
+    await page.goto('/');
+    await page.waitForFunction(() => document.readyState === 'complete');
+    const workers = await page.evaluate(async () =>
+        'serviceWorker' in navigator ? (await navigator.serviceWorker.getRegistrations()).length : 0
+    );
+    expect(workers).toBe(0);
+});

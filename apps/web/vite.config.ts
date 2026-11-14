@@ -12,6 +12,7 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         emptyOutDir: true,
-        sourcemap: true,
+        // No source maps, since every file the build writes is one the worker caches on a phone.
+        sourcemap: false,
     },
 });

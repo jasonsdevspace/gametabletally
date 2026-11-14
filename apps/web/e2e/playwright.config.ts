@@ -23,6 +23,9 @@ export default defineConfig({
         baseURL: 'http://localhost:4180/',
         trace: 'retain-on-failure',
         contextOptions: { reducedMotion: 'reduce' },
+        // No test runs against a page a service worker cached, but the worker's own, which
+        // allows it for itself.
+        serviceWorkers: 'block',
     },
     projects: [
         { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
