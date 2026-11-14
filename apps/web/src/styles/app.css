@@ -1,0 +1,50 @@
+/*
+ * The app's look: the design kit's, with the few things the app adds laid over it in this one
+ * sheet, through the kit's own roles. The kit's colors stay as they are, so no rule here sets a
+ * kit color role, and no rule names a kit class. What the app adds is its typeface, the lip under
+ * a key and the grounds of the game tiles.
+ */
+@import '@jasonsdevspace/design-kit/tokens.css';
+@import '@jasonsdevspace/design-kit/base.css';
+@import '@jasonsdevspace/design-kit/components.css';
+
+/*
+ * DM Sans, served by the app, since a font host fails with no connection. One variable file
+ * holds every weight, for the Latin letters the app writes.
+ */
+@font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 100 1000;
+    font-display: swap;
+    src: url('/fonts/dm-sans-latin.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+        U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+    /* The kit's sans role, set to DM Sans. The numerals stay the kit's mono face. */
+    --dk-font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    /*
+     * The lip: a hard shadow straight under a key or a card, which reads as something to press.
+     * In the light theme it is the text color, faint. In the dark it is darker than the ground,
+     * so it never glows on it.
+     */
+    --gtt-lip-depth: 2px;
+    --gtt-lip-color: light-dark(
+        color-mix(in oklab, var(--dk-fg) 15%, transparent),
+        oklch(0 0 0 / 0.55)
+    );
+    --gtt-lip: 0 var(--gtt-lip-depth) 0 var(--gtt-lip-color);
+
+    /* The lip reaches the kit's buttons and keys through the properties the kit offers for it. */
+    --dk-button-shadow: var(--gtt-lip);
+    /* A press moves a key straight down by the lip's depth. */
+    --dk-button-press: 0 var(--gtt-lip-depth);
+
+    /* The grounds of the game tiles, each with a light and a dark value. Flip 7 takes the accent. */
+    --gtt-tile-sage: light-dark(oklch(0.94 0.03 145), oklch(0.26 0.04 145));
+    --gtt-tile-gold: light-dark(oklch(0.96 0.04 90), oklch(0.28 0.04 90));
+}

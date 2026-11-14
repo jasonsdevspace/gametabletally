@@ -114,11 +114,14 @@ test('every page carries each tag an install reads once', () => {
         const html = readFileSync(join(DIST, page), 'utf8');
         for (const tag of [
             /<link rel="manifest"/g,
-            /<meta name="theme-color"/g,
+            /<meta name="theme-color" content="#[0-9a-f]{6}" media="\(prefers-color-scheme: light\)"/g,
+            /<meta name="theme-color" content="#[0-9a-f]{6}" media="\(prefers-color-scheme: dark\)"/g,
             /<link rel="icon"/g,
             /<link rel="apple-touch-icon"/g,
             /<meta name="viewport"/g,
         ])
             expect(html.match(tag)?.length ?? 0, `${page} ${tag.source}`).toBe(1);
+        // One color for the browser's bar in each theme, and no other.
+        expect(html.match(/<meta name="theme-color"/g)?.length ?? 0, page).toBe(2);
     }
 });
