@@ -22,7 +22,7 @@ export const moveSeat = (seats: readonly string[], id: string, by: -1 | 1): read
 export const cleanName = (typed: string): string => typed.trim().replace(/\s+/g, ' ');
 
 /** Whether two names are the same name, read without regard to case. */
-const sameName = (first: string, second: string): boolean =>
+export const sameName = (first: string, second: string): boolean =>
     first.localeCompare(second, undefined, { sensitivity: 'accent' }) === 0;
 
 /**
