@@ -100,7 +100,8 @@ finished one are saved alike, and whether it is over is worked out from its roun
   not one is passed over, counted and left out of a file, and still keeps the player it names. A
   database upgraded by a newer build is refused with the sentence a page shows, an open store lets
   go when a newer build asks, and a connection that does not is reported. The answer to asking the
-  browser to keep its storage is passed on.
+  browser to keep its storage is passed on, and a browser that has agreed already is not asked
+  again.
 - `apps/web/src/store/format.test.ts` holds a saved game to its fields, with no total among them,
   holds the readers to each rule a field has, a draft's included, holds the scoring input to the
   saved rounds and never the draft, and holds the file's reader to refusing a newer file, a record

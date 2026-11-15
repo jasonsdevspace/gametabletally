@@ -89,7 +89,9 @@ order.
 
 ## An exported file
 
-One JSON object holding everything saved:
+One JSON object holding everything saved. The about page saves it as
+`game-table-tally-2026-11-04.json`, named for the day on the phone's own calendar, and restores
+from one by merging it as below.
 
 ```json
 {

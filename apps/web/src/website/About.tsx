@@ -5,10 +5,14 @@ import { useEffect, useRef } from 'react';
 
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
+import { Backup } from './Backup.js';
 import { listOf } from './games.js';
 import { NOT_AFFILIATED, Website } from './Website.js';
 
-/** What the app is, whose games it names and does not own, and the switch for light and dark. */
+/**
+ * What the app is, whose games it names and does not own, the games saved on the phone, and the
+ * switch for light and dark.
+ */
 export const About = () => {
     const theme = useRef<HTMLDivElement>(null);
     useEffect(() => (theme.current ? attachThemeSwitch(theme.current) : undefined), []);
@@ -48,6 +52,7 @@ export const About = () => {
                         with a connection, it works with none.
                     </p>
                 </section>
+                <Backup />
                 <section aria-labelledby="look">
                     <h2 id="look">Light and dark</h2>
                     <div ref={theme}>
