@@ -172,11 +172,14 @@ describe("the app's sheet over the design kit", () => {
         }
     );
 
-    /** The ground each game's tile is drawn on, by the game's id, from the rules that set it. */
+    /**
+     * The ground each game is drawn on, by the game's id, from the rules that set it for its tile
+     * on the website and its link on the start screen alike.
+     */
     const grounds = new Map(
         [
             ...rules.matchAll(
-                /\.gtt-tile\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z0-9-]+)\)/g
+                /:where\(\.gtt-tile, \.gtt-game\)\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z0-9-]+)\)/g
             ),
         ].map(([, id = '', ground = '']) => [id, ground])
     );

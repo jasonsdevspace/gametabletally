@@ -227,20 +227,7 @@
     border: 1px solid var(--dk-line);
     border-radius: var(--dk-radius-large);
     box-shadow: var(--gtt-lip);
-    background: var(--dk-surface);
     color: var(--dk-fg);
-}
-
-.gtt-tile[data-game='flip-7'] {
-    background: var(--gtt-ground-flip-7);
-}
-
-.gtt-tile[data-game='skyjo'] {
-    background: var(--gtt-ground-skyjo);
-}
-
-.gtt-tile[data-game='wizard'] {
-    background: var(--gtt-ground-wizard);
 }
 
 .gtt-tile h3 {

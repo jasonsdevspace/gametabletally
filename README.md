@@ -36,8 +36,10 @@ against the built script in a runtime that is not Node.
   to take it.
   It is drawn from [`@jasonsdevspace/design-kit`](https://www.npmjs.com/package/@jasonsdevspace/design-kit)
   with the kit's colors as they are. `apps/web/src/styles/app.css` lays the app's typeface, the
-  lip under a key and the grounds of the game tiles over the kit, and
-  `apps/web/src/styles/website.css` lays out the website's pages and sets their display serif.
+  lip under a key and the grounds of the games over the kit,
+  `apps/web/src/styles/website.css` lays out the website's pages and sets their display serif,
+  and `apps/web/src/styles/screens.css` lays out what the screens for keeping score hold inside
+  the kit's app frame and tab bar.
 
 Two more checks run in CI beside `verify`, each building the app first:
 
@@ -49,13 +51,13 @@ npm run lighthouse
 
 `npm run e2e` runs the browser tests on a desktop and a phone profile, against the built files
 served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
-an axe audit and a target size check of each page, the move between screens, a backup saved in one
-browser and restored in another, and every address
-opening with the connection off after one visit. Service workers are blocked in every browser test
-but those of the worker, so no other test reads a cached page. `npm run
-lighthouse` holds every page to a hundred for accessibility, and the website's pages, a page about
-one game and the not-found page to ninety for performance, a good largest paint and layout shift, and a
-budget for the script and style each carries.
+an axe audit and a target size check of each page, the move between screens, the start screen's
+game in play and its tab bar, a backup saved in one browser and restored in another, and every
+address opening with the connection off after one visit. Service workers are blocked in every
+browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
+holds every page to a hundred for accessibility, and the website's pages, the start screen, a page
+about one game and the not-found page to ninety for performance, a good largest paint and layout
+shift, and a budget for the script and style each carries.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the

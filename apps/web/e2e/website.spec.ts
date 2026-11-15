@@ -161,3 +161,20 @@ for (const theme of ['light', 'dark'] as const)
             await audit(page);
         }
     });
+
+test("draws each game's tile on its own ground, apart from the band it sits on", async ({
+    page,
+}) => {
+    await page.goto('/');
+    const grounds = await page
+        .locator('.gtt-tile[data-game]')
+        .evaluateAll((tiles) =>
+            tiles.map((tile) => [
+                getComputedStyle(tile).backgroundColor,
+                getComputedStyle(tile.closest('section') ?? document.body).backgroundColor,
+            ])
+        );
+    expect(grounds.length).toBeGreaterThan(0);
+    expect(new Set(grounds.map(([ground]) => ground)).size).toBe(grounds.length);
+    for (const [ground, band] of grounds) expect(ground).not.toBe(band);
+});

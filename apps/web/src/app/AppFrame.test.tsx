@@ -1,0 +1,84 @@
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
+import { AppFrame, currentOf, useToast } from './AppFrame.js';
+
+/*
+ * The frame every screen for keeping score sits in: its one heading, its tab bar and the place
+ * its toast is shown in.
+ */
+
+const tabs = () => within(screen.getByRole('navigation', { name: 'Sections' }));
+
+describe("the app's frame", () => {
+    it("names its main region by the screen's heading, so focus arriving there says the screen", () => {
+        render(<AppFrame screen="players" title="Players" />);
+        expect(screen.getByRole('main', { name: 'Players' })).toBeInTheDocument();
+    });
+
+    it("holds the screen's name as its one top heading, in the bar", () => {
+        render(<AppFrame screen="play" title="Play" />);
+        expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([
+            'Play',
+        ]);
+        expect(screen.getByRole('banner')).toContainElement(
+            screen.getByRole('heading', { level: 1 })
+        );
+    });
+
+    it('reaches play, history and players, and marks the one the visitor is in', () => {
+        render(<AppFrame screen="history" title="History" />);
+        expect(
+            tabs()
+                .getAllByRole('link')
+                .map((link) => [link.textContent, link.getAttribute('href')])
+        ).toEqual([
+            ['Play', '/play/'],
+            ['History', '/history/'],
+            ['Players', '/players/'],
+        ]);
+        expect(tabs().getByRole('link', { name: 'History' })).toHaveAttribute(
+            'aria-current',
+            'page'
+        );
+        expect(tabs().getByRole('link', { name: 'Play' })).not.toHaveAttribute('aria-current');
+    });
+
+    it('marks the section a screen sits beneath, and nothing for an address of the website', () => {
+        expect(currentOf('play', 'play')).toBe('page');
+        expect(currentOf('play', 'game')).toBe('true');
+        expect(currentOf('players', 'player')).toBe('true');
+        expect(currentOf('history', 'game')).toBeUndefined();
+        expect(currentOf('play', 'about')).toBeUndefined();
+        expect(currentOf('play', 'constructor')).toBeUndefined();
+    });
+
+    it('holds one place for a toast, its status line on the page before any toast is shown', () => {
+        render(<AppFrame screen="play" title="Play" />);
+        const statuses = screen.getAllByRole('status');
+        expect(statuses).toHaveLength(1);
+        expect(statuses[0]).toHaveTextContent('');
+    });
+
+    it("shows a screen's toast in that place, said on its status line", async () => {
+        const Saver = () => {
+            const show = useToast();
+            return (
+                <button type="button" onClick={() => show('Round 3 saved.')}>
+                    Save
+                </button>
+            );
+        };
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <Saver />
+            </AppFrame>
+        );
+        act(() => {
+            screen.getByRole('button', { name: 'Save' }).click();
+        });
+        await waitFor(() => {
+            expect(screen.getByRole('status')).toHaveTextContent('Round 3 saved.');
+        });
+    });
+});

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
+import { PlayStart } from './app/PlayStart.js';
 import { Link } from './navigation.js';
-import { type Route, ROUTES } from './routes.js';
+import { hrefOf, type Route, ROUTES } from './routes.js';
 import { About } from './website/About.js';
 import { Install } from './website/Install.js';
 import { Start } from './website/Start.js';
@@ -9,42 +10,44 @@ import { Website } from './website/Website.js';
 
 /**
  * The screens, one for each address. The website's pages, the first visit, the install page and
- * the about page, are drawn in the website's frame. A screen for keeping score is a plain
- * page that holds its top heading, so every address has a heading to prerender and to focus. A screen about one thing
- * reads its id once it is running, never in the prerender, so the prerendered page holds the
- * frame and the heading and never the phone's own data.
+ * the about page, are drawn in the website's frame. A screen for keeping score is drawn in the
+ * app's frame, with its name in the frame's bar as its one top heading, so every address has a
+ * heading to prerender and to focus. A screen about one thing reads its id once it is running,
+ * never in the prerender, so the prerendered page holds the frame and the heading and never the
+ * phone's own data.
  */
 
 /**
- * A screen for keeping score: its main region, which focus moves to on arrival, and its one top
- * heading.
+ * What a screen for keeping score holds, inside the app's frame, which the app draws around it. A
+ * screen with nothing of its own holds nothing, and the frame's bar names it.
  */
-export const Page = ({
-    title,
-    children,
-}: {
-    readonly title: string;
-    readonly children?: ReactNode;
-}) => (
-    <main id="main" tabIndex={-1}>
-        <h1>{title}</h1>
-        {children}
-    </main>
-);
+export const AppScreen = ({ route }: { readonly route: Route }) =>
+    route.name === 'play' ? <PlayStart /> : null;
 
-/** The screen at a route, or its plain page, so every address draws a heading. */
+/** The website's pages at their routes, each drawing its own frame. */
 export const Screen = ({ route }: { readonly route: Route }) => {
     switch (route.name) {
-        case 'start':
-            return <Start />;
         case 'install':
             return <Install />;
         case 'about':
             return <About />;
         default:
-            return <Page title={route.title} />;
+            return <Start />;
     }
 };
+
+/**
+ * What a screen for keeping score that failed shows in the frame's body. Its way back is a plain
+ * link, which loads the start screen afresh, since whatever failed may still be held in memory.
+ */
+export const ScreenFailed = () => (
+    <>
+        <p>This screen could not be shown. Your saved games are still on this phone.</p>
+        <p>
+            <a href={hrefOf('play')}>Back to the start screen</a>
+        </p>
+    </>
+);
 
 /** A page of the website that is not one of its addresses: its heading and its text. */
 const Notice = ({
