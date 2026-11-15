@@ -1,5 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { SavedGame } from '../store/format.js';
 import { openStore, type Store } from '../store/store.js';
@@ -797,5 +797,32 @@ describe('what each change keeps and refuses', () => {
             for (const name of imports)
                 expect(name).toMatch(/^(@gametabletally\/scoring|\.\.?\/[^']+\.js)$/);
         }
+    });
+});
+
+describe('asking the browser to keep the games', () => {
+    it('asks each time a started game is saved, and not for a game the store refused', async () => {
+        const factory = new IDBFactory();
+        const store = await openStore(factory, 'play');
+        const asked = vi.fn(() => Promise.resolve(true));
+        const play = openPlay(store, clock(), asked);
+        await play.start(newGame('flip-7'));
+        expect(asked).toHaveBeenCalledOnce();
+
+        const refusing: Store = {
+            ...store,
+            saveGame: () => Promise.reject(new Error('The phone is out of space.')),
+        };
+        const refused = vi.fn(() => Promise.resolve(true));
+        await openPlay(refusing, clock(), refused).start(newGame('flip-7', 'g-2'));
+        expect(refused).not.toHaveBeenCalled();
+    });
+
+    it('starts the game whatever the browser answers, a refusal to answer among them', async () => {
+        const store = await openStore(new IDBFactory(), 'play');
+        const play = openPlay(store, clock(), () => Promise.reject(new Error('blocked')));
+        await play.start(newGame('flip-7'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(shown(play, 'g-1').error).toBeNull();
     });
 });

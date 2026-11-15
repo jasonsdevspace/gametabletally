@@ -7,7 +7,7 @@ import {
     type SavedStep,
     toScoreInput,
 } from '../store/format.js';
-import type { Store } from '../store/store.js';
+import { keepStorage, type Store } from '../store/store.js';
 import {
     type DraftRound,
     emptyRound,
@@ -233,11 +233,14 @@ interface Last {
 
 /**
  * Opens the games in progress over a store. `now` gives the time each change is saved at, as an
- * ISO 8601 date and time in UTC, and a test passes its own.
+ * ISO 8601 date and time in UTC, and a test passes its own. `askToKeep` asks the browser to keep
+ * what is saved each time a started game is saved, since from then the phone holds something worth
+ * keeping. A browser that has agreed already is not asked again.
  */
 export const openPlay = (
     store: Store,
-    now: () => string = () => new Date().toISOString()
+    now: () => string = () => new Date().toISOString(),
+    askToKeep: () => Promise<unknown> = () => keepStorage()
 ): Play => {
     const games = new Map<string, SavedGame>();
     const errors = new Map<string, string>();
@@ -361,7 +364,9 @@ export const openPlay = (
                     started: at,
                     changed: at,
                 };
-                await keep({ ...fresh, draft: newDraft(fresh, 0) }, null);
+                const refused = await keep({ ...fresh, draft: newDraft(fresh, 0) }, null);
+                // The answer is not waited for, since a browser may ask the visitor first.
+                if (refused === null) void askToKeep().catch(() => undefined);
             }),
         enter: (id, value) =>
             inOrder(async () => {

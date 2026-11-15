@@ -179,7 +179,7 @@ export const readGame = (raw: unknown): SavedGame | null => {
 
 const NOT_A_FILE: FileProblem = {
     code: 'not-a-file',
-    message: 'This is not a file of saved games.',
+    message: 'This is not a file of saved games, so nothing changed. Choose a file this app saved.',
 };
 
 /** Every record a list holds, read, or null when one of them is not what the list is of. */

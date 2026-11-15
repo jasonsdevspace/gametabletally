@@ -287,16 +287,37 @@ export const openStore = async (
     return storeOver(database);
 };
 
+/** The browser's storage manager, or null in a browser that has none. */
+const storageManager = (): StorageManager | null =>
+    typeof navigator !== 'undefined' && 'storage' in navigator ? navigator.storage : null;
+
+/**
+ * Whether the browser has agreed to keep what the app has saved, without asking it to, or null
+ * when the browser does not say.
+ */
+export const storageKept = async (
+    storage: Pick<StorageManager, 'persisted'> | null = storageManager()
+): Promise<boolean | null> => {
+    if (!storage) return null;
+    try {
+        return await storage.persisted();
+    } catch {
+        return null;
+    }
+};
+
 /**
  * Asks the browser to keep what the app has saved. A browser may clear a site's data when the
- * phone runs low, and a site that has asked is passed over. Resolves to whether it agreed.
+ * phone runs low, and passes over a site it has agreed to keep. Resolves to whether it has agreed.
+ * A browser that has agreed already is not asked again, so a visitor who said yes is never asked
+ * twice.
  */
 export const keepStorage = async (
-    storage: Pick<StorageManager, 'persist'> | null = 'storage' in navigator
-        ? navigator.storage
-        : null
+    storage: Pick<StorageManager, 'persist' | 'persisted'> | null = storageManager()
 ): Promise<boolean> => {
     if (!storage) return false;
+    // A browser that will not say whether it agreed is asked all the same.
+    if ((await storageKept(storage)) === true) return true;
     try {
         return await storage.persist();
     } catch {

@@ -70,8 +70,10 @@ finished one are saved alike, and whether it is over is worked out from its roun
   newer build asks to upgrade it, so the upgrade is not kept waiting.
 - **A removed player who has played is kept and marked,** so a finished game still says who
   played it. A game names its players by id, and a name is looked up when it is shown.
-- **The store can ask the browser to keep its storage,** since a browser may clear a site's data
-  when the phone runs low and passes over a site that has asked.
+- **The app asks the browser to keep its storage once a started game is saved,** since a browser
+  may clear a site's data when the phone runs low and passes over a site it has agreed to keep. A
+  browser that has agreed already is not asked again, and the about page reads its answer without
+  asking.
 
 ## Consequences
 
@@ -81,8 +83,9 @@ finished one are saved alike, and whether it is over is worked out from its roun
   right way when a rule set is corrected.
 - The module in front of the database is code a line of local storage would not need, and a
   change to the saved shape is an upgrade, a reader for the older file and a test.
-- A browser can still clear the data of a site it was not asked to keep, or one whose user clears
-  it. The exported file is the backup until there is sync.
+- A browser can still clear the data of a site it has not agreed to keep, or one whose user clears
+  it. The about page says whether the browser has agreed, and the file it saves is the backup until
+  there is sync.
 - A merge keeps the later copy of a game by the time each was changed, as each phone's clock told
   it. Two phones changing one game is rare with no sync, and the later clock wins.
 - A merge deletes nothing, so a game deleted on one phone returns from a file that still holds
@@ -100,7 +103,8 @@ finished one are saved alike, and whether it is over is worked out from its roun
   not one is passed over, counted and left out of a file, and still keeps the player it names. A
   database upgraded by a newer build is refused with the sentence a page shows, an open store lets
   go when a newer build asks, and a connection that does not is reported. The answer to asking the
-  browser to keep its storage is passed on.
+  browser to keep its storage is passed on, a browser that has agreed already is not asked again,
+  and whether it has agreed is read without asking it.
 - `apps/web/src/store/format.test.ts` holds a saved game to its fields, with no total among them,
   holds the readers to each rule a field has, a draft's included, holds the scoring input to the
   saved rounds and never the draft, and holds the file's reader to refusing a newer file, a record
@@ -108,6 +112,12 @@ finished one are saved alike, and whether it is over is worked out from its roun
 - `apps/web/src/play/play.test.ts` plays a game of each kind through the module alone and holds a
   round half entered to scoring nothing and ending no game. A game opens again at the same round,
   player and entry, a Wizard round is saved between its bids and its tricks, and a reopened round
-  left without saving changes no saved round.
+  left without saving changes no saved round. A started game asks the browser to keep the games
+  once it is saved, and one the store refused does not ask.
+- `apps/web/src/website/Backup.test.tsx` saves every game to a file named for the day that the
+  reader takes back, restores only what the phone does not hold, says why a refused file was not
+  read with nothing changed, and says a file saved now will leave out a record that cannot be read.
+  `apps/web/e2e/backup.spec.ts` saves a file in one browser and restores it, by keyboard, in
+  another that never held the game.
 - A database on a real disk that outlives a closed tab is not proven by these tests, which run in
-  memory.
+  memory or in a browser profile that is thrown away after each test.

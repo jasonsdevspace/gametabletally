@@ -1,6 +1,6 @@
 import { score } from '@gametabletally/scoring';
 import { IDBFactory } from 'fake-indexeddb';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
     FORMAT,
@@ -11,7 +11,7 @@ import {
     type SavedPlayer,
     toScoreInput,
 } from './format.js';
-import { BLOCKED_DATABASE, keepStorage, NEWER_DATABASE, openStore } from './store.js';
+import { BLOCKED_DATABASE, keepStorage, NEWER_DATABASE, openStore, storageKept } from './store.js';
 
 /*
  * The store runs here against an IndexedDB that lives in memory, with the real one's
@@ -384,15 +384,46 @@ describe('a database and a build of different versions', () => {
 });
 
 describe('asking the browser to keep what is saved', () => {
+    /** A browser's storage manager that has agreed or not, and counts how often it is asked. */
+    const manager = (kept: boolean, answer: () => Promise<boolean>) => {
+        const persist = vi.fn(answer);
+        return { persist, persisted: () => Promise.resolve(kept) };
+    };
+
     it('says whether the browser agreed', async () => {
-        expect(await keepStorage({ persist: () => Promise.resolve(true) })).toBe(true);
-        expect(await keepStorage({ persist: () => Promise.resolve(false) })).toBe(false);
+        expect(await keepStorage(manager(false, () => Promise.resolve(true)))).toBe(true);
+        expect(await keepStorage(manager(false, () => Promise.resolve(false)))).toBe(false);
+    });
+
+    it('does not ask a browser that has agreed already, since one may ask the visitor each time', async () => {
+        const storage = manager(true, () => Promise.resolve(true));
+        expect(await keepStorage(storage)).toBe(true);
+        expect(storage.persist).not.toHaveBeenCalled();
+    });
+
+    it('asks a browser that will not say whether it agreed', async () => {
+        const persist = vi.fn(() => Promise.resolve(true));
+        expect(
+            await keepStorage({ persist, persisted: () => Promise.reject(new Error('blocked')) })
+        ).toBe(true);
+        expect(persist).toHaveBeenCalledOnce();
     });
 
     it('says no where the browser cannot be asked, or refuses to answer', async () => {
         expect(await keepStorage(null)).toBe(false);
-        expect(await keepStorage({ persist: () => Promise.reject(new Error('blocked')) })).toBe(
+        expect(await keepStorage(manager(false, () => Promise.reject(new Error('blocked'))))).toBe(
             false
         );
+    });
+
+    it('says whether the browser has agreed without asking, and nothing where it does not say', async () => {
+        const storage = manager(true, () => Promise.resolve(true));
+        expect(await storageKept(storage)).toBe(true);
+        expect(await storageKept(manager(false, () => Promise.resolve(true)))).toBe(false);
+        expect(storage.persist).not.toHaveBeenCalled();
+        expect(await storageKept(null)).toBeNull();
+        expect(
+            await storageKept({ persisted: () => Promise.reject(new Error('blocked')) })
+        ).toBeNull();
     });
 });
