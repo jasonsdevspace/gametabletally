@@ -115,7 +115,8 @@ const names = (row: unknown, id: string): boolean =>
     Array.isArray(row.players) &&
     row.players.includes(id);
 
-const byAdded = (first: SavedPlayer, second: SavedPlayer): number =>
+/** The order players are listed in: the order they were added. */
+export const byAdded = (first: SavedPlayer, second: SavedPlayer): number =>
     compareInstants(first.added, second.added);
 
 const lastChangedFirst = (first: SavedGame, second: SavedGame): number =>

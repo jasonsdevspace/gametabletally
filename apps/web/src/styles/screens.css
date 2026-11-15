@@ -112,6 +112,13 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* A player's page: their name, large, as the page is about them. */
+.gtt-player-name {
+    margin: 0;
+    font-size: var(--dk-text-display);
+    overflow-wrap: anywhere;
+}
+
 /* The score header: whose turn it is, their total in flip digits, and how it adds up. */
 .gtt-score {
     display: grid;
