@@ -1,17 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
-import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
-import { AddByName, type Said } from './player-parts.js';
-import {
-    gamesOf,
-    nameRefusal,
-    newPlayerOf,
-    PLAYERS_CHANGED,
-    type PlayersRead,
-    readPlayers,
-} from './players.js';
+import { byAdded, openStore, refusalOf, type Store, withStore } from '../store/store.js';
+import { AddByName, Announce, usePlayersRead, useSay } from './player-parts.js';
+import { gamesOf, nameRefusal, newPlayerOf } from './players.js';
 
 /**
  * The players screen: every player still offered for a new game, in the order they were added,
@@ -31,41 +22,15 @@ export interface PlayersListProps {
 const today = () => new Date();
 const randomId = () => crypto.randomUUID();
 
+const UNREAD = 'Your players could not be opened in this browser. Reload the page to try again.';
+
 export const PlayersList = ({
     open = openStore,
     newId = randomId,
     now = today,
 }: PlayersListProps) => {
-    const [read, setRead] = useState<PlayersRead | null>(null);
-    const [unread, setUnread] = useState('');
-    const [said, setSaid] = useState<Said>({ words: '', count: 0 });
-    const nameField = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        let left = false;
-        const again = () => {
-            readPlayers(open).then(
-                (found) => {
-                    if (left) return;
-                    setRead(found);
-                    setUnread('');
-                },
-                (error: unknown) => {
-                    if (!left)
-                        setUnread(
-                            refusalOf(error) ??
-                                'Your players could not be opened in this browser. Reload the page to try again.'
-                        );
-                }
-            );
-        };
-        again();
-        window.addEventListener(PLAYERS_CHANGED, again);
-        return () => {
-            left = true;
-            window.removeEventListener(PLAYERS_CHANGED, again);
-        };
-    }, [open]);
+    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
+    const [said, say] = useSay();
 
     const add = async (typed: string): Promise<string | null> => {
         // A name is checked against the saved players, so none is added before they are read.
@@ -78,15 +43,19 @@ export const PlayersList = ({
         } catch (error) {
             return refusalOf(error) ?? 'The player could not be saved. Try again.';
         }
+        // A removed player brought back keeps the day they were added, and so their place.
         setRead((before) =>
             before === null
                 ? before
                 : {
                       ...before,
-                      players: [...before.players.filter(({ id }) => id !== player.id), player],
+                      players: [
+                          ...before.players.filter(({ id }) => id !== player.id),
+                          player,
+                      ].sort(byAdded),
                   }
         );
-        setSaid((before) => ({ words: `${player.name} added.`, count: before.count + 1 }));
+        say(`${player.name} added.`);
         return null;
     };
 
@@ -119,10 +88,8 @@ export const PlayersList = ({
                     ))}
                 </ul>
             )}
-            <AddByName field={nameField} onAdd={add} />
-            <p className="dk-visually-hidden" role="status">
-                {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
-            </p>
+            <AddByName onAdd={add} />
+            <Announce said={said} />
         </>
     );
 };

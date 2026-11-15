@@ -1,10 +1,21 @@
-import { type FormEvent, type RefObject, useRef, useState, useSyncExternalStore } from 'react';
+import {
+    type FormEvent,
+    type RefObject,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 
+import { refusalOf, type Store } from '../store/store.js';
+import { PLAYERS_CHANGED, type PlayersRead, readPlayers } from './players.js';
 import { cleanName } from './seats.js';
 
 /*
  * What the screens that name players share: the longest name, a way to tell the prerender from the
- * running screen, words said to a screen reader, and the field a new player's name is typed in.
+ * running screen, words said to a screen reader, the saved players as read, and the field a new
+ * player's name is typed in.
  */
 
 /** The longest name a player can be given, which fits a seat's row and a table of scores. */
@@ -15,6 +26,60 @@ export interface Said {
     readonly words: string;
     readonly count: number;
 }
+
+/** The words to say to a screen reader, and the function that says the next. */
+export const useSay = (): readonly [Said, (words: string) => void] => {
+    const [said, setSaid] = useState<Said>({ words: '', count: 0 });
+    const say = useCallback((words: string) => {
+        setSaid((before) => ({ words, count: before.count + 1 }));
+    }, []);
+    return [said, say];
+};
+
+/**
+ * A status line out of sight that says each message once it is set. Each is drawn in an element
+ * of its own, so the same words said twice are heard twice.
+ */
+export const Announce = ({ said }: { readonly said: Said }) => (
+    <p className="dk-visually-hidden" role="status">
+        {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
+    </p>
+);
+
+/**
+ * The saved players and how many games each has played, read once the screen is running and again
+ * when a player is put back from a toast, and why they could not be read, if so. Only the latest
+ * read is drawn, so one that is answered late never draws over a newer one.
+ */
+export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) => {
+    const [read, setRead] = useState<PlayersRead | null>(null);
+    const [unread, setUnread] = useState('');
+    useEffect(() => {
+        let latest = 0;
+        let left = false;
+        const again = () => {
+            latest += 1;
+            const asked = latest;
+            readPlayers(open).then(
+                (found) => {
+                    if (left || asked !== latest) return;
+                    setRead(found);
+                    setUnread('');
+                },
+                (error: unknown) => {
+                    if (!left && asked === latest) setUnread(refusalOf(error) ?? unreadWords);
+                }
+            );
+        };
+        again();
+        window.addEventListener(PLAYERS_CHANGED, again);
+        return () => {
+            left = true;
+            window.removeEventListener(PLAYERS_CHANGED, again);
+        };
+    }, [open, unreadWords]);
+    return { read, setRead, unread };
+};
 
 const subscribeToNothing = () => () => undefined;
 
@@ -30,14 +95,14 @@ export const useRunning = (): boolean =>
     );
 
 /**
- * The field a new player's name is typed in, with its button. `onAdd` seats the name and resolves
- * to why it could not, which is drawn as the field's error, or null once it is seated.
+ * The field a new player's name is typed in, with its button. `onAdd` takes the name and resolves
+ * to why it could not, which is drawn as the field's error, or null once it is taken.
  */
 export const AddByName = ({
     field,
     onAdd,
 }: {
-    readonly field: RefObject<HTMLInputElement | null>;
+    readonly field?: RefObject<HTMLInputElement | null>;
     readonly onAdd: (typed: string) => Promise<string | null>;
 }) => {
     const [name, setName] = useState('');

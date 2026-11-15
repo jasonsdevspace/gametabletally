@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { openPlay } from '../play/play.js';
 import type { SavedPlayer } from '../store/format.js';
-import { openStore } from '../store/store.js';
+import { openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { PlayerPage } from './PlayerPage.js';
 import { PLAYERS_CHANGED } from './players.js';
@@ -19,7 +19,11 @@ const player = (id: string, name: string, removed = false): SavedPlayer => ({
 });
 
 /** A database with Ann, who has played a game with Ben, and Cat, who has played none. */
-const draw = async (id: string) => {
+const draw = async (
+    id: string,
+    wrap: (open: () => Promise<Store>) => () => Promise<Store> = (open) => open,
+    navigates = false
+) => {
     window.history.replaceState(null, '', `/player/?id=${id}`);
     const factory = new IDBFactory();
     const store = await openStore(factory);
@@ -37,12 +41,16 @@ const draw = async (id: string) => {
     const went: string[] = [];
     render(
         <AppFrame screen="player" title="Player">
-            <PlayerPage
-                open={open}
-                go={(href) => {
-                    went.push(href);
-                }}
-            />
+            {navigates ? (
+                <PlayerPage open={wrap(open)} />
+            ) : (
+                <PlayerPage
+                    open={wrap(open)}
+                    go={(href) => {
+                        went.push(href);
+                    }}
+                />
+            )}
         </AppFrame>
     );
     return { open, went };
@@ -149,5 +157,93 @@ describe("a player's page", () => {
         expect(
             within(screen.getByRole('banner')).getByRole('link', { name: 'All players' })
         ).toHaveAttribute('href', '/players/');
+    });
+
+    it('removes the player as last renamed, when Remove is pressed as the rename saves', async () => {
+        const { open } = await draw('ann');
+        await screen.findByRole('heading', { name: 'Ann' });
+        fireEvent.change(nameField(), { target: { value: 'Annie' } });
+        fireEvent.blur(nameField());
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Ann' }));
+        await waitFor(() => {
+            expect(toast().getByText('Annie removed.')).toBeInTheDocument();
+        });
+        expect((await players(open)).find(({ id }) => id === 'ann')).toEqual({
+            ...player('ann', 'Annie'),
+            removed: true,
+        });
+        fireEvent.click(toast().getByRole('button', { name: 'Undo' }));
+        await waitFor(async () => {
+            expect((await players(open)).find(({ id }) => id === 'ann')).toEqual(
+                player('ann', 'Annie')
+            );
+        });
+    });
+
+    it('removes once, however quickly Remove is pressed twice', async () => {
+        const { went } = await draw('cat');
+        const remove = await screen.findByRole('button', { name: 'Remove Cat' });
+        fireEvent.click(remove);
+        fireEvent.click(remove);
+        await waitFor(() => {
+            expect(went).toEqual(['/players/']);
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(went).toEqual(['/players/']);
+    });
+
+    it('goes to the players screen in the removed player’s place, so Back does not lead to no one', async () => {
+        await draw('cat', undefined, true);
+        const entries = window.history.length;
+        fireEvent.click(await screen.findByRole('button', { name: 'Remove Cat' }));
+        await waitFor(() => {
+            expect(window.location.pathname).toBe('/players/');
+        });
+        expect(window.history.length).toBe(entries);
+    });
+
+    it('puts no one back whose name another player has taken since, and says why', async () => {
+        const { open } = await draw('cat');
+        fireEvent.click(await screen.findByRole('button', { name: 'Remove Cat' }));
+        await waitFor(() => {
+            expect(toast().getByText('Cat removed.')).toBeInTheDocument();
+        });
+        const store = await open();
+        await store.savePlayer({ ...player('cat-2', 'Cat'), added: '2026-11-02T10:00:00Z' });
+        store.close();
+        fireEvent.click(toast().getByRole('button', { name: 'Undo' }));
+        await waitFor(() => {
+            expect(
+                toast().getByText('Cat could not be put back, since another player has the name.')
+            ).toBeInTheDocument();
+        });
+        expect((await players(open)).filter(({ name }) => name === 'Cat')).toHaveLength(1);
+    });
+
+    it('saves a name typed while another saves, after it', async () => {
+        let release: () => void = () => undefined;
+        const held = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        let saves = 0;
+        const { open } = await draw('ann', (opener) => async () => {
+            const store = await opener();
+            return {
+                ...store,
+                savePlayer: async (one) => {
+                    saves += 1;
+                    if (saves === 1) await held;
+                    await store.savePlayer(one);
+                },
+            };
+        });
+        await screen.findByRole('heading', { name: 'Ann' });
+        fireEvent.change(nameField(), { target: { value: 'Annie' } });
+        fireEvent.submit(nameField());
+        fireEvent.change(nameField(), { target: { value: 'Anna' } });
+        fireEvent.blur(nameField());
+        release();
+        expect(await screen.findByRole('heading', { name: 'Anna' })).toBeVisible();
+        expect((await players(open)).find(({ id }) => id === 'ann')?.name).toBe('Anna');
     });
 });

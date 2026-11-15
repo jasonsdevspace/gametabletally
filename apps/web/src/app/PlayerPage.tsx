@@ -6,8 +6,8 @@ import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
-import { NAME_LENGTH, type Said, useRunning } from './player-parts.js';
-import { gamesOf, nameRefusal, playersChanged, type PlayersRead, readPlayers } from './players.js';
+import { Announce, NAME_LENGTH, usePlayersRead, useRunning, useSay } from './player-parts.js';
+import { gamesOf, nameRefusal, playersChanged } from './players.js';
 import { cleanName } from './seats.js';
 
 /**
@@ -36,25 +36,21 @@ const RenameField = ({
 }) => {
     const [name, setName] = useState(player.name);
     const [error, setError] = useState('');
-    // Set while a name is being saved, so leaving the field as Enter saves it saves it once.
-    const saving = useRef(false);
 
+    // Each save is put in order by the page, which skips one that changes nothing, so a blur that
+    // follows Enter saves the name once and a name typed while another saves is saved after it.
     const save = async () => {
         const typed = cleanName(name);
-        if (saving.current || typed === player.name) return;
+        if (typed === player.name) return;
         const refused = nameRefusal(players, typed, player.id);
         if (refused !== null) {
             setError(refused);
             return;
         }
-        saving.current = true;
-        try {
-            const failed = await onRename(typed);
-            setError(failed ?? '');
-            if (failed === null) setName(typed);
-        } finally {
-            saving.current = false;
-        }
+        const failed = await onRename(typed);
+        setError(failed ?? '');
+        // Tidied to the name saved, unless something else has been typed since.
+        if (failed === null) setName((now) => (cleanName(now) === typed ? typed : now));
     };
 
     return (
@@ -70,7 +66,7 @@ const RenameField = ({
                 Name
             </label>
             <p className="dk-field-hint" id="player-name-hint">
-                Saved as you leave the field.
+                Saved as you leave the field or press Enter.
             </p>
             {error === '' ? null : (
                 <p className="dk-field-error" id="player-name-error">
@@ -99,42 +95,35 @@ const RenameField = ({
     );
 };
 
-const goTo = (href: string) => {
-    navigate(href);
+/** Goes to the players screen in the removed player's place, so Back does not lead to no one. */
+const goInPlace = (href: string) => {
+    navigate(href, { replace: true });
 };
 
-export const PlayerPage = ({ open = openStore, go = goTo }: PlayerPageProps) => {
+const UNREAD = 'This player could not be opened in this browser. Reload the page to try again.';
+
+export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps) => {
     const { search } = usePlace();
     const running = useRunning();
     const show = useToast();
-    const [read, setRead] = useState<PlayersRead | null>(null);
-    const [unread, setUnread] = useState('');
-    const [said, setSaid] = useState<Said>({ words: '', count: 0 });
+    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
+    const [said, say] = useSay();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;
+    const player = read?.players.find((one) => one.id === id && !one.removed);
+    // The player as last saved, which a save waiting its turn reads when it runs.
+    const current = useRef(player);
+    // Each save waits for the one before it, so a rename and a removal land in the order made.
+    const queue = useRef<Promise<unknown>>(Promise.resolve());
+    // Set once a removal starts, so a second press does not remove the player twice.
+    const removing = useRef(false);
 
     useEffect(() => {
-        let left = false;
-        readPlayers(open).then(
-            (found) => {
-                if (!left) setRead(found);
-            },
-            (error: unknown) => {
-                if (!left)
-                    setUnread(
-                        refusalOf(error) ??
-                            'This player could not be opened in this browser. Reload the page to try again.'
-                    );
-            }
-        );
-        return () => {
-            left = true;
-        };
-    }, [open]);
+        current.current = player;
+    }, [player]);
 
     if (unread !== '') return <p role="alert">{unread}</p>;
     if (read === null || !running) return null;
-    const player = read.players.find((one) => one.id === id && !one.removed);
     if (!player)
         return (
             <>
@@ -145,40 +134,79 @@ export const PlayerPage = ({ open = openStore, go = goTo }: PlayerPageProps) => 
             </>
         );
 
-    const rename = async (name: string): Promise<string | null> => {
-        const renamed = { ...player, name };
-        try {
-            await withStore(open, (store) => store.savePlayer(renamed));
-        } catch (error) {
-            return refusalOf(error) ?? 'The name could not be saved. Try again.';
-        }
-        setRead({
-            ...read,
-            players: read.players.map((one) => (one.id === renamed.id ? renamed : one)),
+    const inOrder = <Result,>(work: () => Promise<Result>): Promise<Result> => {
+        const run = queue.current.then(work, work);
+        queue.current = run.catch(() => undefined);
+        return run;
+    };
+
+    const rename = (name: string): Promise<string | null> =>
+        inOrder(async () => {
+            const was = current.current;
+            if (!was || was.name === name) return null;
+            const renamed = { ...was, name };
+            try {
+                await withStore(open, (store) => store.savePlayer(renamed));
+            } catch (error) {
+                return refusalOf(error) ?? 'The name could not be saved. Try again.';
+            }
+            current.current = renamed;
+            setRead((before) =>
+                before === null
+                    ? before
+                    : {
+                          ...before,
+                          players: before.players.map((one) =>
+                              one.id === renamed.id ? renamed : one
+                          ),
+                      }
+            );
+            say(`Saved as ${name}.`);
+            return null;
         });
-        setSaid((before) => ({ words: `Saved as ${name}.`, count: before.count + 1 }));
-        return null;
+
+    /** Puts a removed player back as they were, unless another player has taken their name. */
+    const putBack = (was: SavedPlayer) => {
+        withStore(open, async (store) => {
+            const taken = nameRefusal(await store.players(), was.name, was.id) !== null;
+            if (!taken) await store.savePlayer(was);
+            return taken;
+        }).then(
+            (taken) => {
+                if (taken)
+                    show(`${was.name} could not be put back, since another player has the name.`);
+                else playersChanged();
+            },
+            () => {
+                show(`${was.name} could not be put back.`);
+            }
+        );
     };
 
     const remove = async () => {
+        if (removing.current) return;
+        removing.current = true;
         setFailed('');
+        let was: SavedPlayer | undefined;
         try {
-            await withStore(open, (store) => store.removePlayer(player.id));
+            was = await inOrder(async () => {
+                const last = current.current;
+                if (last) await withStore(open, (store) => store.removePlayer(last.id));
+                return last;
+            });
         } catch (error) {
+            removing.current = false;
             setFailed(refusalOf(error) ?? `${player.name} could not be removed. Try again.`);
             return;
         }
+        if (!was) return;
+        const removed = was;
         go(hrefOf('players'));
         // The frame's toast outlives the move, so Undo is offered on the players screen.
-        show(`${player.name} removed.`, {
+        show(`${removed.name} removed.`, {
             label: 'Undo',
             onAction: () => {
-                void withStore(open, (store) => store.savePlayer(player)).then(
-                    playersChanged,
-                    () => {
-                        show(`${player.name} could not be put back.`);
-                    }
-                );
+                putBack(removed);
             },
         });
     };
@@ -189,9 +217,7 @@ export const PlayerPage = ({ open = openStore, go = goTo }: PlayerPageProps) => 
             <h2 className="gtt-player-name">{player.name}</h2>
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
             <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
-            <p className="dk-visually-hidden" role="status">
-                {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
-            </p>
+            <Announce said={said} />
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>
@@ -199,7 +225,7 @@ export const PlayerPage = ({ open = openStore, go = goTo }: PlayerPageProps) => 
             <p className="gtt-fine">
                 {played === 0
                     ? 'Removing a player who has played no game deletes them.'
-                    : 'Removing a player keeps them in the games they played, and offers them for no new game.'}
+                    : 'Removing a player keeps them in the games they played, but no longer offers them for a new game.'}
             </p>
         </>
     );

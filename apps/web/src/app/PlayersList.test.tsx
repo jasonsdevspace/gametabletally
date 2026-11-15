@@ -143,4 +143,54 @@ describe('the players screen', () => {
         render(<PlayersList open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
         expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
     });
+
+    it('lists a removed player brought back by name in their place, by the day they were added', async () => {
+        await draw([
+            player('ann', 'Ann', '2026-11-01T10:00:00Z', true),
+            player('ben', 'Ben', '2026-11-01T10:01:00Z'),
+        ]);
+        addByName('ann');
+        await waitFor(() => {
+            expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben']);
+        });
+    });
+
+    it('draws only the latest read, when an earlier one is answered after it', async () => {
+        const { open } = await database(SAVED);
+        let release: () => void = () => undefined;
+        const held = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        let opened = 0;
+        const slowFirst = async () => {
+            opened += 1;
+            const store = await open();
+            if (opened !== 1) return store;
+            const before = await store.players();
+            return {
+                ...store,
+                players: async () => {
+                    await held;
+                    return before;
+                },
+            };
+        };
+        render(<PlayersList open={slowFirst} />);
+        // Old is put back, and the second read finds them while the first is still waiting.
+        const store = await open();
+        await store.savePlayer(player('old', 'Old', '2026-11-01T10:02:00Z'));
+        store.close();
+        act(() => {
+            playersChanged();
+        });
+        await waitFor(() => {
+            expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben', 'Old']);
+        });
+        await act(async () => {
+            release();
+            await held;
+            await new Promise((resolve) => setTimeout(resolve, 20));
+        });
+        expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben', 'Old']);
+    });
 });

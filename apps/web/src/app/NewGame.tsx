@@ -9,7 +9,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
-import { AddByName, type Said, useRunning } from './player-parts.js';
+import { AddByName, Announce, useRunning, useSay } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
 /**
@@ -168,7 +168,7 @@ export const NewGame = ({
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
-    const [said, setSaid] = useState<Said>({ words: '', count: 0 });
+    const [said, say] = useSay();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
     const focus = useRef<Focus | null>(null);
@@ -200,10 +200,6 @@ export const NewGame = ({
     const byId = new Map(players.map((player) => [player.id, player]));
     const nameOf = (id: string) => byId.get(id)?.name ?? '';
     const offered = players.filter(({ id, removed }) => !removed && !seats.includes(id));
-
-    const say = (words: string) => {
-        setSaid((before) => ({ words, count: before.count + 1 }));
-    };
 
     /** Seats a player after the ones seated, `taken` of them, which a late answer passes. */
     const seat = (player: SavedPlayer, taken = seats.length) => {
@@ -342,9 +338,7 @@ export const NewGame = ({
                 )}
                 <AddByName field={nameField} onAdd={addByName} />
             </section>
-            <p className="dk-visually-hidden" role="status">
-                {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
-            </p>
+            <Announce said={said} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
                 {refused === '' ? null : <p role="alert">{refused}</p>}
