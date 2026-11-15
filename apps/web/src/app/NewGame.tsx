@@ -1,15 +1,6 @@
 import { GAMES } from '@gametabletally/scoring';
 import { Button, ChoiceField } from '@jasonsdevspace/design-kit/react';
-import {
-    type FormEvent,
-    type ReactNode,
-    type RefObject,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-    useSyncExternalStore,
-} from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
@@ -18,7 +9,8 @@ import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
-import { cleanName, moveSeat, playerNamed, seatsProblem } from './seats.js';
+import { AddByName, type Said, useRunning } from './player-parts.js';
+import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
 /**
  * The new game screen: the game, the players and their seats, and the button that starts it. The
@@ -27,9 +19,6 @@ import { cleanName, moveSeat, playerNamed, seatsProblem } from './seats.js';
  * offered from then on. The seats are a list with a button to move each one up and one to move it
  * down, which a keyboard and a thumb both reach, and a screen reader is told each seat's new place.
  */
-
-/** The longest name a player can be given, which fits a seat's row and a table of scores. */
-const NAME_LENGTH = 30;
 
 /** An icon on a seat's button, drawn in the button's color and hidden from a screen reader. */
 const Icon = ({ children }: { readonly children: ReactNode }) => (
@@ -73,25 +62,6 @@ const selectorOf = (wanted: Focus): string | null => {
     return `[data-saved="${CSS.escape(wanted.saved)}"]`;
 };
 
-/** Something said to a screen reader, counted so the same words said twice are heard twice. */
-interface Said {
-    readonly words: string;
-    readonly count: number;
-}
-
-const subscribeToNothing = () => () => undefined;
-
-/**
- * Whether the screen is running in the browser past its first draw: false in the prerender and
- * while the browser takes the prerendered page over, so the two are the same page, and true after.
- */
-const useRunning = (): boolean =>
-    useSyncExternalStore(
-        subscribeToNothing,
-        () => true,
-        () => false
-    );
-
 /** One seat: the player's name and place, and the buttons that move it and remove it. */
 const SeatRow = ({
     id,
@@ -133,68 +103,6 @@ const SeatRow = ({
                 })}
             </div>
         </li>
-    );
-};
-
-/**
- * The field a new player's name is typed in, with its button. `onAdd` seats the name and resolves
- * to why it could not, which is drawn as the field's error, or null once it is seated.
- */
-const AddByName = ({
-    field,
-    onAdd,
-}: {
-    readonly field: RefObject<HTMLInputElement | null>;
-    readonly onAdd: (typed: string) => Promise<string | null>;
-}) => {
-    const [name, setName] = useState('');
-    const [error, setError] = useState('');
-    // Set while a name is being saved, so a second press does not save it twice.
-    const adding = useRef(false);
-    const submit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (adding.current) return;
-        adding.current = true;
-        try {
-            const refused = await onAdd(cleanName(name));
-            setError(refused ?? '');
-            if (refused === null) setName('');
-        } finally {
-            adding.current = false;
-        }
-    };
-    return (
-        <form className="dk-field" noValidate onSubmit={(event) => void submit(event)}>
-            <label className="dk-field-label" htmlFor="new-player">
-                A new player&apos;s name
-            </label>
-            {error === '' ? null : (
-                <p className="dk-field-error" id="new-player-error">
-                    <span className="dk-visually-hidden">Error:</span> {error}
-                </p>
-            )}
-            <div className="dk-field-action">
-                <input
-                    ref={field}
-                    className="dk-input"
-                    id="new-player"
-                    autoComplete="off"
-                    autoCapitalize="words"
-                    enterKeyHint="done"
-                    maxLength={NAME_LENGTH}
-                    value={name}
-                    aria-invalid={error === '' ? undefined : true}
-                    aria-describedby={error === '' ? undefined : 'new-player-error'}
-                    onChange={(event) => {
-                        setName(event.currentTarget.value);
-                        setError('');
-                    }}
-                />
-                <button type="submit" className="dk-button">
-                    Add
-                </button>
-            </div>
-        </form>
     );
 };
 

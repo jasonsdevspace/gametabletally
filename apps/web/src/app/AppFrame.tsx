@@ -149,12 +149,24 @@ export const Dock = ({ children }: { readonly children: ReactNode }) => {
 };
 
 /** The bar's one action on a screen that has one, after the title. */
-const actionOf = (screen: string): ReactNode =>
-    screen === 'play' ? (
-        <Link className="dk-button dk-button-text" href={hrefOf('about')}>
-            About
-        </Link>
-    ) : null;
+const actionOf = (screen: string): ReactNode => {
+    switch (screen) {
+        case 'play':
+            return (
+                <Link className="dk-button dk-button-text" href={hrefOf('about')}>
+                    About
+                </Link>
+            );
+        case 'player':
+            return (
+                <Link className="dk-button dk-button-text" href={hrefOf('players')}>
+                    All players
+                </Link>
+            );
+        default:
+            return null;
+    }
+};
 
 /**
  * The frame, drawn once for every screen for keeping score and kept as the visitor moves between
