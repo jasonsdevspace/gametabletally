@@ -227,7 +227,6 @@
     border: 1px solid var(--dk-line);
     border-radius: var(--dk-radius-large);
     box-shadow: var(--gtt-lip);
-    background: var(--dk-surface);
     color: var(--dk-fg);
 }
 

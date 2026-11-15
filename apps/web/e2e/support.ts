@@ -89,7 +89,10 @@ export const smallTargets = async (page: Page): Promise<string[]> => {
     }, TARGET);
 };
 
-/** A clock that moves on a second at each reading from a fixed start, so a seeded game's dates are fixed. */
+/**
+ * A clock that moves on a second at each reading from a fixed start, so a seeded game's dates are
+ * fixed.
+ */
 const fixedClock = () => {
     let at = Date.parse('2026-11-14T10:00:00Z');
     return () => {
@@ -152,7 +155,9 @@ export const seed = async (
                         resolve();
                     };
                     writing.onerror = () => {
-                        reject(writing.error ?? new Error('The games were not seeded.'));
+                        reject(
+                            writing.error ?? new Error('The games and players were not seeded.')
+                        );
                     };
                 };
             }),

@@ -1,17 +1,19 @@
 import { Component, type ReactNode, useEffect, useRef } from 'react';
 
+import { AppFrame, SECTION_OF } from './app/AppFrame.js';
 import { usePlace } from './navigation.js';
 import { routeAt, titleOf } from './routes.js';
-import { ErrorPage, NotFound, Screen } from './screens.js';
+import { AppScreen, ErrorPage, NotFound, Screen, ScreenFailed } from './screens.js';
 
 /**
- * Catches a screen that throws while it draws and shows the error page in its place, so a
- * failure is said in words and never leaves a blank page. A move to another screen starts
+ * Catches a screen that throws while it draws and shows what it is given in its place, the error
+ * page or, inside the app's frame, a few words in the frame's body, so a failure is said in words
+ * and never leaves a blank page. A move to another screen starts
  * afresh, since the boundary is drawn anew for each address. It sets the page's title too, so a
  * screen that failed is titled as the error page and not as the screen it was.
  */
 class Boundary extends Component<
-    { readonly children: ReactNode; readonly title: string },
+    { readonly children: ReactNode; readonly title: string; readonly failed: ReactNode },
     { readonly failed: boolean }
 > {
     override state = { failed: false };
@@ -29,7 +31,7 @@ class Boundary extends Component<
     }
 
     override render(): ReactNode {
-        return this.state.failed ? <ErrorPage /> : this.props.children;
+        return this.state.failed ? this.props.failed : this.props.children;
     }
 
     private setTitle(): void {
@@ -59,8 +61,22 @@ export const App = () => {
         document.getElementById('main')?.focus();
     }, [place, route]);
 
+    // A screen for keeping score sits in the app's frame, which is kept as the visitor moves
+    // between such screens, so a toast survives the move. Only the screen inside is drawn afresh.
+    if (route && Object.hasOwn(SECTION_OF, route.name))
+        return (
+            <AppFrame screen={route.name} title={route.title}>
+                <Boundary key={place} title={route.title} failed={<ScreenFailed />}>
+                    <AppScreen route={route} />
+                </Boundary>
+            </AppFrame>
+        );
     return (
-        <Boundary key={place} title={route?.title ?? 'Nothing at this address'}>
+        <Boundary
+            key={place}
+            title={route?.title ?? 'Nothing at this address'}
+            failed={<ErrorPage />}
+        >
             {route ? <Screen route={route} /> : <NotFound />}
         </Boundary>
     );

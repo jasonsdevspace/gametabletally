@@ -52,7 +52,7 @@ const only = (games: readonly GameInPlay[]): GameInPlay => {
 };
 
 describe('the game the start screen offers to continue', () => {
-    it("says whose turn it is, by the player's name", async () => {
+    it("says whose score is next, by the player's name", async () => {
         const { play } = await setUp();
         await play.start({
             id: 'g-1',
@@ -61,9 +61,9 @@ describe('the game the start screen offers to continue', () => {
             options: {},
             players: ['ann', 'ben'],
         });
-        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("It is Ann's turn.");
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ann's score is next.");
         await play.enter('g-1', hand([5]));
-        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("It is Ben's turn.");
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ben's score is next.");
     });
 
     it('says a round entered whole is ready to save, and a player it cannot name is the next one', async () => {
@@ -73,16 +73,49 @@ describe('the game the start screen offers to continue', () => {
             game: 'flip-7',
             rules: 1,
             options: {},
-            players: ['ann', 'ben'],
+            players: ['ann', 'ben', 'cat'],
         });
         expect(turnOf(only(play.snapshot().games), new Map())).toBe(
-            "It is the next player's turn."
+            "Another player's score is next."
         );
         await play.enter('g-1', hand([5]));
         await play.enter('g-1', hand([6]));
+        await play.enter('g-1', hand([7]));
         expect(turnOf(only(play.snapshot().games), NAMES)).toBe(
-            'The round is entered and ready to save.'
+            'Every score is in. The round is ready to save.'
         );
+    });
+
+    it('says a round the rules refuse needs a check, and a game with no round started has none', async () => {
+        const { play } = await setUp();
+        await play.start({
+            id: 'g-1',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
+        const game = only(play.snapshot().games);
+        const draft = game.draft;
+        if (!draft) throw new Error('no draft');
+        expect(turnOf({ ...game, draft: { ...draft, step: null, ready: false } }, NAMES)).toBe(
+            'Every score is in. Check the round before saving it.'
+        );
+        expect(turnOf({ ...game, draft: null }, NAMES)).toBe('The next round has not started.');
+    });
+
+    it("says a Wizard round's bid is next, then its tricks", async () => {
+        const { play } = await setUp();
+        await play.start({
+            id: 'g-1',
+            game: 'wizard',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben', 'cat'],
+        });
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ann's bid is next.");
+        for (const bid of [1, 0, 0]) await play.enter('g-1', bid);
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ann's tricks are next.");
     });
 
     it('says a Skyjo round waits on who ended it, once every card count is in', async () => {
@@ -124,7 +157,7 @@ describe('the game the start screen offers to continue', () => {
             id: 'g-new',
             name: 'Flip 7',
             round: 2,
-            turn: "It is Ann's turn.",
+            turn: "Ann's score is next.",
         });
     });
 
@@ -149,7 +182,7 @@ describe('the game the start screen offers to continue', () => {
                 },
             };
         });
-        expect(found).toMatchObject({ id: 'g-1', turn: "It is Ann's turn." });
+        expect(found).toMatchObject({ id: 'g-1', turn: "Ann's score is next." });
         expect(closed).toBe(1);
     });
 });

@@ -1,6 +1,6 @@
 import { attachToast, type ShowToast } from '@jasonsdevspace/design-kit/controls';
 import { SkipLink, Toast } from '@jasonsdevspace/design-kit/react';
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef } from 'react';
 
 import { Link } from '../navigation.js';
 import { hrefOf, type RouteName } from '../routes.js';
@@ -71,7 +71,7 @@ const TABS = [
 }[];
 
 /** The section each screen for keeping score sits under, which its tab marks. */
-export const SECTION_OF: Readonly<Partial<Record<RouteName, Section>>> = {
+export const SECTION_OF: Readonly<Record<string, Section>> = {
     play: 'play',
     new: 'play',
     game: 'play',
@@ -87,8 +87,7 @@ export const SECTION_OF: Readonly<Partial<Record<RouteName, Section>>> = {
  * screen beneath it, and nothing on another section's.
  */
 export const currentOf = (tab: Section, screen: string): 'page' | 'true' | undefined => {
-    const section = Object.entries(SECTION_OF).find(([name]) => name === screen)?.[1];
-    if (section !== tab) return undefined;
+    if (!Object.hasOwn(SECTION_OF, screen) || SECTION_OF[screen] !== tab) return undefined;
     return screen === tab ? 'page' : 'true';
 };
 
@@ -108,37 +107,42 @@ const TabBar = ({ screen }: { readonly screen: string }) => (
     </nav>
 );
 
-/** Shows a toast in the frame's one place for it. Does nothing before the frame is drawn. */
+/** What a screen outside the frame is given: a toast that shows nothing. */
 const ToastContext = createContext<ShowToast>(() => () => undefined);
 
 /** The function a screen shows a toast with, in the frame's one place for it. */
 export const useToast = (): ShowToast => useContext(ToastContext);
 
+/** The bar's one action on a screen that has one, after the title. */
+const actionOf = (screen: string): ReactNode =>
+    screen === 'play' ? (
+        <Link className="dk-button dk-button-text" href={hrefOf('about')}>
+            About
+        </Link>
+    ) : null;
+
+/**
+ * The frame, drawn once for every screen for keeping score and kept as the visitor moves between
+ * them, so a toast that offers Undo survives a move. Only the body is drawn afresh for each
+ * screen.
+ */
 export const AppFrame = ({
     screen,
     title,
-    action,
-    dock,
     children,
 }: {
-    /** The name of the screen drawn, which marks its tab. */
+    /** The screen's route name, which picks the tab it marks and the bar's action. */
     readonly screen: string;
-    /** The screen's name, its one top heading. */
+    /** The screen's title, shown in the bar as its one top heading. */
     readonly title: string;
-    /** The bar's one action, after the title. */
-    readonly action?: ReactNode;
-    /** The dock's label and what it holds, for a screen with a main button. */
-    readonly dock?: { readonly label: string; readonly children: ReactNode };
     readonly children?: ReactNode;
 }) => {
-    const toast = useRef<HTMLDivElement>(null);
     const shown = useRef<ShowToast | null>(null);
 
-    useEffect(() => {
-        if (toast.current) shown.current = attachToast(toast.current);
-        return () => {
-            shown.current = null;
-        };
+    // Attached as the toast is drawn, before any screen's effect runs, so a screen can show a
+    // toast as it arrives.
+    const attach = useCallback((element: HTMLDivElement | null) => {
+        shown.current = element ? attachToast(element) : null;
     }, []);
 
     // The same function for the frame's life, which reaches the toast once it is attached.
@@ -152,20 +156,18 @@ export const AppFrame = ({
             <div className="dk-app">
                 <header className="dk-app-bar">
                     <TallyMark size={32} />
-                    <h1 className="dk-app-title">{title}</h1>
-                    {action}
+                    <h1 className="dk-app-title" id="screen-title">
+                        {title}
+                    </h1>
+                    {actionOf(screen)}
                 </header>
-                <main id="main" tabIndex={0} className="dk-app-body">
+                {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
+                <main id="main" tabIndex={0} className="dk-app-body" aria-labelledby="screen-title">
                     {children}
                 </main>
                 <div className="dk-app-toast">
-                    <Toast ref={toast} />
+                    <Toast ref={attach} />
                 </div>
-                {dock ? (
-                    <section className="dk-app-dock" aria-label={dock.label}>
-                        {dock.children}
-                    </section>
-                ) : null}
                 <TabBar screen={screen} />
             </div>
         </ToastContext.Provider>

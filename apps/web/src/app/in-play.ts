@@ -17,13 +17,25 @@ export interface Continuing {
     readonly turn: string;
 }
 
-/** What the round being entered waits on, in a sentence. */
+/** What a player enters at each part of a round, as the sentence names it. */
+const ENTERED = { entry: 'score is', bid: 'bid is', tricks: 'tricks are' } as const;
+
+/**
+ * What the round being entered waits on, in a sentence: whose score, bid or tricks are next, who
+ * ended a Skyjo round, or a round whose every score is in, which the rules take or refuse.
+ */
 export const turnOf = (game: GameInPlay, names: ReadonlyMap<string, string>): string => {
-    const step = game.draft?.step ?? null;
-    if (step === null) return 'The round is entered and ready to save.';
-    if (step.player === null) return 'Next, say who ended the round.';
+    const { draft } = game;
+    if (draft === null) return 'The next round has not started.';
+    const { step } = draft;
+    if (step === null)
+        return draft.ready
+            ? 'Every score is in. The round is ready to save.'
+            : 'Every score is in. Check the round before saving it.';
+    if (step.player === null || step.part === 'ender') return 'Next, say who ended the round.';
+    const what = ENTERED[step.part];
     const name = names.get(step.player);
-    return name === undefined ? "It is the next player's turn." : `It is ${name}'s turn.`;
+    return `${name === undefined ? "Another player's" : `${name}'s`} ${what} next.`;
 };
 
 /**
@@ -45,15 +57,15 @@ export const continuingOf = (
 };
 
 /**
- * Reads the game to continue from the phone's database, and lets the database go. Reading asks
- * the browser for nothing, since only starting a game asks it to keep the games.
+ * Reads the game to continue from the phone's database, and lets the database go. The model is
+ * handed an ask to keep the games that does nothing, so opening the start screen never asks the
+ * browser. Only saving a started game asks that.
  */
 export const readContinuing = async (open: () => Promise<Store>): Promise<Continuing | null> => {
     const store = await open();
     try {
         const play = openPlay(store, undefined, () => Promise.resolve());
-        await play.load();
-        const players = await store.players();
+        const [, players] = await Promise.all([play.load(), store.players()]);
         return continuingOf(
             play.snapshot().games,
             new Map(players.map(({ id, name }) => [id, name]))

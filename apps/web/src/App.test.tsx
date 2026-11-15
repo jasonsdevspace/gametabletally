@@ -46,6 +46,19 @@ describe('the app', () => {
         );
     });
 
+    it("keeps the app's frame and its toast as the visitor moves between screens for keeping score", () => {
+        window.history.pushState(null, '', hrefOf('play'));
+        render(<App />);
+        const toast = document.querySelector('.dk-toast');
+        expect(toast).not.toBeNull();
+        act(() => {
+            navigate(hrefOf('history'));
+        });
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('History');
+        // The same toast, so one that offers Undo is still there after the move.
+        expect(document.querySelector('.dk-toast')).toBe(toast);
+    });
+
     it('moves to another screen with no reload, sets its title and focus, and Back returns', async () => {
         window.history.pushState(null, '', '/no-such-page/');
         render(<App />);

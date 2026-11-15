@@ -4,15 +4,14 @@
  *   npm run lighthouse
  *
  * Runs after a build, in two passes. Every address, and the not-found page, must score a hundred
- * for accessibility. Then the website's pages, a page about one thing and the not-found page are
- * measured as
- * a phone on a slow network loads them on a first visit: each must score at least ninety for
- * performance, paint its largest content within the time a visit counts as good, shift its layout
- * no more than that either, and carry no more script or style than its budget. Every page loads
- * the one script the build writes, so a page about one thing stands for the screens for keeping
- * score, and the pass stays within
- * the job's time. One trace on a shared machine can be slow for reasons of its own, so a page that
- * misses on performance is measured twice more and judged on the middle of the three.
+ * for accessibility. Then the website's pages, the start screen the installed app opens to, a page
+ * about one thing and the not-found page are measured as a phone on a slow network loads them on a
+ * first visit: each must score at least ninety for performance, paint its largest content within
+ * the time a visit counts as good, shift its layout no more than that either, and carry no more
+ * script or style than its budget. Every page loads the one script the build writes, so the start
+ * screen and a page about one thing stand for the screens for keeping score, and the pass stays
+ * within the job's time. One trace on a shared machine can be slow for reasons of its own, so a
+ * page that misses on performance is measured twice more and judged on the middle of the three.
  *
  * Lighthouse will not audit a page that answers with a 404, so the not-found page is audited at
  * its own file, which is served as any file is.

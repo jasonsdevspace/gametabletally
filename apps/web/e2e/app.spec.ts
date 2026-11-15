@@ -17,7 +17,7 @@ const player = (id: string, name: string): SavedPlayer => ({
     removed: false,
 });
 
-/** The start screen with a game of Wizard in play, Ben to bid. */
+/** The start screen with a game of Wizard in play, Ben's bid next. */
 const withGameInPlay = async (page: Page) => {
     const game = await buildGame(
         { id: 'g-wizard', game: 'wizard', rules: 1, options: {}, players: ['ann', 'ben', 'cat'] },
@@ -36,10 +36,14 @@ test('offers to continue the game in play, naming the game and whose turn it is'
     page,
 }) => {
     await withGameInPlay(page);
-    const card = page.getByRole('region', { name: 'Game in play' });
+    const card = page
+        .locator('div', {
+            has: page.getByRole('heading', { name: 'Game in play' }),
+        })
+        .last();
     await expect(card.getByText('Wizard', { exact: true })).toBeVisible();
     await expect(card.getByText('Round 1')).toBeVisible();
-    await expect(card.getByText("It is Ben's turn.")).toBeVisible();
+    await expect(card.getByText("Ben's bid is next.")).toBeVisible();
     await card.getByRole('link', { name: 'Continue the game' }).click();
     await expect(page).toHaveURL(/\/game\/\?id=g-wizard$/);
 });
@@ -50,9 +54,9 @@ test('offers only to start a game when none is in play, and says whose games the
     await page.goto(hrefOf('play'));
     await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
     await expect(
-        page.getByRole('region', { name: 'Start a new game' }).getByRole('link')
+        page.getByRole('list', { name: 'Start a new game' }).getByRole('link')
     ).toHaveCount(3);
-    await expect(page.getByRole('region', { name: 'Game in play' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Game in play' })).toHaveCount(0);
     await expect(page.getByRole('main')).toContainText('not affiliated with the publishers');
 });
 
@@ -95,6 +99,15 @@ test('keeps the tab bar at the bottom edge and one empty toast place on every sc
         await expect(page.getByRole('status'), name).toHaveCount(1);
         await expect(page.getByRole('status'), name).toHaveText('');
     }
+});
+
+test('names the main region by the screen, so focus arriving there says where the visitor is', async ({
+    page,
+}) => {
+    await page.goto(hrefOf('play'));
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    await tabs(page).getByRole('link', { name: 'History' }).click();
+    await expect(page.getByRole('main', { name: 'History' })).toBeFocused();
 });
 
 test('works by keyboard alone, from the game in play to the tabs', async ({ page }) => {

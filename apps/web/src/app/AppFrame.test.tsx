@@ -11,6 +11,11 @@ import { AppFrame, currentOf, useToast } from './AppFrame.js';
 const tabs = () => within(screen.getByRole('navigation', { name: 'Sections' }));
 
 describe("the app's frame", () => {
+    it("names its main region by the screen's heading, so focus arriving there says the screen", () => {
+        render(<AppFrame screen="players" title="Players" />);
+        expect(screen.getByRole('main', { name: 'Players' })).toBeInTheDocument();
+    });
+
     it("holds the screen's name as its one top heading, in the bar", () => {
         render(<AppFrame screen="play" title="Play" />);
         expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([

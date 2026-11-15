@@ -1,8 +1,8 @@
 /*
  * The screens for keeping score, inside the design kit's app frame. The frame, the tab bar, the
  * buttons and the toast are the kit's, so this sheet lays out only what a screen holds of its own:
- * the start screen's game in play, its list of games and its small print. It sets no color and
- * names no kit class.
+ * the start screen's game in play, its list of games and its small print. Its colors are the
+ * kit's roles, and it names no kit class.
  */
 
 /* The game in play, raised on a card with the lip, as a thing to pick up again. */
@@ -39,8 +39,8 @@
 
 .gtt-continue-game span {
     color: var(--dk-muted);
-    font-family: var(--dk-font-mono);
     font-size: var(--dk-text-small);
+    font-variant-numeric: tabular-nums;
 }
 
 .gtt-start {
@@ -76,6 +76,7 @@
 .gtt-game span {
     color: var(--dk-muted);
     font-size: var(--dk-text-small);
+    text-wrap: pretty;
 }
 
 @media (hover: hover) {

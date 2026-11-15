@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 
-import { AppFrame } from './app/AppFrame.js';
 import { PlayStart } from './app/PlayStart.js';
 import { Link } from './navigation.js';
-import { type Route, ROUTES } from './routes.js';
+import { hrefOf, type Route, ROUTES } from './routes.js';
 import { About } from './website/About.js';
 import { Install } from './website/Install.js';
 import { Start } from './website/Start.js';
@@ -18,26 +17,37 @@ import { Website } from './website/Website.js';
  * phone's own data.
  */
 
-/** A screen for keeping score that has nothing of its own yet: the frame and its heading. */
-export const Page = ({ route }: { readonly route: Route }) => (
-    <AppFrame screen={route.name} title={route.title} />
-);
+/**
+ * What a screen for keeping score holds, inside the app's frame, which the app draws around it. A
+ * screen with nothing of its own holds nothing, and the frame's bar names it.
+ */
+export const AppScreen = ({ route }: { readonly route: Route }) =>
+    route.name === 'play' ? <PlayStart /> : null;
 
-/** The screen at a route, so every address draws a heading. */
+/** The website's pages at their routes, each drawing its own frame. */
 export const Screen = ({ route }: { readonly route: Route }) => {
     switch (route.name) {
-        case 'start':
-            return <Start />;
         case 'install':
             return <Install />;
         case 'about':
             return <About />;
-        case 'play':
-            return <PlayStart />;
         default:
-            return <Page route={route} />;
+            return <Start />;
     }
 };
+
+/**
+ * What a screen for keeping score that failed shows in the frame's body. Its way back is a plain
+ * link, which loads the start screen afresh, since whatever failed may still be held in memory.
+ */
+export const ScreenFailed = () => (
+    <>
+        <p>This screen could not be shown. Your saved games are still on this phone.</p>
+        <p>
+            <a href={hrefOf('play')}>Back to the start screen</a>
+        </p>
+    </>
+);
 
 /** A page of the website that is not one of its addresses: its heading and its text. */
 const Notice = ({

@@ -53,12 +53,11 @@ npm run lighthouse
 served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
 an axe audit and a target size check of each page, the move between screens, the start screen's
 game in play and its tab bar, a backup saved in one browser and restored in another, and every
-address
-opening with the connection off after one visit. Service workers are blocked in every browser test
-but those of the worker, so no other test reads a cached page. `npm run
-lighthouse` holds every page to a hundred for accessibility, and the website's pages, a page about
-one game and the not-found page to ninety for performance, a good largest paint and layout shift, and a
-budget for the script and style each carries.
+address opening with the connection off after one visit. Service workers are blocked in every
+browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
+holds every page to a hundred for accessibility, and the website's pages, the start screen, a page
+about one game and the not-found page to ninety for performance, a good largest paint and layout
+shift, and a budget for the script and style each carries.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the
