@@ -58,9 +58,11 @@
     --dk-button-press: 0 var(--gtt-lip-depth);
 
     /*
-     * The grounds of the game tiles, each with a light and a dark value. Flip 7's tile takes the
-     * kit's highlight, `--dk-highlight`, which is the drawing's pale blue.
+     * The grounds of the game tiles, one for each game, each with a light and a dark value. Flip
+     * 7's is the drawing's pale blue, the kit's highlight's values, held as a ground of its own so
+     * a tile that is chosen, drawn on the highlight, is never mistaken for Flip 7's at rest.
      */
-    --gtt-tile-sage: light-dark(oklch(0.94 0.03 145), oklch(0.26 0.04 145));
-    --gtt-tile-gold: light-dark(oklch(0.96 0.04 90), oklch(0.28 0.04 90));
+    --gtt-ground-flip-7: light-dark(#e3eafb, #22305a);
+    --gtt-ground-skyjo: light-dark(oklch(0.94 0.03 145), oklch(0.26 0.04 145));
+    --gtt-ground-wizard: light-dark(oklch(0.96 0.04 90), oklch(0.28 0.04 90));
 }

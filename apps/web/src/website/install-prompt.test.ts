@@ -99,4 +99,50 @@ describe("the browser's offer to install", () => {
         });
         expect(result.current.kind).toBe('installed');
     });
+
+    it('keeps the offer while the browser asks, so the button that asked stays', async () => {
+        openAs(false);
+        stop = listenForInstall();
+        const { result } = renderHook(() => useInstall());
+        type Choice = { outcome: 'accepted' | 'dismissed' };
+        let answer: ((choice: Choice) => void) | undefined;
+        const event: InstallPromptEvent = Object.assign(
+            new Event('beforeinstallprompt', { cancelable: true }),
+            {
+                prompt: () => Promise.resolve(),
+                userChoice: new Promise<Choice>((done) => {
+                    answer = done;
+                }),
+            }
+        );
+        act(() => {
+            window.dispatchEvent(event);
+        });
+        let asked: Promise<void> = Promise.resolve();
+        act(() => {
+            asked = install();
+        });
+        expect(result.current.kind).toBe('offered');
+        answer?.({ outcome: 'dismissed' });
+        await act(() => asked);
+        expect(result.current.kind).toBe('none');
+    });
+
+    it('lets the offer go, with nothing thrown, when the browser refuses to show it', async () => {
+        openAs(false);
+        stop = listenForInstall();
+        const { result } = renderHook(() => useInstall());
+        const event: InstallPromptEvent = Object.assign(
+            new Event('beforeinstallprompt', { cancelable: true }),
+            {
+                prompt: () => Promise.reject(new DOMException('Used already', 'NotAllowedError')),
+                userChoice: Promise.resolve({ outcome: 'dismissed' as const }),
+            }
+        );
+        act(() => {
+            window.dispatchEvent(event);
+        });
+        await act(() => install());
+        expect(result.current.kind).toBe('none');
+    });
 });

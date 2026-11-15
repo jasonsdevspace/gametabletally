@@ -45,7 +45,7 @@ export const Start = () => (
                     One phone, passed around the table. Tap in each round, and the app adds it up by
                     the rules of {NAMES}.
                 </p>
-                <p className="gtt-actions">
+                <p className="dk-actions">
                     <Link
                         className="dk-button dk-button-accent dk-button-large"
                         href={hrefOf('play')}
@@ -115,7 +115,7 @@ export const Start = () => (
                     Good company, great games
                 </h2>
             </div>
-            <p className="gtt-actions">
+            <p className="dk-actions">
                 <Link className="dk-button dk-button-accent dk-button-large" href={hrefOf('play')}>
                     Open the app
                 </Link>

@@ -94,15 +94,22 @@ test('marks the current page in the header by more than its color', async ({ pag
                 return {
                     current: link.getAttribute('aria-current'),
                     weight: Number(drawn.fontWeight),
-                    line: drawn.textDecorationLine,
+                    ground: drawn.backgroundColor,
                 };
             });
     const [current, other] = await Promise.all([style('About'), style('Install')]);
     expect(current.current).toBe('page');
     expect(other.current).toBeNull();
     expect(current.weight).toBeGreaterThan(other.weight);
-    expect(current.line).toContain('underline');
-    expect(other.line).not.toContain('underline');
+    expect(current.ground).not.toBe(other.ground);
+});
+
+test("keeps the install page's status line on the page while it is empty, so it is heard when it speaks", async ({
+    page,
+}) => {
+    await page.goto(hrefOf('install'));
+    await expect(page.getByRole('status')).toBeAttached();
+    await expect(page.getByRole('status')).toHaveText('');
 });
 
 test("offers the browser's own prompt, and shows it when pressed", async ({ page }) => {
@@ -126,6 +133,8 @@ test("offers the browser's own prompt, and shows it when pressed", async ({ page
         'The app is installed. Open it from your home screen.'
     );
     await expect(page.getByRole('button', { name: 'Install the app' })).toHaveCount(0);
+    // The button is gone, so focus is on the way on rather than back at the page's start.
+    await expect(page.getByRole('main').getByRole('link', { name: 'Open the app' })).toBeFocused();
 });
 
 test('switches between light and dark from the about page', async ({ page }) => {

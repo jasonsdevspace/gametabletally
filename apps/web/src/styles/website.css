@@ -33,8 +33,19 @@
 
 :root {
     --gtt-font-display: 'Instrument Serif', 'Instrument Serif Fallback', Georgia, serif;
-    /* The inset that lines a band's content up with the kit's column, as the strip's is. */
-    --gtt-column-inset: calc(max(0px, (100% - var(--dk-column)) / 2) + var(--dk-space-4));
+    /* The app's name on the first visit, and every other display line, a page's or a band's. */
+    --gtt-text-hero: clamp(3rem, 2rem + 5vw, 5rem);
+    --gtt-text-display: clamp(2rem, 1.6rem + 2vw, 3rem);
+    /*
+     * The insets that line a band's content up with the kit's column, kept clear of a notch or a
+     * rounded corner on each side, as the kit's skip link is, since the pages fill the screen.
+     */
+    --gtt-inset-left: calc(
+        max(var(--dk-safe-left), max(0px, (100% - var(--dk-column)) / 2)) + var(--dk-space-4)
+    );
+    --gtt-inset-right: calc(
+        max(var(--dk-safe-right), max(0px, (100% - var(--dk-column)) / 2)) + var(--dk-space-4)
+    );
 }
 
 .gtt-display {
@@ -45,16 +56,33 @@
 }
 
 .gtt-display-hero {
-    font-size: clamp(3rem, 2rem + 5vw, 5rem);
+    font-size: var(--gtt-text-hero);
     line-height: 1;
 }
 
-.gtt-display-page {
-    font-size: clamp(2.5rem, 2rem + 2.5vw, 3.5rem);
+.gtt-display-page,
+.gtt-display-section {
+    font-size: var(--gtt-text-display);
 }
 
-.gtt-display-section {
-    font-size: clamp(2rem, 1.6rem + 2vw, 3rem);
+/*
+ * The kit resets the body alone, so each block in the website's main region starts with no
+ * margin of its own, and the rules below space them on the kit's steps. Only block margins are
+ * reset, so a kit piece's own inline room, such as the theme switch's ring, is left alone.
+ */
+:where(.gtt-site) :where(h1, h2, h3, p, ul, ol, dl, dd) {
+    margin-block: 0;
+}
+
+/* The footer stays at the bottom of a short page rather than in the middle of the screen. */
+#root:has(> .gtt-site) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+}
+
+.gtt-site {
+    flex: 1;
 }
 
 /* The header: the app's name and mark, then its links, each in view at every width. */
@@ -65,7 +93,7 @@
     justify-content: space-between;
     gap: var(--dk-space-2) var(--dk-space-5);
     padding-block: var(--dk-space-3);
-    padding-inline: var(--gtt-column-inset);
+    padding-inline: var(--gtt-inset-left) var(--gtt-inset-right);
     border-bottom: 1px solid var(--dk-line);
 }
 
@@ -96,47 +124,11 @@
     stroke-linecap: round;
 }
 
-.gtt-site-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 var(--dk-space-5);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.gtt-site-links a {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--dk-target);
-    color: inherit;
-    text-decoration: none;
-}
-
-.gtt-site-links a:hover {
-    text-decoration: underline;
-}
-
-/* The page a link leads to is marked by its weight and a heavier underline, not by color alone. */
-.gtt-site-links a[aria-current='page'] {
-    font-weight: var(--dk-weight-strong);
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.3em;
-}
-
-/*
- * The main region takes focus only from the skip link and from a move between screens, and it is
- * not something to press, so it draws no focus ring. Its bands line up with the kit's column.
- */
-.gtt-site:focus {
-    outline: none;
-}
-
+/* The main region's bands, each lined up with the kit's column. */
 .gtt-hero,
 .gtt-band,
 .gtt-page {
-    padding-inline: var(--gtt-column-inset);
+    padding-inline: var(--gtt-inset-left) var(--gtt-inset-right);
 }
 
 .gtt-hero {
@@ -151,11 +143,11 @@
 }
 
 .gtt-hero-text > :first-child + * {
-    margin-block-start: var(--dk-space-3);
+    margin-block-start: var(--dk-space-1);
 }
 
 .gtt-hero-line {
-    font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+    font-size: var(--dk-text-heading);
 }
 
 .gtt-lead {
@@ -165,17 +157,10 @@
     line-height: var(--dk-leading-body);
 }
 
-.gtt-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dk-space-3);
-}
-
 .gtt-ticks {
     display: flex;
     flex-wrap: wrap;
     gap: var(--dk-space-2) var(--dk-space-5);
-    margin: 0;
     padding: 0;
     list-style: none;
     color: var(--dk-muted);
@@ -184,7 +169,7 @@
 
 .gtt-ticks li::before {
     content: '✓\00a0';
-    color: var(--dk-accent);
+    content: '✓\00a0' / '';
 }
 
 .gtt-hero-photo {
@@ -214,7 +199,7 @@
 }
 
 .gtt-band > :first-child + h2 {
-    margin-block-start: var(--dk-space-2);
+    margin-block-start: var(--dk-space-1);
 }
 
 .gtt-band-surface {
@@ -247,15 +232,15 @@
 }
 
 .gtt-tile[data-game='flip-7'] {
-    background: var(--dk-highlight);
+    background: var(--gtt-ground-flip-7);
 }
 
 .gtt-tile[data-game='skyjo'] {
-    background: var(--gtt-tile-sage);
+    background: var(--gtt-ground-skyjo);
 }
 
 .gtt-tile[data-game='wizard'] {
-    background: var(--gtt-tile-gold);
+    background: var(--gtt-ground-wizard);
 }
 
 .gtt-tile h3 {
@@ -327,7 +312,7 @@
 }
 
 .gtt-page > :first-child + h1 {
-    margin-block-start: var(--dk-space-3);
+    margin-block-start: var(--dk-space-1);
 }
 
 .gtt-page h2 {
@@ -345,10 +330,6 @@
 
 .gtt-page p {
     max-width: var(--dk-measure);
-}
-
-.gtt-status:empty {
-    display: none;
 }
 
 .gtt-platforms {

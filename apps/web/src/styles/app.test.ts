@@ -176,7 +176,7 @@ describe("the app's sheet over the design kit", () => {
     const grounds = new Map(
         [
             ...rules.matchAll(
-                /\.gtt-tile\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z-]+)\)/g
+                /\.gtt-tile\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z0-9-]+)\)/g
             ),
         ].map(([, id = '', ground = '']) => [id, ground])
     );
@@ -199,4 +199,17 @@ describe("the app's sheet over the design kit", () => {
             expect(contrast(dark, darkMuted)).toBeGreaterThanOrEqual(4.5);
         }
     );
+
+    it("keeps the website's bands clear of a notch or a rounded corner on each side", () => {
+        expect(app.get('--gtt-inset-left')).toMatch(/^calc\(\s*max\(var\(--dk-safe-left\),/);
+        expect(app.get('--gtt-inset-right')).toMatch(/^calc\(\s*max\(var\(--dk-safe-right\),/);
+    });
+
+    it('gives every mark the sheet draws itself no words for a screen reader', () => {
+        const blocks = [...rules.matchAll(/\{([^{}]*(?<![\w-])content:[^{}]*)\}/g)].map(
+            ([, body = '']) => body
+        );
+        expect(blocks.length).toBeGreaterThan(0);
+        for (const body of blocks) expect(body).toMatch(/(?<![\w-])content:[^;]*\/\s*'';/);
+    });
 });

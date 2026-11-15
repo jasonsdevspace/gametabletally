@@ -22,10 +22,8 @@ const CARDS: Readonly<Record<string, GameCard>> = {
  * What the website says about a game, or a plain card, so a game added to the scoring package
  * still gets a tile.
  */
-export const cardOf = (id: string): GameCard => CARDS[id] ?? { line: '', mark: '' };
-
-/** Whether the website has words for a game. */
-export const hasCard = (id: string): boolean => id in CARDS;
+export const cardOf = (id: string): GameCard =>
+    (Object.hasOwn(CARDS, id) ? CARDS[id] : undefined) ?? { line: '', mark: '' };
 
 /** How many play a game, in words: "2 to 8 players", or "3 or more players" with no limit. */
 export const playersOf = ({ minPlayers, maxPlayers }: Pick<Game, 'minPlayers' | 'maxPlayers'>) =>

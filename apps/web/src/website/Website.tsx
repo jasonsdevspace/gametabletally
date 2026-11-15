@@ -14,6 +14,9 @@ import { listOf } from './games.js';
  * screen.
  */
 
+/** Where the strip's and the footer's How it works leads: the section of the about page. */
+const HOW = `${hrefOf('about')}#how`;
+
 /** The repository, which the strip and the footer link to. */
 export const SOURCE = 'https://github.com/jasonsdevspace/gametabletally';
 
@@ -54,50 +57,59 @@ const currentIf = (here: boolean) => (here ? ('page' as const) : undefined);
  */
 export const Website = ({
     current,
+    reload = false,
     children,
 }: {
     /** The page this is, so its link is marked, or none for a page the header does not list. */
     readonly current?: RouteName | undefined;
+    /**
+     * Whether the header's links load their page afresh, as on the error page, where whatever
+     * failed may still be held in memory. Otherwise they move inside the app with no reload.
+     */
+    readonly reload?: boolean;
     readonly children: ReactNode;
-}) => (
-    <>
-        <SkipLink target="main" />
-        <PortfolioStrip
-            about={hrefOf('about')}
-            source={SOURCE}
-            current={current === 'about' ? 'about' : undefined}
-        />
-        <header className="gtt-site-header">
-            <Link
-                className="gtt-brand"
-                href={hrefOf('start')}
-                aria-current={currentIf(current === 'start')}
+}) => {
+    const Way = reload ? 'a' : Link;
+    return (
+        <>
+            <SkipLink target="main" />
+            <PortfolioStrip
+                about={HOW}
+                source={SOURCE}
+                current={current === 'about' ? 'about' : undefined}
+            />
+            <header className="gtt-site-header">
+                <Way className="gtt-brand" href={hrefOf('start')}>
+                    <TallyMark size={32} />
+                    Game Table Tally
+                </Way>
+                <nav aria-label="Website">
+                    <ul className="dk-pills" role="list">
+                        {LINKS.map(({ name, label }) => (
+                            <li key={name}>
+                                <Way
+                                    className="dk-pill"
+                                    href={hrefOf(name)}
+                                    aria-current={currentIf(current === name)}
+                                >
+                                    {label}
+                                </Way>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+            </header>
+            <main id="main" tabIndex={-1} className="gtt-site">
+                {children}
+            </main>
+            <DemoFooter
+                name="Game Table Tally"
+                about={HOW}
+                source={SOURCE}
+                current={current === 'about' ? 'about' : undefined}
             >
-                <TallyMark size={32} />
-                Game Table Tally
-            </Link>
-            <nav aria-label="Website">
-                <ul className="gtt-site-links" role="list">
-                    {LINKS.map(({ name, label }) => (
-                        <li key={name}>
-                            <Link href={hrefOf(name)} aria-current={currentIf(current === name)}>
-                                {label}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </header>
-        <main id="main" tabIndex={-1} className="gtt-site">
-            {children}
-        </main>
-        <DemoFooter
-            name="Game Table Tally"
-            about={hrefOf('about')}
-            source={SOURCE}
-            current={current === 'about' ? 'about' : undefined}
-        >
-            {NOT_AFFILIATED}
-        </DemoFooter>
-    </>
-);
+                {NOT_AFFILIATED}
+            </DemoFooter>
+        </>
+    );
+};

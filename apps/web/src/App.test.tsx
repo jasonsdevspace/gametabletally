@@ -5,10 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App.js';
 import { navigate } from './navigation.js';
 import { hrefOf, ROUTES } from './routes.js';
+import { listenForInstall } from './website/install-prompt.js';
 import { NOT_AFFILIATED } from './website/Website.js';
 
 afterEach(() => {
     window.history.pushState(null, '', '/');
+    // The browser's offer is held for the whole page, so each test starts with none.
+    listenForInstall();
 });
 
 describe('the app', () => {
@@ -84,6 +87,19 @@ describe('the app', () => {
         expect(document.title).toBe('Something went wrong, Game Table Tally');
         expect(screen.getByRole('banner')).toBeInTheDocument();
         expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+        // Its header's links load their page afresh, so the app takes no click over there.
+        let taken = true;
+        const watch = (event: MouseEvent) => {
+            taken = event.defaultPrevented;
+            event.preventDefault();
+        };
+        window.addEventListener('click', watch);
+        act(() => {
+            within(screen.getByRole('banner')).getByRole('link', { name: 'About' }).click();
+        });
+        window.removeEventListener('click', watch);
+        expect(taken).toBe(false);
+        expect(window.location.pathname).toBe('/');
         expect(screen.getByRole('link', { name: 'Back to the start' })).toHaveAttribute(
             'href',
             '/'

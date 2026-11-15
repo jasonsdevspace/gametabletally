@@ -1,13 +1,12 @@
 import { GAMES } from '@gametabletally/scoring';
 import { describe, expect, it } from 'vitest';
 
-import { cardOf, hasCard, listOf, playersOf } from './games.js';
+import { cardOf, listOf, playersOf } from './games.js';
 
 describe("the website's words for each game", () => {
     it.each(GAMES.map((game) => [game.name, game.id] as const))(
         'has a line and a mark for %s',
         (_, id) => {
-            expect(hasCard(id)).toBe(true);
             expect(cardOf(id).line).not.toBe('');
             expect(cardOf(id).mark).not.toBe('');
         }
@@ -15,6 +14,7 @@ describe("the website's words for each game", () => {
 
     it('gives a game it has no words for a plain card, so a new game still draws', () => {
         expect(cardOf('bowling')).toEqual({ line: '', mark: '' });
+        expect(cardOf('constructor')).toEqual({ line: '', mark: '' });
     });
 
     it('says how many play, with or without a limit', () => {

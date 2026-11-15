@@ -72,16 +72,22 @@ export const listenForInstall = (): (() => void) => {
 if (typeof window !== 'undefined') listenForInstall();
 
 /**
- * Shows the browser's offer. The event can be shown once, so it is let go whatever the visitor
- * answers, and the browser fires a new one later if the app can still be installed.
+ * Shows the browser's offer. The event can be shown once, so it is let go once the visitor
+ * answers, or once the browser refuses to show it, and the browser fires a new one later if the
+ * app can still be installed. The offer is held while the browser asks, so the button that asked
+ * stays on the page until there is an answer.
  */
 export const install = async (): Promise<void> => {
     if (state.kind !== 'offered') return;
     const { event } = state;
-    set(NONE);
-    await event.prompt();
-    const { outcome } = await event.userChoice;
-    if (outcome === 'accepted') set(INSTALLED);
+    try {
+        await event.prompt();
+        const { outcome } = await event.userChoice;
+        set(outcome === 'accepted' ? INSTALLED : NONE);
+    } catch {
+        // A browser that will not show the offer again leaves the steps on the page to follow.
+        set(NONE);
+    }
 };
 
 const subscribe = (listener: () => void): (() => void) => {

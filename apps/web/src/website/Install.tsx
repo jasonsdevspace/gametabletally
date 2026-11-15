@@ -1,4 +1,5 @@
 import { Button } from '@jasonsdevspace/design-kit/react';
+import { useRef } from 'react';
 
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
@@ -63,6 +64,7 @@ const Steps = ({ steps }: { readonly steps: readonly Step[] }) => (
 
 export const Install = () => {
     const offer = useInstall();
+    const open = useRef<HTMLAnchorElement>(null);
     return (
         <Website current="install">
             <div className="gtt-page">
@@ -72,20 +74,23 @@ export const Install = () => {
                     Put Game Table Tally on your phone&apos;s home screen and it opens like any
                     other app, ready whenever the cards come out.
                 </p>
-                <p className="gtt-actions">
+                <p className="dk-actions">
                     {offer.kind === 'offered' ? (
-                        <Button accent large onClick={() => void install()}>
+                        <Button
+                            accent
+                            large
+                            onClick={() => {
+                                void install().then(() => {
+                                    // The button is gone once the browser has its answer, so
+                                    // focus moves to the way on rather than to the page's start.
+                                    open.current?.focus();
+                                });
+                            }}
+                        >
                             Install the app
                         </Button>
                     ) : null}
-                    <Link
-                        className={
-                            offer.kind === 'offered'
-                                ? 'dk-button dk-button-large'
-                                : 'dk-button dk-button-accent dk-button-large'
-                        }
-                        href={hrefOf('play')}
-                    >
+                    <Link className="dk-button dk-button-large" href={hrefOf('play')} ref={open}>
                         Open the app
                     </Link>
                 </p>

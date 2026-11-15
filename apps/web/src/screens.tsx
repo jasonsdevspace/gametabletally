@@ -47,8 +47,16 @@ export const Screen = ({ route }: { readonly route: Route }) => {
 };
 
 /** A page of the website that is not one of its addresses: its heading and its text. */
-const Notice = ({ title, children }: { readonly title: string; readonly children: ReactNode }) => (
-    <Website>
+const Notice = ({
+    title,
+    reload = false,
+    children,
+}: {
+    readonly title: string;
+    readonly reload?: boolean;
+    readonly children: ReactNode;
+}) => (
+    <Website reload={reload}>
         <div className="gtt-page">
             <h1 className="gtt-display gtt-display-page">{title}</h1>
             {children}
@@ -71,7 +79,7 @@ export const NotFound = () => (
  * loads the start afresh, since whatever failed may still be held in memory.
  */
 export const ErrorPage = () => (
-    <Notice title="Something went wrong">
+    <Notice title="Something went wrong" reload>
         <p>
             This page could not be shown. Your saved games are still on this phone. Go back to the
             start and try again.

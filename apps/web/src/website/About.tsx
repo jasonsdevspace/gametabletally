@@ -18,8 +18,7 @@ export const About = () => {
             <div className="gtt-page">
                 <h1 className="gtt-display gtt-display-page">About</h1>
                 <p className="gtt-lead">
-                    Game Table Tally keeps score at the game table. Pass one phone around, tap in
-                    each round, and the app adds it up by the game&apos;s own rules.
+                    Game Table Tally keeps score at the game table, for free.
                 </p>
                 <dl className="gtt-facts">
                     <div>
@@ -37,6 +36,18 @@ export const About = () => {
                         </dd>
                     </div>
                 </dl>
+                <section aria-labelledby="how">
+                    <h2 id="how">How it works</h2>
+                    <p>
+                        Pass one phone around the table and tap in each round as it ends. The app
+                        adds every round up by the game&apos;s own rules and keeps the totals, so
+                        nobody does the sums or argues over a rule.
+                    </p>
+                    <p>
+                        Games are saved on the phone they were played on. Once the app has opened
+                        with a connection, it works with none.
+                    </p>
+                </section>
                 <section aria-labelledby="look">
                     <h2 id="look">Light and dark</h2>
                     <div ref={theme}>
