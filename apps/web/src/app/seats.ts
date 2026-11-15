@@ -3,7 +3,7 @@ import type { Game } from '@gametabletally/scoring';
 import type { SavedPlayer } from '../store/format.js';
 
 /**
- * The seats of a new game, as player ids in the order the phone goes round the table, and what
+ * The seats of a new game, as player ids in the order the phone goes around the table, and what
  * the new game screen says about them.
  */
 

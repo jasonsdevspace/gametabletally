@@ -15,7 +15,7 @@ import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
-import { keepStorage, openStore, refusalOf, type Store, withStore } from '../store/store.js';
+import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { cleanName, moveSeat, playerNamed, seatsProblem } from './seats.js';
@@ -149,11 +149,19 @@ const AddByName = ({
 }) => {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    // Set while a name is being saved, so a second press does not save it twice.
+    const adding = useRef(false);
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const refused = await onAdd(cleanName(name));
-        setError(refused ?? '');
-        if (refused === null) setName('');
+        if (adding.current) return;
+        adding.current = true;
+        try {
+            const refused = await onAdd(cleanName(name));
+            setError(refused ?? '');
+            if (refused === null) setName('');
+        } finally {
+            adding.current = false;
+        }
     };
     return (
         <form className="dk-field" noValidate onSubmit={(event) => void submit(event)}>
@@ -196,25 +204,33 @@ export interface NewGameProps {
     /** Makes the id of a new player or a new game. */
     readonly newId?: () => string;
     readonly now?: () => Date;
-    /** Asks the browser to keep what is saved, once the game has started. */
-    readonly askToKeep?: () => Promise<unknown>;
-    /** Moves to the started game. */
+    /** Asks the browser to keep what is saved, once the game has started, as the model does unless given. */
+    readonly askToKeep?: (() => Promise<unknown>) | undefined;
+    /** Moves to the started game, in the new game screen's place, so Back does not start it again. */
     readonly go?: (href: string) => void;
 }
 
 const today = () => new Date();
 const randomId = () => crypto.randomUUID();
-const askBrowser = () => keepStorage();
+const goInPlace = (href: string) => {
+    navigate(href, { replace: true });
+};
 
-/** The saved players, read once the screen is running, and why they could not be, if so. */
+/**
+ * The saved players, read once the screen is running, whether they have been, and why they could
+ * not be, if so.
+ */
 const usePlayers = (open: () => Promise<Store>) => {
     const [players, setPlayers] = useState<readonly SavedPlayer[]>([]);
+    const [loaded, setLoaded] = useState(false);
     const [unread, setUnread] = useState('');
     useEffect(() => {
         let left = false;
         withStore(open, (store) => store.players()).then(
             (saved) => {
-                if (!left) setPlayers(saved);
+                if (left) return;
+                setPlayers(saved);
+                setLoaded(true);
             },
             (error: unknown) => {
                 if (!left)
@@ -228,19 +244,19 @@ const usePlayers = (open: () => Promise<Store>) => {
             left = true;
         };
     }, [open]);
-    return [players, setPlayers, unread] as const;
+    return { players, setPlayers, loaded, unread };
 };
 
 export const NewGame = ({
     open = openStore,
     newId = randomId,
     now = today,
-    askToKeep = askBrowser,
-    go = navigate,
+    askToKeep,
+    go = goInPlace,
 }: NewGameProps) => {
     const { search } = usePlace();
     const running = useRunning();
-    const [players, setPlayers, unread] = usePlayers(open);
+    const { players, setPlayers, loaded, unread } = usePlayers(open);
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
@@ -250,8 +266,15 @@ export const NewGame = ({
     const focus = useRef<Focus | null>(null);
     const screen = useRef<HTMLDivElement>(null);
     const nameField = useRef<HTMLInputElement>(null);
+    // The seats and players as last drawn, for a name whose save is answered after they change.
+    const latest = useRef({ seats, players });
 
-    // Focus goes where the last press left it, once what it pressed is drawn in its new place.
+    useLayoutEffect(() => {
+        latest.current = { seats, players };
+    }, [seats, players]);
+
+    // After a press redraws the seats or the saved players, focus goes to the control the press
+    // chose, which may be the one pressed or its neighbor, or to the name field when none is left.
     useLayoutEffect(() => {
         const wanted = focus.current;
         focus.current = null;
@@ -274,9 +297,10 @@ export const NewGame = ({
         setSaid((before) => ({ words, count: before.count + 1 }));
     };
 
-    const seat = (player: SavedPlayer) => {
+    /** Seats a player after the ones seated, `taken` of them, which a late answer passes. */
+    const seat = (player: SavedPlayer, taken = seats.length) => {
         setSeats((before) => [...before, player.id]);
-        say(`${player.name} takes seat ${seats.length + 1}.`);
+        say(`${player.name} takes seat ${taken + 1}.`);
     };
 
     const move = (id: string, action: 'up' | 'down') => {
@@ -304,6 +328,8 @@ export const NewGame = ({
     };
 
     const addByName = async (typed: string): Promise<string | null> => {
+        // A name is matched against the saved players, so none is added before they are read.
+        if (!loaded) return unread || 'Your saved players are still being read. Try again.';
         if (typed === '') return "Enter the player's name.";
         const known = playerNamed(players, typed);
         if (known && seats.includes(known.id)) return `${known.name} has a seat already.`;
@@ -317,8 +343,11 @@ export const NewGame = ({
         } catch (error) {
             return refusalOf(error) ?? 'The player could not be saved. Try again.';
         }
+        // The seats may have changed while the player was saved.
+        const seatedNow = latest.current.seats;
+        if (seatedNow.includes(player.id)) return `${player.name} has a seat already.`;
         setPlayers((before) => [...before.filter(({ id }) => id !== player.id), player]);
-        seat(player);
+        seat(player, seatedNow.length);
         return null;
     };
 
@@ -329,7 +358,7 @@ export const NewGame = ({
         const id = newId();
         try {
             const error = await withStore(open, async (store) => {
-                const play = openPlay(store, undefined, askToKeep);
+                const play = openPlay(store, () => now().toISOString(), askToKeep);
                 await play.start({
                     id,
                     game: game.id,
@@ -350,10 +379,9 @@ export const NewGame = ({
         setBusy(false);
     };
 
-    const problem = refused || unread;
     return (
         <div className="gtt-new" ref={screen}>
-            {problem === '' ? null : <p role="alert">{problem}</p>}
+            {unread === '' ? null : <p role="alert">{unread}</p>}
             <ChoiceField
                 label="Game"
                 name="game"
@@ -410,6 +438,8 @@ export const NewGame = ({
                 {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
             </p>
             <Dock>
+                {/* Beside the button that was pressed, which may be far below the body's top. */}
+                {refused === '' ? null : <p role="alert">{refused}</p>}
                 {why === null ? null : (
                     <p className="dk-field-hint" id="start-why">
                         {why}

@@ -127,7 +127,10 @@ export const useToast = (): ShowToast => useContext(ToastContext);
 /** Where a screen draws its main button: the frame's dock, and a way to say a screen holds it. */
 interface DockPlace {
     readonly element: HTMLElement | null;
-    /** Marks the dock as held while a screen's dock is drawn, and resolves to letting it go. */
+    /**
+     * Marks the dock as held while a screen's dock is drawn, and returns the function that lets it
+     * go.
+     */
     readonly hold: () => () => void;
 }
 

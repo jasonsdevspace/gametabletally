@@ -42,9 +42,10 @@ const TARGET = 24;
  * Every control on the page that misses WCAG 2.5.8's target size, each named by its text, so a
  * failure says which. A control passes when it is at least 24 by 24 pixels. One smaller passes
  * when a circle 24 pixels across, around its center, meets no other control and no other small
- * control's circle. A control that holds it, such as a body that scrolls and so takes focus, is
- * not another control beside it. A link set inline within a sentence is left out, as the rule leaves it, and so
- * is a control drawn at a single pixel until it has focus, such as a skip link.
+ * control's circle. A region that takes focus only to scroll, such as the frame's body, is left
+ * out when it holds controls, since it holds them rather than standing beside them. A link set
+ * inline within a sentence is left out, as the rule leaves it, and so is a control drawn at a
+ * single pixel until it has focus, such as a skip link.
  */
 export const smallTargets = async (page: Page): Promise<string[]> => {
     await fontsReady(page);
@@ -54,6 +55,15 @@ export const smallTargets = async (page: Page): Promise<string[]> => {
                 'a[href], button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])'
             ),
         ].filter((control) => {
+            // A region that takes focus only so it can be scrolled, such as the frame's body,
+            // holds controls rather than being one beside them.
+            if (
+                !control.matches(
+                    'a[href], button, input, select, textarea, summary, [role="button"]'
+                ) &&
+                control.querySelector('a[href], button, input, select, textarea, summary')
+            )
+                return false;
             const box = control.getBoundingClientRect();
             return control.getClientRects().length > 0 && box.width > 1 && box.height > 1;
         });
@@ -80,8 +90,7 @@ export const smallTargets = async (page: Page): Promise<string[]> => {
             if (!center || !small[at] || inSentence(control)) return [];
             const [x, y] = center;
             const crowded = boxes.some((other, near) => {
-                // A control's own container, such as a body that scrolls, is not its neighbor.
-                if (near === at || controls[near]?.contains(control)) return false;
+                if (near === at) return false;
                 if (gap(other, x, y) < least / 2) return true;
                 const [ox, oy] = centers[near] ?? [Number.NaN, Number.NaN];
                 return small[near] === true && Math.hypot(ox - x, oy - y) < least;

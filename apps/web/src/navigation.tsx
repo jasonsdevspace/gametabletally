@@ -56,10 +56,13 @@ export const usePlace = (): Place =>
 
 /**
  * Moves to an address inside the app with no reload, at the top of the new screen, and leaves an
- * entry Back returns to. Back and Forward leave the browser to put the scroll back where it was.
+ * entry Back returns to, or, with `replace`, puts the new address in the current one's place, as
+ * after a form whose work is done and should not be done twice. Back and Forward leave the browser
+ * to put the scroll back where it was.
  */
-export const navigate = (href: string): void => {
-    window.history.pushState(null, '', href);
+export const navigate = (href: string, { replace = false } = {}): void => {
+    if (replace) window.history.replaceState(null, '', href);
+    else window.history.pushState(null, '', href);
     window.scrollTo(0, 0);
     notify();
 };

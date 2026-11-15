@@ -4,7 +4,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { SavedPlayer } from '../store/format.js';
-import { BLOCKED_DATABASE, openStore } from '../store/store.js';
+import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
 
@@ -248,7 +248,124 @@ describe('the new game screen', () => {
             players: ['ben', 'ann'],
             rounds: [],
             draft: { index: 0, step: { player: 'ben' } },
+            started: '2026-11-15T09:00:00.000Z',
         });
+    });
+
+    it('opens the started game in the new game screen’s place, so Back does not start it again', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open, read } = await database([player('ann', 'Ann'), player('ben', 'Ben')]);
+        render(
+            <AppFrame screen="new" title="New game">
+                <NewGame open={open} askToKeep={() => Promise.resolve()} />
+            </AppFrame>
+        );
+        await act(() => read);
+        const entries = window.history.length;
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
+        await waitFor(() => {
+            expect(window.location.pathname).toBe('/game/');
+        });
+        expect(window.history.length).toBe(entries);
+    });
+
+    it('saves a typed name once, however quickly it is added twice', async () => {
+        const { open } = await draw([player('ann', 'Ann')]);
+        const field = screen.getByRole('textbox', { name: "A new player's name" });
+        fireEvent.change(field, { target: { value: 'Cat' } });
+        const form = field.closest('form') ?? document.body;
+        fireEvent.submit(form);
+        fireEvent.submit(form);
+        await waitFor(() => {
+            expect(seated()).toEqual(['Cat']);
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(seated()).toEqual(['Cat']);
+        const store = await open();
+        expect((await store.players()).map(({ name }) => name)).toEqual(['Ann', 'Cat']);
+        store.close();
+    });
+
+    it('adds no name before the saved players are read, so none is saved twice', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open } = await database([player('ann', 'Ann')]);
+        let release: () => void = () => undefined;
+        const held = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        let opened = 0;
+        const slow = async (): Promise<Store> => {
+            opened += 1;
+            if (opened === 1) await held;
+            return open();
+        };
+        render(<NewGame open={slow} />);
+        addByName('Ann');
+        expect(
+            await screen.findByText('Your saved players are still being read. Try again.')
+        ).toBeVisible();
+        release();
+        expect(await screen.findByRole('button', { name: 'Add Ann' })).toBeVisible();
+        const store = await open();
+        expect(await store.players()).toEqual([player('ann', 'Ann')]);
+        store.close();
+    });
+
+    it('says the seat a typed name takes as it is when the save is answered', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open, read } = await database([player('ann', 'Ann')]);
+        let release: () => void = () => undefined;
+        const held = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        const slowSave = async (): Promise<Store> => {
+            const store = await open();
+            return {
+                ...store,
+                savePlayer: async (one) => {
+                    await held;
+                    await store.savePlayer(one);
+                },
+            };
+        };
+        render(
+            <AppFrame screen="new" title="New game">
+                <NewGame open={slowSave} newId={() => 'cat'} />
+            </AppFrame>
+        );
+        await act(() => read);
+        addByName('Cat');
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        await act(() => {
+            release();
+            return held;
+        });
+        await waitFor(() => {
+            expect(seated()).toEqual(['Ann', 'Cat']);
+        });
+        expect(status()).toHaveTextContent('Cat takes seat 2.');
+    });
+
+    it('says why a game was not started beside the start button', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open, read } = await database([player('ann', 'Ann'), player('ben', 'Ben')]);
+        const refusing = async (): Promise<Store> => ({
+            ...(await open()),
+            saveGame: () => Promise.reject(new Error('The phone is out of room.')),
+        });
+        render(
+            <AppFrame screen="new" title="New game">
+                <NewGame open={refusing} askToKeep={() => Promise.resolve()} go={() => undefined} />
+            </AppFrame>
+        );
+        await act(() => read);
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
+        const dock = screen.getByRole('region', { name: 'Actions' });
+        expect(await within(dock).findByRole('alert')).toHaveTextContent(/./);
     });
 
     it("says why the saved players could not be read, in the store's own words", async () => {
