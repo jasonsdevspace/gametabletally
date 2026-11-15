@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { AppFrame, currentOf, useToast } from './AppFrame.js';
+import { AppFrame, currentOf, Dock, useToast } from './AppFrame.js';
 
 /*
  * The frame every screen for keeping score sits in: its one heading, its tab bar and the place
@@ -80,5 +80,23 @@ describe("the app's frame", () => {
         await waitFor(() => {
             expect(screen.getByRole('status')).toHaveTextContent('Round 3 saved.');
         });
+    });
+
+    it("draws a screen's dock in the frame, after the body, and none for a screen with no dock", () => {
+        const { rerender } = render(<AppFrame screen="play" title="Play" />);
+        expect(screen.queryByRole('region', { name: 'Actions' })).toBeNull();
+        rerender(
+            <AppFrame screen="new" title="New game">
+                <p>The body</p>
+                <Dock>
+                    <button type="button">Start the game</button>
+                </Dock>
+            </AppFrame>
+        );
+        const dock = screen.getByRole('region', { name: 'Actions' });
+        expect(within(dock).getByRole('button', { name: 'Start the game' })).toBeVisible();
+        expect(screen.getByRole('main')).not.toContainElement(dock);
+        rerender(<AppFrame screen="play" title="Play" />);
+        expect(screen.queryByRole('region', { name: 'Actions' })).toBeNull();
     });
 });

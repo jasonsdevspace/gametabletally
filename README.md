@@ -52,11 +52,11 @@ npm run lighthouse
 `npm run e2e` runs the browser tests on a desktop and a phone profile, against the built files
 served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
 an axe audit and a target size check of each page, the move between screens, the start screen's
-game in play and its tab bar, a backup saved in one browser and restored in another, and every
+game in play and its tab bar, a game of each kind started from the new game screen, a backup saved in one browser and restored in another, and every
 address opening with the connection off after one visit. Service workers are blocked in every
 browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
-holds every page to a hundred for accessibility, and the website's pages, the start screen, a page
-about one game and the not-found page to ninety for performance, a good largest paint and layout
+holds every page to a hundred for accessibility, and the website's pages, the start screen, the new
+game screen, a page about one game and the not-found page to ninety for performance, a good largest paint and layout
 shift, and a budget for the script and style each carries.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit

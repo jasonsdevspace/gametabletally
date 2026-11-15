@@ -1,8 +1,8 @@
 /*
  * The screens for keeping score, inside the design kit's app frame. The frame, the tab bar, the
  * buttons and the toast are the kit's, so this sheet lays out only what a screen holds of its own:
- * the start screen's game in play, its list of games and its small print. Its colors are the
- * kit's roles, and it names no kit class.
+ * the start screen's game in play, its list of games and its small print, and the new game
+ * screen's parts. Its colors are the kit's roles, and it names no kit class.
  */
 
 /* The game in play, raised on a card with the lip, as a thing to pick up again. */
@@ -88,4 +88,26 @@
 .gtt-fine {
     color: var(--dk-muted);
     font-size: var(--dk-text-small);
+}
+
+/* The new game screen: the game, the seats and the way to add a player, a step apart. */
+.gtt-new,
+.gtt-seats,
+.gtt-add {
+    display: grid;
+    gap: var(--dk-space-4);
+}
+
+.gtt-seats,
+.gtt-add {
+    gap: var(--dk-space-3);
+}
+
+:is(.gtt-new, .gtt-seats, .gtt-add) > :is(h2, p, fieldset, form, ol) {
+    margin: 0;
+}
+
+/* The seat's place under the name, in figures of one width, so a column of seats lines up. */
+.gtt-seat {
+    font-variant-numeric: tabular-nums;
 }

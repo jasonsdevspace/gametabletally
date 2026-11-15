@@ -42,7 +42,8 @@ const TARGET = 24;
  * Every control on the page that misses WCAG 2.5.8's target size, each named by its text, so a
  * failure says which. A control passes when it is at least 24 by 24 pixels. One smaller passes
  * when a circle 24 pixels across, around its center, meets no other control and no other small
- * control's circle. A link set inline within a sentence is left out, as the rule leaves it, and so
+ * control's circle. A control that holds it, such as a body that scrolls and so takes focus, is
+ * not another control beside it. A link set inline within a sentence is left out, as the rule leaves it, and so
  * is a control drawn at a single pixel until it has focus, such as a skip link.
  */
 export const smallTargets = async (page: Page): Promise<string[]> => {
@@ -79,7 +80,8 @@ export const smallTargets = async (page: Page): Promise<string[]> => {
             if (!center || !small[at] || inSentence(control)) return [];
             const [x, y] = center;
             const crowded = boxes.some((other, near) => {
-                if (near === at) return false;
+                // A control's own container, such as a body that scrolls, is not its neighbor.
+                if (near === at || controls[near]?.contains(control)) return false;
                 if (gap(other, x, y) < least / 2) return true;
                 const [ox, oy] = centers[near] ?? [Number.NaN, Number.NaN];
                 return small[near] === true && Math.hypot(ox - x, oy - y) < least;

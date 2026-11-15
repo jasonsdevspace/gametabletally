@@ -1,7 +1,7 @@
 import { GAMES } from '@gametabletally/scoring';
 
 import { type GameInPlay, openPlay } from '../play/play.js';
-import type { Store } from '../store/store.js';
+import { type Store, withStore } from '../store/store.js';
 
 /**
  * The game the start screen offers to continue: the one in play that was changed last, with its
@@ -61,16 +61,12 @@ export const continuingOf = (
  * handed an ask to keep the games that does nothing, so opening the start screen never asks the
  * browser. Only saving a started game asks that.
  */
-export const readContinuing = async (open: () => Promise<Store>): Promise<Continuing | null> => {
-    const store = await open();
-    try {
+export const readContinuing = (open: () => Promise<Store>): Promise<Continuing | null> =>
+    withStore(open, async (store) => {
         const play = openPlay(store, undefined, () => Promise.resolve());
         const [, players] = await Promise.all([play.load(), store.players()]);
         return continuingOf(
             play.snapshot().games,
             new Map(players.map(({ id, name }) => [id, name]))
         );
-    } finally {
-        store.close();
-    }
-};
+    });
