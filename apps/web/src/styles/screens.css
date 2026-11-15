@@ -144,7 +144,8 @@
 
 /*
  * Each character of the total on a card of its own, with the lip and a fold across its middle. The
- * minus sign's card has no fold, which would cross the sign and make it read as an equals sign.
+ * minus sign's card has no fold, since a fold would cross the sign and make it read as an equals
+ * sign.
  */
 .gtt-digits {
     display: inline-flex;
@@ -170,11 +171,17 @@
     animation: gtt-flip var(--dk-duration-medium) ease-out;
 }
 
+/* A card of the first draw stands still, so the total flips as it changes, not as it appears. */
+.gtt-digit[data-still] {
+    animation: none;
+}
+
 .gtt-digit:not([data-sign])::after {
     position: absolute;
     inset-inline: 0;
     top: 50%;
     border-top: 1px solid var(--dk-line);
+    content: '';
     content: '' / '';
 }
 

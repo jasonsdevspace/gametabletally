@@ -20,11 +20,11 @@ describe('the score header', () => {
         expect(screen.getByText('40 last round and 2 this round.')).toBeVisible();
     });
 
-    it('names a negative total as negative, and draws a true minus sign', () => {
+    it('names a negative total with the word minus, and draws a true minus sign', () => {
         render(<ScoreHeader name="Ben" total={-7} line="" />);
         const digits = screen.getByRole('img', { name: 'minus 7' });
         expect([...digits.children].map((card) => card.textContent)).toEqual(['−', '7']);
-        // The sign's card has no fold, which would make it read as an equals sign.
+        // The sign's card has no fold, since a fold would make it read as an equals sign.
         expect(digits.children[0]).toHaveAttribute('data-sign');
         expect(digits.children[1]).not.toHaveAttribute('data-sign');
     });
@@ -57,11 +57,35 @@ describe('the score header', () => {
         expect(status().firstElementChild).not.toBe(first);
     });
 
-    it('flips only the card whose character changed', () => {
-        const { rerender } = render(<ScoreHeader name="Ann" total={41} line="" />);
-        const [tens] = screen.getByRole('img').children;
-        rerender(<ScoreHeader name="Ann" total={42} line="" />);
-        expect(screen.getByRole('img').children[0]).toBe(tens);
+    it('draws the first total still, then flips only the card whose character changed', () => {
+        const { rerender } = render(<ScoreHeader name="Ann" total={-41} line="" />);
+        const [sign, tens, ones] = screen.getByRole('img').children;
+        for (const card of [sign, tens, ones]) expect(card).toHaveAttribute('data-still');
+        rerender(<ScoreHeader name="Ann" total={-42} line="" />);
+        const after = [...screen.getByRole('img').children];
+        expect(after[0]).toBe(sign);
+        expect(after[1]).toBe(tens);
+        expect(after[2]).not.toBe(ones);
+        expect(after[2]).not.toHaveAttribute('data-still');
+        // A total with another digit keeps its sign still.
+        rerender(<ScoreHeader name="Ann" total={-142} line="" />);
+        expect(screen.getByRole('img').children[0]).toBe(sign);
+    });
+
+    it("flips every card of a new player's total, since it is someone else's number", () => {
+        const { rerender } = render(<ScoreHeader name="Ann" total={42} line="" />);
+        const before = [...screen.getByRole('img').children];
+        rerender(<ScoreHeader name="Ben" total={42} line="" />);
+        const after = [...screen.getByRole('img').children];
+        for (const [at, card] of after.entries()) {
+            expect(card).not.toBe(before[at]);
+            expect(card).not.toHaveAttribute('data-still');
+        }
+    });
+
+    it('draws no line under the total when it is given none', () => {
+        const { container } = render(<ScoreHeader name="Ann" total={0} line="" />);
+        expect(container.querySelector('.gtt-score-line')).toBeNull();
     });
 
     it('passes the axe audit', async () => {
@@ -76,10 +100,8 @@ describe('the score header', () => {
 
     it("flips over the kit's medium duration, which the kit's base stops under reduced motion", () => {
         expect(sheet).toMatch(/\.gtt-digit \{[^}]*animation: gtt-flip var\(--dk-duration-medium\)/);
-        const reduced = /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n {4}\}/.exec(
-            base
-        )?.[1];
-        expect(reduced).toContain('animation-duration: 0.01ms !important');
+        const reduced = base.slice(base.indexOf('@media (prefers-reduced-motion: reduce)'));
+        expect(reduced).toMatch(/^@media[^{]*\{[^@]*animation-duration: 0\.01ms !important/);
     });
 });
 

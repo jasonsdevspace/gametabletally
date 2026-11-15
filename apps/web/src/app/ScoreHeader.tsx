@@ -12,11 +12,24 @@ import { useState } from 'react';
 export const spokenOf = (total: number): string =>
     total < 0 ? `minus ${String(-total)}` : String(total);
 
+/** The true minus sign a negative total is drawn with. */
+const SIGN = '−';
+
 /** A total as it is drawn, one card to a character, with a true minus sign. */
 export const cardsOf = (total: number): readonly string[] => [
-    ...(total < 0 ? ['−'] : []),
+    ...(total < 0 ? [SIGN] : []),
     ...String(Math.abs(total)),
 ];
+
+/**
+ * What tells a card apart from one drawn before it: the player, so a new player's total is drawn
+ * afresh, then the sign alone, or a digit's place from the right and its character, so within one
+ * player's total only a card that changes is drawn afresh.
+ */
+const keysOf = (name: string, cards: readonly string[]): readonly string[] =>
+    cards.map((card, at) =>
+        card === SIGN ? `${name}|sign` : `${name}|${String(cards.length - at)}|${card}`
+    );
 
 /** What the status line says when the player or their total changes, or null for no change. */
 export const changeOf = (
@@ -31,7 +44,7 @@ export const changeOf = (
 export interface ScoreHeaderProps {
     /** The name of the player whose turn it is. */
     readonly name: string;
-    /** Their total, the round being entered counted in. */
+    /** Their total, counting the round being entered. */
     readonly total: number;
     /** How the total adds up, in a sentence. */
     readonly line: string;
@@ -39,35 +52,42 @@ export interface ScoreHeaderProps {
 
 export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
     const [shown, setShown] = useState({ name, total });
+    // The cards of the first draw, which stand still, so a total flips only as it changes and not
+    // as the screen opens.
+    const [still] = useState(() => new Set(keysOf(name, cardsOf(total))));
     // What the status line says, counted so the same words said twice are heard twice.
     const [said, setSaid] = useState({ words: '', count: 0 });
-    // Said as the header is drawn with the change, so the words and the digits arrive together.
+    // Worked out in the render that draws the change, not in an effect, so the words and the
+    // digits arrive together.
     if (shown.name !== name || shown.total !== total) {
         const change = changeOf(shown, { name, total });
         setShown({ name, total });
         if (change !== null) setSaid({ words: change, count: said.count + 1 });
     }
     const cards = cardsOf(total);
+    const keys = keysOf(name, cards);
     return (
         <div className="gtt-score">
             <p className="dk-eyebrow">Now scoring</p>
             <div className="gtt-score-who">
                 <p className="gtt-score-name">{name}</p>
                 <span className="gtt-digits" role="img" aria-label={spokenOf(total)}>
-                    {cards.map((card, at) => (
-                        // Keyed by place from the right and by character, so only a card that
-                        // changes flips.
-                        <span
-                            className="gtt-digit"
-                            key={`${String(cards.length - at)}-${card}`}
-                            data-sign={card === '−' ? '' : undefined}
-                        >
-                            {card}
-                        </span>
-                    ))}
+                    {cards.map((card, at) => {
+                        const key = keys[at] ?? card;
+                        return (
+                            <span
+                                className="gtt-digit"
+                                key={key}
+                                data-sign={card === SIGN ? '' : undefined}
+                                data-still={still.has(key) ? '' : undefined}
+                            >
+                                {card}
+                            </span>
+                        );
+                    })}
                 </span>
             </div>
-            <p className="gtt-score-line">{line}</p>
+            {line === '' ? null : <p className="gtt-score-line">{line}</p>}
             <p className="dk-visually-hidden" role="status">
                 {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
             </p>
