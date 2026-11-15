@@ -234,8 +234,8 @@ interface Last {
 /**
  * Opens the games in progress over a store. `now` gives the time each change is saved at, as an
  * ISO 8601 date and time in UTC, and a test passes its own. `askToKeep` asks the browser to keep
- * what is saved, once a game started is saved, since that is when the phone first holds something
- * worth keeping.
+ * what is saved each time a started game is saved, since from then the phone holds something worth
+ * keeping. A browser that has agreed already is not asked again.
  */
 export const openPlay = (
     store: Store,
@@ -366,7 +366,7 @@ export const openPlay = (
                 };
                 const refused = await keep({ ...fresh, draft: newDraft(fresh, 0) }, null);
                 // The answer is not waited for, since a browser may ask the visitor first.
-                if (refused === null) void askToKeep();
+                if (refused === null) void askToKeep().catch(() => undefined);
             }),
         enter: (id, value) =>
             inOrder(async () => {

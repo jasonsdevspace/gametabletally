@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -67,7 +67,9 @@ describe('saving and restoring the games', () => {
         );
         (await screen.findByRole('button', { name: 'Save to a file' })).click();
         await waitFor(() => {
-            expect(said()).toHaveTextContent('Saved 1 game to game-table-tally-2026-11-14.json.');
+            expect(said()).toHaveTextContent(
+                '1 game is ready in game-table-tally-2026-11-14.json.'
+            );
         });
         const [name, text] = save.mock.calls[0] ?? ['', ''];
         expect(name).toBe('game-table-tally-2026-11-14.json');
@@ -105,7 +107,7 @@ describe('saving and restoring the games', () => {
         [
             'a file that is not one of the app’s',
             '{"hello": true}',
-            'This is not a file of saved games.',
+            'This is not a file of saved games, so nothing changed.',
         ],
         [
             'a file from a newer version',
@@ -146,7 +148,7 @@ describe('saving and restoring the games', () => {
         render(<Backup open={open} kept={() => Promise.resolve(true)} />);
         expect(
             await screen.findByText(
-                'One saved record cannot be read, so a file saved now will not hold it.'
+                'One saved game or player cannot be read, so a file saved now will leave it out.'
             )
         ).toBeVisible();
     });
@@ -164,22 +166,45 @@ describe('saving and restoring the games', () => {
         expect(screen.queryByRole('button')).toBeNull();
     });
 
-    it('lets the database go when the page is left', async () => {
+    it('opens the games afresh for each save, so a database closed under the page still saves', async () => {
+        const { open } = await database(async (store) => {
+            await store.saveGame(game('g-1'));
+        });
+        const closed = vi.fn();
+        const opening = vi.fn(async () => {
+            const store = await open();
+            return {
+                ...store,
+                close: () => {
+                    closed();
+                    store.close();
+                },
+            };
+        });
+        render(<Backup open={opening} kept={() => Promise.resolve(true)} save={vi.fn()} />);
+        const save = await screen.findByRole('button', { name: 'Save to a file' });
+        // The database is let go once the page has read it, as a newer build's upgrade would.
+        expect(closed).toHaveBeenCalledOnce();
+        save.click();
+        await waitFor(() => {
+            expect(said()).toHaveTextContent('1 game is ready in');
+        });
+        expect(opening).toHaveBeenCalledTimes(2);
+        expect(closed).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps both buttons when what is unreadable cannot be counted, since a backup is wanted most then', async () => {
         const { open } = await database();
-        const close = vi.fn();
-        const { unmount } = render(
+        render(
             <Backup
-                open={async () => {
-                    const store = await open();
-                    return { ...store, close };
-                }}
-                kept={() => Promise.resolve(true)}
+                open={async () => ({
+                    ...(await open()),
+                    damaged: () => Promise.reject(new Error('The disk could not be read.')),
+                })}
+                kept={() => Promise.reject(new Error('No answer.'))}
             />
         );
-        await screen.findByRole('button', { name: 'Save to a file' });
-        act(() => {
-            unmount();
-        });
-        expect(close).toHaveBeenCalledOnce();
+        expect(await screen.findByRole('button', { name: 'Save to a file' })).toBeVisible();
+        expect(screen.getByText(/does not say whether it will keep/)).toBeVisible();
     });
 });

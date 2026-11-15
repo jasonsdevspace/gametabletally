@@ -401,6 +401,14 @@ describe('asking the browser to keep what is saved', () => {
         expect(storage.persist).not.toHaveBeenCalled();
     });
 
+    it('asks a browser that will not say whether it agreed', async () => {
+        const persist = vi.fn(() => Promise.resolve(true));
+        expect(
+            await keepStorage({ persist, persisted: () => Promise.reject(new Error('blocked')) })
+        ).toBe(true);
+        expect(persist).toHaveBeenCalledOnce();
+    });
+
     it('says no where the browser cannot be asked, or refuses to answer', async () => {
         expect(await keepStorage(null)).toBe(false);
         expect(await keepStorage(manager(false, () => Promise.reject(new Error('blocked'))))).toBe(

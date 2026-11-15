@@ -159,7 +159,7 @@ new version runs. Decision record 2 says why.
   saved whole or not at all and is never decided on what another change has since replaced.
 - A player or a game that breaks the rules above is refused when it is saved.
 - A record already there that is not a player or a game is passed over when the records are
-  read, is left out of an exported file, and is counted, so a page can say a backup is not whole.
+  read, is left out of an exported file, and is counted, so the about page says a file saved now will leave it out.
   A player such a record names is still kept when they are removed.
 - A database a newer version of the app has upgraded is not opened by an older one, which says to
   update the app. An open tab lets go of the database when a newer version asks to upgrade it.

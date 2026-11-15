@@ -801,7 +801,7 @@ describe('what each change keeps and refuses', () => {
 });
 
 describe('asking the browser to keep the games', () => {
-    it('asks once a game started is saved, and not for a game the store refused', async () => {
+    it('asks each time a started game is saved, and not for a game the store refused', async () => {
         const factory = new IDBFactory();
         const store = await openStore(factory, 'play');
         const asked = vi.fn(() => Promise.resolve(true));
@@ -816,5 +816,13 @@ describe('asking the browser to keep the games', () => {
         const refused = vi.fn(() => Promise.resolve(true));
         await openPlay(refusing, clock(), refused).start(newGame('flip-7', 'g-2'));
         expect(refused).not.toHaveBeenCalled();
+    });
+
+    it('starts the game whatever the browser answers, a refusal to answer among them', async () => {
+        const store = await openStore(new IDBFactory(), 'play');
+        const play = openPlay(store, clock(), () => Promise.reject(new Error('blocked')));
+        await play.start(newGame('flip-7'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(shown(play, 'g-1').error).toBeNull();
     });
 });

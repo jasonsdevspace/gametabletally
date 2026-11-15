@@ -12,17 +12,23 @@ describe("the about page's words for the saved games", () => {
         expect(restoredOf({ games: 3, players: 1 })).toBe(
             'Restored 3 games and 1 player from the file.'
         );
-        expect(restoredOf({ games: 1, players: 0 })).toBe(
-            'Restored 1 game and 0 players from the file.'
-        );
+        expect(restoredOf({ games: 1, players: 0 })).toBe('Restored 1 game from the file.');
+        expect(restoredOf({ games: 0, players: 2 })).toBe('Restored 2 players from the file.');
         expect(restoredOf({ games: 0, players: 0 })).toBe(
-            'Nothing was added. This phone already holds everything in the file.'
+            'Nothing was added. Every game and player in the file is already on this phone.'
         );
     });
 
-    it('says what a save wrote', () => {
-        expect(savedOf(1, 'a.json')).toBe('Saved 1 game to a.json.');
-        expect(savedOf(0, 'a.json')).toBe('Saved 0 games to a.json.');
+    it('says the file is ready and how many games it holds, since a page cannot tell it was kept', () => {
+        expect(savedOf(1, 'a.json')).toBe(
+            '1 game is ready in a.json. Your browser saves it with your downloads.'
+        );
+        expect(savedOf(2, 'a.json')).toBe(
+            '2 games are ready in a.json. Your browser saves it with your downloads.'
+        );
+        expect(savedOf(0, 'a.json')).toBe(
+            'a.json is ready, with no games on this phone yet. Your browser saves it with your downloads.'
+        );
     });
 
     it('says whether the browser will keep the games, in words for each answer', () => {
@@ -34,10 +40,10 @@ describe("the about page's words for the saved games", () => {
     it('says what a backup leaves out, and nothing when it leaves nothing out', () => {
         expect(damagedOf(0)).toBe('');
         expect(damagedOf(1)).toBe(
-            'One saved record cannot be read, so a file saved now will not hold it.'
+            'One saved game or player cannot be read, so a file saved now will leave it out.'
         );
         expect(damagedOf(2)).toBe(
-            '2 saved records cannot be read, so a file saved now will not hold them.'
+            '2 saved games or players cannot be read, so a file saved now will leave them out.'
         );
     });
 });

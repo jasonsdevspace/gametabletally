@@ -26,7 +26,8 @@ against the built script in a runtime that is not Node.
   to cases.
 - `apps/web` is the app, which reads the scoring package from its source, so nothing needs
   building first. It keeps players and games on the phone in the shape
-  [docs/saved-games.md](docs/saved-games.md) describes. Its addresses are one list in
+  [docs/saved-games.md](docs/saved-games.md) describes, and the about page saves them to a file in
+  that shape and restores from one. Its addresses are one list in
   `apps/web/src/routes.ts`, and the build writes each as a page drawn ahead of time, so every
   address reads with no script, with `404.html` for any other path, as GitHub Pages serves it.
   The app installs from its manifest, and its service worker, built from `apps/web/worker`,
@@ -48,7 +49,8 @@ npm run lighthouse
 
 `npm run e2e` runs the browser tests on a desktop and a phone profile, against the built files
 served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
-an axe audit and a target size check of each page, the move between screens, and every address
+an axe audit and a target size check of each page, the move between screens, a backup saved in one
+browser and restored in another, and every address
 opening with the connection off after one visit. Service workers are blocked in every browser test
 but those of the worker, so no other test reads a cached page. `npm run
 lighthouse` holds every page to a hundred for accessibility, and the website's pages, a page about

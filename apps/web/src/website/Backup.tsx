@@ -25,21 +25,27 @@ export const download = (name: string, text: string): void => {
     link.href = address;
     link.download = name;
     link.click();
-    // The address is let go once the browser has surely started the download with it.
+    // Let go a minute later rather than at once, since a browser that starts the download after
+    // the click returns would find the address gone.
     setTimeout(() => {
         URL.revokeObjectURL(address);
     }, 60_000);
 };
 
-/** What the page says when the phone's database cannot be opened. */
-const notOpened = (error: unknown): string =>
+/** The store's own sentence for a database it would not open, or null for any other failure. */
+const refusal = (error: unknown): string | null =>
     error instanceof Error &&
     (error.message === NEWER_DATABASE || error.message === BLOCKED_DATABASE)
         ? error.message
-        : 'Your games could not be opened in this browser.';
+        : null;
 
-interface Opened {
-    readonly store: Store;
+/** What the page says when the phone's database cannot be opened. */
+const notOpened = (error: unknown): string =>
+    refusal(error) ??
+    'Your games could not be opened in this browser. Reload the page to try again.';
+
+/** What the page knows once the database has opened: the browser's answer and what is unreadable. */
+interface Ready {
     readonly kept: boolean | null;
     readonly damaged: number;
 }
@@ -47,7 +53,10 @@ interface Opened {
 export interface BackupProps {
     /** Opens the phone's database, which a test opens in memory. */
     readonly open?: () => Promise<Store>;
-    /** Whether the browser has agreed to keep what is saved. */
+    /**
+     * Whether the browser has agreed to keep what is saved, read without asking, or null when it
+     * does not say.
+     */
     readonly kept?: () => Promise<boolean | null>;
     readonly now?: () => Date;
     /** Hands the browser the saved file. */
@@ -56,13 +65,29 @@ export interface BackupProps {
 
 const today = () => new Date();
 
+/**
+ * Opens the database for one piece of work and lets it go after, so a page left open while a newer
+ * build upgrades the database, which closes every connection, opens it afresh the next time.
+ */
+const withStore = async <Result,>(
+    open: () => Promise<Store>,
+    work: (store: Store) => Promise<Result>
+): Promise<Result> => {
+    const store = await open();
+    try {
+        return await work(store);
+    } finally {
+        store.close();
+    }
+};
+
 export const Backup = ({
     open = openStore,
     kept = storageKept,
     now = today,
     save = download,
 }: BackupProps) => {
-    const [opened, setOpened] = useState<Opened | null>(null);
+    const [ready, setReady] = useState<Ready | null>(null);
     const [said, setSaid] = useState('');
     const [busy, setBusy] = useState(false);
     const picker = useRef<HTMLInputElement>(null);
@@ -71,35 +96,32 @@ export const Backup = ({
         // Set when the page has left, so an answer that comes later is not drawn.
         let left = false;
         const here = () => !left;
-        let store: Store | undefined;
         void (async () => {
             try {
-                store = await open();
-                // A page left while the database opened lets it go at once.
-                if (!here()) {
-                    store.close();
-                    return;
-                }
-                const [agreed, damaged] = await Promise.all([kept(), store.damaged()]);
-                if (here()) setOpened({ store, kept: agreed, damaged });
+                // A count that cannot be read leaves the buttons in place, since a backup is
+                // wanted most when something is wrong.
+                const damaged = await withStore(open, (store) => store.damaged().catch(() => 0));
+                const agreed = await kept().catch(() => null);
+                if (here()) setReady({ kept: agreed, damaged });
             } catch (error) {
                 if (here()) setSaid(notOpened(error));
             }
         })();
         return () => {
             left = true;
-            store?.close();
         };
     }, [open, kept]);
 
     /** Runs one save or restore at a time, and says what it did or why it could not. */
     const run = async (work: (store: Store) => Promise<string>, failed: string) => {
-        if (!opened || busy) return;
+        if (busy) return;
         setBusy(true);
+        // Emptied first, so the same sentence said twice is heard twice.
+        setSaid('');
         try {
-            setSaid(await work(opened.store));
-        } catch {
-            setSaid(failed);
+            setSaid(await withStore(open, work));
+        } catch (error) {
+            setSaid(refusal(error) ?? failed);
         } finally {
             setBusy(false);
         }
@@ -123,21 +145,20 @@ export const Backup = ({
             const file = readFile(await chosen.text());
             if ('code' in file) return file.message;
             return restoredOf(await store.importFile(file));
-        }, 'The file could not be restored, and nothing saved has changed. Try again.');
+        }, 'The file could not be restored, so nothing changed. Try again.');
     };
 
     return (
         <section aria-labelledby="saved">
             <h2 id="saved">Your games</h2>
             <p>
-                Your games are kept in this browser on this phone, and nowhere else. Save them to a
-                file to keep a copy, or to move them to another phone or browser and restore them
-                there.
+                Your games are kept in this browser and nowhere else. Save them to a file to keep a
+                copy, or to move them to another phone or browser and restore them there.
             </p>
-            {opened ? (
+            {ready ? (
                 <>
-                    <p>{keptOf(opened.kept)}</p>
-                    {opened.damaged > 0 ? <p>{damagedOf(opened.damaged)}</p> : null}
+                    <p>{keptOf(ready.kept)}</p>
+                    {ready.damaged > 0 ? <p>{damagedOf(ready.damaged)}</p> : null}
                     <p className="dk-actions">
                         <Button off={busy} onClick={() => void saveAll()}>
                             Save to a file
@@ -145,7 +166,7 @@ export const Backup = ({
                         <Button
                             off={busy}
                             onClick={() => {
-                                if (!busy) picker.current?.click();
+                                picker.current?.click();
                             }}
                         >
                             Restore from a file

@@ -59,7 +59,7 @@ test('saves every game to a file in one browser and restores it in another, by k
     ]);
     expect(download.suggestedFilename()).toMatch(/^game-table-tally-\d{4}-\d{2}-\d{2}\.json$/);
     await expect(page.getByRole('status')).toHaveText(
-        `Saved 1 game to ${download.suggestedFilename()}.`
+        `1 game is ready in ${download.suggestedFilename()}. Your browser saves it with your downloads.`
     );
     const path = await download.path();
     expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({
@@ -78,9 +78,7 @@ test('saves every game to a file in one browser and restores it in another, by k
             second.keyboard.press('Enter'),
         ]);
         await chooser.setFiles(path);
-        await expect(second.getByRole('status')).toHaveText(
-            'Restored 1 game and 0 players from the file.'
-        );
+        await expect(second.getByRole('status')).toHaveText('Restored 1 game from the file.');
         expect(await savedIds(second)).toEqual(['g-moved']);
     } finally {
         await other.close();
@@ -100,6 +98,8 @@ test('says why a file that is not one of the app’s was not read, and changes n
         mimeType: 'application/json',
         buffer: Buffer.from('{"shopping": ["milk"]}'),
     });
-    await expect(page.getByRole('status')).toHaveText('This is not a file of saved games.');
+    await expect(page.getByRole('status')).toHaveText(
+        'This is not a file of saved games, so nothing changed. Choose a file this app saved.'
+    );
     expect(await savedIds(page)).toEqual([]);
 });

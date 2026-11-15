@@ -292,22 +292,6 @@ const storageManager = (): StorageManager | null =>
     typeof navigator !== 'undefined' && 'storage' in navigator ? navigator.storage : null;
 
 /**
- * Asks the browser to keep what the app has saved. A browser may clear a site's data when the
- * phone runs low, and a site that has asked is passed over. Resolves to whether it agreed. A
- * browser that has agreed already is not asked again, since one may ask the visitor each time.
- */
-export const keepStorage = async (
-    storage: Pick<StorageManager, 'persist' | 'persisted'> | null = storageManager()
-): Promise<boolean> => {
-    if (!storage) return false;
-    try {
-        return (await storage.persisted()) || (await storage.persist());
-    } catch {
-        return false;
-    }
-};
-
-/**
  * Whether the browser has agreed to keep what the app has saved, without asking it to, or null
  * when the browser does not say.
  */
@@ -319,5 +303,24 @@ export const storageKept = async (
         return await storage.persisted();
     } catch {
         return null;
+    }
+};
+
+/**
+ * Asks the browser to keep what the app has saved. A browser may clear a site's data when the
+ * phone runs low, and passes over a site it has agreed to keep. Resolves to whether it has agreed.
+ * A browser that has agreed already is not asked again, so a visitor who said yes is never asked
+ * twice.
+ */
+export const keepStorage = async (
+    storage: Pick<StorageManager, 'persist' | 'persisted'> | null = storageManager()
+): Promise<boolean> => {
+    if (!storage) return false;
+    // A browser that will not say whether it agreed is asked all the same.
+    if ((await storageKept(storage)) === true) return true;
+    try {
+        return await storage.persist();
+    } catch {
+        return false;
     }
 };
