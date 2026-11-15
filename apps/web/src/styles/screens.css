@@ -111,3 +111,77 @@
 .gtt-seat {
     font-variant-numeric: tabular-nums;
 }
+
+/* The score header: whose turn it is, their total in flip digits, and how it adds up. */
+.gtt-score {
+    display: grid;
+    gap: var(--dk-space-2);
+}
+
+.gtt-score > p {
+    margin: 0;
+}
+
+.gtt-score-who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--dk-space-3);
+}
+
+.gtt-score-name {
+    min-width: 0;
+    margin: 0;
+    font-size: var(--dk-text-display);
+    font-weight: var(--dk-weight-strong);
+    overflow-wrap: anywhere;
+}
+
+.gtt-score-line {
+    color: var(--dk-muted);
+}
+
+/*
+ * Each character of the total on a card of its own, with the lip and a fold across its middle. The
+ * minus sign's card has no fold, which would cross the sign and make it read as an equals sign.
+ */
+.gtt-digits {
+    display: inline-flex;
+    gap: var(--dk-space-1);
+    font-family: var(--dk-font-mono);
+    font-size: var(--dk-text-numeral);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--dk-weight-strong);
+    line-height: 1;
+    perspective: 20em;
+}
+
+.gtt-digit {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    min-width: 0.75em;
+    padding: 0.08em 0.06em;
+    border: 1px solid var(--dk-line);
+    border-radius: var(--dk-radius);
+    background: var(--dk-raised);
+    box-shadow: var(--gtt-lip);
+    animation: gtt-flip var(--dk-duration-medium) ease-out;
+}
+
+.gtt-digit:not([data-sign])::after {
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    border-top: 1px solid var(--dk-line);
+    content: '' / '';
+}
+
+/* A card that changes turns down into place. The kit's base stops it under reduced motion. */
+@keyframes gtt-flip {
+    from {
+        opacity: 0.3;
+        transform: rotateX(80deg);
+    }
+}
