@@ -1,3 +1,4 @@
+import { GAMES } from '@gametabletally/scoring';
 import tokens from '@jasonsdevspace/design-kit/tokens.css?raw';
 import { describe, expect, it } from 'vitest';
 
@@ -12,9 +13,9 @@ const sheets = import.meta.glob<string>('../**/*.css', {
 const sheet = Object.values(sheets).join('\n');
 
 /*
- * The app's one sheet over the design kit: it sets no kit color role and names no kit class, its
- * lip reaches the kit's keys by the kit's own properties, and its tile grounds and lip hold up in
- * both themes.
+ * The app's sheets over the design kit: they set no kit color role and name no kit class, their
+ * lip reaches the kit's keys by the kit's own properties, and their tile grounds and lip hold up
+ * in both themes.
  */
 
 /** The sheet with its comments taken out, so a word in a comment is never read as a rule. */
@@ -171,10 +172,25 @@ describe("the app's sheet over the design kit", () => {
         }
     );
 
-    it.each(['--gtt-tile-sage', '--gtt-tile-gold'])(
-        'holds text on the %s ground to WCAG AA in both themes',
-        (tile) => {
-            const [light, dark] = pair(app.get(tile) ?? '');
+    /** The ground each game's tile is drawn on, by the game's id, from the rules that set it. */
+    const grounds = new Map(
+        [
+            ...rules.matchAll(
+                /\.gtt-tile\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z0-9-]+)\)/g
+            ),
+        ].map(([, id = '', ground = '']) => [id, ground])
+    );
+
+    it('draws every game the scoring package knows on a tile ground of its own', () => {
+        expect([...grounds.keys()].sort()).toEqual(GAMES.map((game) => game.id).sort());
+        expect(new Set(grounds.values()).size).toBe(grounds.size);
+    });
+
+    it.each(GAMES.map((game) => [game.name, game.id] as const))(
+        "holds the text on %s's tile to WCAG AA in both themes",
+        (_, id) => {
+            const ground = grounds.get(id) ?? '';
+            const [light, dark] = pair(app.get(ground) ?? kit.get(ground) ?? '');
             const [lightText, darkText] = pair(kit.get('--dk-fg') ?? '');
             const [lightMuted, darkMuted] = pair(kit.get('--dk-muted') ?? '');
             expect(contrast(light, lightText)).toBeGreaterThanOrEqual(4.5);
@@ -183,4 +199,17 @@ describe("the app's sheet over the design kit", () => {
             expect(contrast(dark, darkMuted)).toBeGreaterThanOrEqual(4.5);
         }
     );
+
+    it("keeps the website's bands clear of a notch or a rounded corner on each side", () => {
+        expect(app.get('--gtt-inset-left')).toMatch(/^calc\(\s*max\(var\(--dk-safe-left\),/);
+        expect(app.get('--gtt-inset-right')).toMatch(/^calc\(\s*max\(var\(--dk-safe-right\),/);
+    });
+
+    it('gives every mark the sheet draws itself no words for a screen reader', () => {
+        const blocks = [...rules.matchAll(/\{([^{}]*(?<![\w-])content:[^{}]*)\}/g)].map(
+            ([, body = '']) => body
+        );
+        expect(blocks.length).toBeGreaterThan(0);
+        for (const body of blocks) expect(body).toMatch(/(?<![\w-])content:[^;]*\/\s*'';/);
+    });
 });

@@ -1,4 +1,4 @@
-import { type AnchorHTMLAttributes, type MouseEvent, useSyncExternalStore } from 'react';
+import { type ComponentProps, type MouseEvent, useSyncExternalStore } from 'react';
 
 /**
  * Moving between screens inside the app, with no router dependency.
@@ -81,7 +81,7 @@ export const Link = ({
     href,
     onClick,
     ...rest
-}: AnchorHTMLAttributes<HTMLAnchorElement> & { readonly href: string }) => (
+}: ComponentProps<'a'> & { readonly href: string }) => (
     <a
         {...rest}
         href={href}

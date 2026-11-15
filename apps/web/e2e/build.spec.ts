@@ -103,9 +103,11 @@ test('the worker caches every file a page asks for, and each is served, as its i
     // Each page's own files, read from the page rather than from a walk of the folder.
     for (const page of [...listed].filter((file) => file.endsWith('.html'))) {
         const html = readFileSync(join(DIST, page), 'utf8');
-        for (const [, path] of html.matchAll(/(?:src|href)="(\/[^"#?]*)"/g))
-            if (path && path !== '/')
-                expect(listed.has(path), `${page} asks for ${path}`).toBe(true);
+        for (const [, path] of html.matchAll(/(?:src|href)="(\/[^"#?]*)"/g)) {
+            // A link to another page asks for that page's own file.
+            const file = path?.endsWith('/') ? `${path}index.html` : path;
+            if (file) expect(listed.has(file), `${page} asks for ${path}`).toBe(true);
+        }
     }
 });
 

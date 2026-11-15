@@ -1,10 +1,11 @@
 import { THEME_KEY } from '@jasonsdevspace/design-kit/theme';
 
-import { ROUTES } from '../src/routes.js';
+import { hrefOf, ROUTES } from '../src/routes.js';
 import { expect, fontsReady, test } from './support.js';
 
 /*
- * The app's look in a browser: the design kit's theme, DM Sans from the app's own files, the lip
+ * The app's look in a browser: the design kit's theme, DM Sans and the website's serif from the
+ * app's own files, the lip
  * on the kit's keys, and nothing asked of another origin.
  */
 
@@ -30,13 +31,37 @@ test("draws its text in DM Sans, loaded from the app's own files", async ({ page
     page.on('request', (request) => {
         if (request.resourceType() === 'font') fonts.push(request.url());
     });
-    await page.goto('/');
+    await page.goto(hrefOf('play'));
     await fontsReady(page);
     expect(await page.evaluate(() => document.fonts.check('16px "DM Sans"'))).toBe(true);
     expect(
         await page.evaluate(() => getComputedStyle(document.body).fontFamily.split(',')[0]?.trim())
     ).toMatch(/^"?DM Sans"?$/);
+    // The serif is the website's alone, so a screen for keeping score never asks for it.
     expect(fonts).toEqual([new URL('/fonts/dm-sans-latin.woff2', baseURL).href]);
+});
+
+test("sets the website's display lines in Instrument Serif, from the app's own files", async ({
+    page,
+    baseURL,
+}) => {
+    const fonts: string[] = [];
+    page.on('request', (request) => {
+        if (request.resourceType() === 'font') fonts.push(request.url());
+    });
+    await page.goto('/');
+    await fontsReady(page);
+    expect(
+        await page
+            .getByRole('heading', { level: 1 })
+            .evaluate((heading) => getComputedStyle(heading).fontFamily.split(',')[0]?.trim())
+    ).toMatch(/^"?Instrument Serif"?$/);
+    expect(await page.evaluate(() => document.fonts.check('48px "Instrument Serif"'))).toBe(true);
+    expect(fonts.sort()).toEqual(
+        ['/fonts/dm-sans-latin.woff2', '/fonts/instrument-serif-latin.woff2'].map(
+            (path) => new URL(path, baseURL).href
+        )
+    );
 });
 
 for (const theme of ['light', 'dark'] as const)
@@ -84,6 +109,8 @@ test("gives the kit's keys the lip, and a press moves a key straight down by its
         document.querySelector('main')?.append(key);
     });
     const key = page.locator('#key');
+    // The key goes at the end of a long page, so it is brought into view before it is pressed.
+    await key.scrollIntoViewIfNeeded();
     const look = () =>
         key.evaluate((element) => {
             const style = getComputedStyle(element);
