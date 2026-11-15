@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { AppFrame } from './app/AppFrame.js';
+import { PlayStart } from './app/PlayStart.js';
 import { Link } from './navigation.js';
 import { type Route, ROUTES } from './routes.js';
 import { About } from './website/About.js';
@@ -9,30 +11,19 @@ import { Website } from './website/Website.js';
 
 /**
  * The screens, one for each address. The website's pages, the first visit, the install page and
- * the about page, are drawn in the website's frame. A screen for keeping score is a plain
- * page that holds its top heading, so every address has a heading to prerender and to focus. A screen about one thing
- * reads its id once it is running, never in the prerender, so the prerendered page holds the
- * frame and the heading and never the phone's own data.
+ * the about page, are drawn in the website's frame. A screen for keeping score is drawn in the
+ * app's frame, with its name in the frame's bar as its one top heading, so every address has a
+ * heading to prerender and to focus. A screen about one thing reads its id once it is running,
+ * never in the prerender, so the prerendered page holds the frame and the heading and never the
+ * phone's own data.
  */
 
-/**
- * A screen for keeping score: its main region, which focus moves to on arrival, and its one top
- * heading.
- */
-export const Page = ({
-    title,
-    children,
-}: {
-    readonly title: string;
-    readonly children?: ReactNode;
-}) => (
-    <main id="main" tabIndex={-1}>
-        <h1>{title}</h1>
-        {children}
-    </main>
+/** A screen for keeping score that has nothing of its own yet: the frame and its heading. */
+export const Page = ({ route }: { readonly route: Route }) => (
+    <AppFrame screen={route.name} title={route.title} />
 );
 
-/** The screen at a route, or its plain page, so every address draws a heading. */
+/** The screen at a route, so every address draws a heading. */
 export const Screen = ({ route }: { readonly route: Route }) => {
     switch (route.name) {
         case 'start':
@@ -41,8 +32,10 @@ export const Screen = ({ route }: { readonly route: Route }) => {
             return <Install />;
         case 'about':
             return <About />;
+        case 'play':
+            return <PlayStart />;
         default:
-            return <Page title={route.title} />;
+            return <Page route={route} />;
     }
 };
 

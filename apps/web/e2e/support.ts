@@ -3,8 +3,8 @@ import { expect, type Page, test } from '@playwright/test';
 import { IDBFactory } from 'fake-indexeddb';
 
 import { openPlay } from '../src/play/play.js';
-import { FORMAT_VERSION, type SavedGame } from '../src/store/format.js';
-import { DATABASE, GAMES, openStore, SCHEMA } from '../src/store/store.js';
+import { FORMAT_VERSION, type SavedGame, type SavedPlayer } from '../src/store/format.js';
+import { DATABASE, GAMES, openStore, PLAYERS, SCHEMA } from '../src/store/store.js';
 
 /*
  * What the browser tests share: the test itself, an axe audit that names what it found, a check
@@ -117,12 +117,17 @@ export const buildGame = async (
 };
 
 /**
- * Writes games into the browser's database for the page's origin, as the app's store keeps them,
- * making the database first where the app has not yet. The page has to be on the app's origin.
+ * Writes games, and the players they name, into the browser's database for the page's origin, as
+ * the app's store keeps them, making the database first where the app has not yet. The page has
+ * to be on the app's origin.
  */
-export const seed = async (page: Page, games: readonly SavedGame[]): Promise<void> => {
+export const seed = async (
+    page: Page,
+    games: readonly SavedGame[],
+    players: readonly SavedPlayer[] = []
+): Promise<void> => {
     await page.evaluate(
-        ({ name, version, schema, stores, records }) =>
+        ({ name, version, schema, records }) =>
             new Promise<void>((resolve, reject) => {
                 const opening = indexedDB.open(name, version);
                 opening.onupgradeneeded = () => {
@@ -136,8 +141,12 @@ export const seed = async (page: Page, games: readonly SavedGame[]): Promise<voi
                 };
                 opening.onsuccess = () => {
                     const database = opening.result;
-                    const writing = database.transaction(stores, 'readwrite');
-                    for (const record of records) writing.objectStore(stores).put(record);
+                    const writing = database.transaction(
+                        records.map(([kind]) => kind),
+                        'readwrite'
+                    );
+                    for (const [kind, rows] of records)
+                        for (const row of rows) writing.objectStore(kind).put(row);
                     writing.oncomplete = () => {
                         database.close();
                         resolve();
@@ -147,6 +156,14 @@ export const seed = async (page: Page, games: readonly SavedGame[]): Promise<voi
                     };
                 };
             }),
-        { name: DATABASE, version: FORMAT_VERSION, schema: SCHEMA, stores: GAMES, records: games }
+        {
+            name: DATABASE,
+            version: FORMAT_VERSION,
+            schema: SCHEMA,
+            records: [
+                [GAMES, games],
+                [PLAYERS, players],
+            ] as const,
+        }
     );
 };

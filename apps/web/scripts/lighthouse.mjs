@@ -46,9 +46,10 @@ const NOT_FOUND = `/${NOT_FOUND_FILE}`;
 const PAGES = [...ROUTES.map(({ path }) => path), NOT_FOUND];
 /**
  * The pages measured for performance: the website's pages, which load the serif and, on the
- * start, the photograph, a page about one thing, and the not-found page.
+ * start, the photograph, the start screen the installed app opens to, a page about one thing, and
+ * the not-found page.
  */
-const MEASURED = ['/', '/install/', '/about/', '/game/', NOT_FOUND];
+const MEASURED = ['/', '/install/', '/about/', '/play/', '/game/', NOT_FOUND];
 
 /** What a report measures of one visit. */
 const measureOf = (report) => {

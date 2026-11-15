@@ -231,18 +231,6 @@
     color: var(--dk-fg);
 }
 
-.gtt-tile[data-game='flip-7'] {
-    background: var(--gtt-ground-flip-7);
-}
-
-.gtt-tile[data-game='skyjo'] {
-    background: var(--gtt-ground-skyjo);
-}
-
-.gtt-tile[data-game='wizard'] {
-    background: var(--gtt-ground-wizard);
-}
-
 .gtt-tile h3 {
     font-size: var(--dk-text-title);
 }

@@ -1,0 +1,90 @@
+/*
+ * The screens for keeping score, inside the design kit's app frame. The frame, the tab bar, the
+ * buttons and the toast are the kit's, so this sheet lays out only what a screen holds of its own:
+ * the start screen's game in play, its list of games and its small print. It sets no color and
+ * names no kit class.
+ */
+
+/* The game in play, raised on a card with the lip, as a thing to pick up again. */
+.gtt-continue {
+    display: grid;
+    gap: var(--dk-space-3);
+    padding: var(--dk-space-4);
+    border: 1px solid var(--dk-line);
+    border-radius: var(--dk-radius-large);
+    background: var(--dk-raised);
+    box-shadow: var(--gtt-lip);
+}
+
+.gtt-continue h2,
+.gtt-start h2 {
+    margin: 0;
+}
+
+.gtt-continue p {
+    margin: 0;
+}
+
+.gtt-continue-game {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--dk-space-2);
+}
+
+.gtt-continue-game strong {
+    font-size: var(--dk-text-title);
+}
+
+.gtt-continue-game span {
+    color: var(--dk-muted);
+    font-family: var(--dk-font-mono);
+    font-size: var(--dk-text-small);
+}
+
+.gtt-start {
+    display: grid;
+    gap: var(--dk-space-3);
+}
+
+.gtt-games {
+    display: grid;
+    gap: var(--dk-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Each game to start, a link on its own tile ground, at the larger target, with the lip. */
+.gtt-game {
+    display: grid;
+    gap: var(--dk-space-1);
+    min-height: var(--dk-target-large);
+    padding: var(--dk-space-3) var(--dk-space-4);
+    border: 1px solid var(--dk-line);
+    border-radius: var(--dk-radius-large);
+    box-shadow: var(--gtt-lip);
+    color: inherit;
+    text-decoration: none;
+}
+
+.gtt-game strong {
+    font-size: var(--dk-text-lead);
+}
+
+.gtt-game span {
+    color: var(--dk-muted);
+    font-size: var(--dk-text-small);
+}
+
+@media (hover: hover) {
+    .gtt-game:hover strong {
+        text-decoration: underline;
+    }
+}
+
+.gtt-fine {
+    color: var(--dk-muted);
+    font-size: var(--dk-text-small);
+}
