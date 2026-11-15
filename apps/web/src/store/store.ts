@@ -287,6 +287,29 @@ export const openStore = async (
     return storeOver(database);
 };
 
+/**
+ * Opens the database for one piece of work and lets it go after, so a page left open while a newer
+ * build upgrades the database, which closes every connection, opens it afresh the next time.
+ */
+export const withStore = async <Result>(
+    open: () => Promise<Store>,
+    work: (store: Store) => Promise<Result>
+): Promise<Result> => {
+    const store = await open();
+    try {
+        return await work(store);
+    } finally {
+        store.close();
+    }
+};
+
+/** The store's own sentence for a database it would not open, or null for any other failure. */
+export const refusalOf = (error: unknown): string | null =>
+    error instanceof Error &&
+    (error.message === NEWER_DATABASE || error.message === BLOCKED_DATABASE)
+        ? error.message
+        : null;
+
 /** The browser's storage manager, or null in a browser that has none. */
 const storageManager = (): StorageManager | null =>
     typeof navigator !== 'undefined' && 'storage' in navigator ? navigator.storage : null;

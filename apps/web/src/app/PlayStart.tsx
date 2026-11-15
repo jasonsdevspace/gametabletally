@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
-import { BLOCKED_DATABASE, NEWER_DATABASE, openStore, type Store } from '../store/store.js';
+import { openStore, refusalOf, type Store } from '../store/store.js';
 import { cardOf, playersOf } from '../website/games.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { type Continuing, readContinuing } from './in-play.js';
@@ -19,13 +19,6 @@ import { type Continuing, readContinuing } from './in-play.js';
 /** Where starting a game of one kind leads: the new game screen, with the game picked. */
 export const newGameOf = (game: string): string =>
     `${hrefOf('new')}?${new URLSearchParams({ game }).toString()}`;
-
-/** The store's own sentence for a database it would not open, or nothing for another failure. */
-const refusalOf = (error: unknown): string =>
-    error instanceof Error &&
-    (error.message === NEWER_DATABASE || error.message === BLOCKED_DATABASE)
-        ? error.message
-        : '';
 
 export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<Store> }) => {
     const [continuing, setContinuing] = useState<Continuing | null>(null);
@@ -45,7 +38,7 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
                 (error: unknown) => {
                     if (left) return;
                     setContinuing(null);
-                    setRefused(refusalOf(error));
+                    setRefused(refusalOf(error) ?? '');
                 }
             );
         };

@@ -2,13 +2,7 @@ import { Button } from '@jasonsdevspace/design-kit/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
 import { readFile } from '../store/format.js';
-import {
-    BLOCKED_DATABASE,
-    NEWER_DATABASE,
-    openStore,
-    storageKept,
-    type Store,
-} from '../store/store.js';
+import { openStore, refusalOf, storageKept, type Store, withStore } from '../store/store.js';
 import { damagedOf, fileNameOf, keptOf, restoredOf, savedOf } from './backup-words.js';
 
 /**
@@ -32,16 +26,9 @@ export const download = (name: string, text: string): void => {
     }, 60_000);
 };
 
-/** The store's own sentence for a database it would not open, or null for any other failure. */
-const refusal = (error: unknown): string | null =>
-    error instanceof Error &&
-    (error.message === NEWER_DATABASE || error.message === BLOCKED_DATABASE)
-        ? error.message
-        : null;
-
 /** What the page says when the phone's database cannot be opened. */
 const notOpened = (error: unknown): string =>
-    refusal(error) ??
+    refusalOf(error) ??
     'Your games could not be opened in this browser. Reload the page to try again.';
 
 /** What the page knows once the database has opened: the browser's answer and what is unreadable. */
@@ -64,22 +51,6 @@ export interface BackupProps {
 }
 
 const today = () => new Date();
-
-/**
- * Opens the database for one piece of work and lets it go after, so a page left open while a newer
- * build upgrades the database, which closes every connection, opens it afresh the next time.
- */
-const withStore = async <Result,>(
-    open: () => Promise<Store>,
-    work: (store: Store) => Promise<Result>
-): Promise<Result> => {
-    const store = await open();
-    try {
-        return await work(store);
-    } finally {
-        store.close();
-    }
-};
 
 export const Backup = ({
     open = openStore,
@@ -121,7 +92,7 @@ export const Backup = ({
         try {
             setSaid(await withStore(open, work));
         } catch (error) {
-            setSaid(refusal(error) ?? failed);
+            setSaid(refusalOf(error) ?? failed);
         } finally {
             setBusy(false);
         }

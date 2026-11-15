@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { NewGame } from './app/NewGame.js';
 import { PlayStart } from './app/PlayStart.js';
 import { Link } from './navigation.js';
 import { hrefOf, type Route, ROUTES } from './routes.js';
@@ -21,8 +22,16 @@ import { Website } from './website/Website.js';
  * What a screen for keeping score holds, inside the app's frame, which the app draws around it. A
  * screen with nothing of its own holds nothing, and the frame's bar names it.
  */
-export const AppScreen = ({ route }: { readonly route: Route }) =>
-    route.name === 'play' ? <PlayStart /> : null;
+export const AppScreen = ({ route }: { readonly route: Route }) => {
+    switch (route.name) {
+        case 'play':
+            return <PlayStart />;
+        case 'new':
+            return <NewGame />;
+        default:
+            return null;
+    }
+};
 
 /** The website's pages at their routes, each drawing its own frame. */
 export const Screen = ({ route }: { readonly route: Route }) => {

@@ -96,8 +96,9 @@ test('keeps the tab bar at the bottom edge and one empty toast place on every sc
         const bar = await tabs(page).boundingBox();
         const height = page.viewportSize()?.height ?? 0;
         expect(Math.round((bar?.y ?? 0) + (bar?.height ?? 0)), name).toBe(height);
-        await expect(page.getByRole('status'), name).toHaveCount(1);
-        await expect(page.getByRole('status'), name).toHaveText('');
+        const toast = page.locator('.dk-app-toast').getByRole('status');
+        await expect(toast, name).toHaveCount(1);
+        await expect(toast, name).toHaveText('');
     }
 });
 
