@@ -67,10 +67,10 @@ export const Install = () => {
     const open = useRef<HTMLAnchorElement>(null);
     return (
         <Website current="install">
-            <div className="gtt-page">
+            <div className="dk-page gtt-page">
                 <p className="dk-eyebrow">A seat at every table</p>
                 <h1 className="gtt-display gtt-display-page">Install the app</h1>
-                <p className="gtt-lead">
+                <p className="dk-lead gtt-lead">
                     Put Game Table Tally on your phone&apos;s home screen and it opens like any
                     other app, ready whenever the cards come out.
                 </p>

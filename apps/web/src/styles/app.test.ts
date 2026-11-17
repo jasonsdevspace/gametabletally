@@ -208,9 +208,18 @@ describe("the app's sheet over the design kit", () => {
         }
     );
 
-    it("keeps the website's bands clear of a notch or a rounded corner on each side", () => {
-        expect(app.get('--gtt-inset-left')).toMatch(/^calc\(\s*max\(var\(--dk-safe-left\),/);
-        expect(app.get('--gtt-inset-right')).toMatch(/^calc\(\s*max\(var\(--dk-safe-right\),/);
+    it("lines the website's bands up by the kit's band insets, clear of a notch on each side", () => {
+        expect(rules).toMatch(
+            /\.gtt-band \{\s*padding-inline: var\(--dk-band-left\) var\(--dk-band-right\);/
+        );
+        expect(rules).not.toMatch(/--gtt-inset-/);
+    });
+
+    it("leaves the website's header, its lead's size and the spacing of its pages to the kit", () => {
+        expect(rules).not.toMatch(/\.gtt-(?:site-header|brand)\b/);
+        expect(rules).not.toMatch(/\.gtt-site\)? :where\(h1/);
+        expect(rules).not.toMatch(/\.gtt-lead \{[^}]*font-size/);
+        expect(rules).not.toMatch(/\.gtt-display-hero \{[^}]*line-height/);
     });
 
     it('gives every mark the sheet draws itself no words for a screen reader', () => {
