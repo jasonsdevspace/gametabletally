@@ -1,8 +1,11 @@
+import { StatusLine } from '@jasonsdevspace/design-kit/react';
+
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
 import { byAdded, openStore, refusalOf, type Store, withStore } from '../store/store.js';
-import { AddByName, Announce, usePlayersRead, useSay } from './player-parts.js';
+import { AddByName, usePlayersRead } from './player-parts.js';
 import { gamesOf, nameRefusal, newPlayerOf } from './players.js';
+import { useStatus } from './status.js';
 
 /**
  * The players screen: every player still offered for a new game, in the order they were added,
@@ -30,7 +33,7 @@ export const PlayersList = ({
     now = today,
 }: PlayersListProps) => {
     const { read, setRead, unread } = usePlayersRead(open, UNREAD);
-    const [said, say] = useSay();
+    const [line, say] = useStatus();
 
     const add = async (typed: string): Promise<string | null> => {
         // A name is checked against the saved players, so none is added before they are read.
@@ -89,7 +92,7 @@ export const PlayersList = ({
                 </ul>
             )}
             <AddByName onAdd={add} />
-            <Announce said={said} />
+            <StatusLine ref={line} />
         </>
     );
 };

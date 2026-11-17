@@ -1,5 +1,5 @@
 import base from '@jasonsdevspace/design-kit/base.css?raw';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { describe, expect, it } from 'vitest';
 
@@ -9,6 +9,12 @@ import { cardsOf, changeOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
 /* The score header on its own, with no game screen around it. */
 
 const status = () => screen.getByRole('status');
+
+/** Waits for the kit's status line to say the words, which it does a moment after it is told. */
+const heard = (line: HTMLElement, words: string) =>
+    waitFor(() => {
+        expect(line).toHaveTextContent(words);
+    });
 
 describe('the score header', () => {
     it("shows the player's name, their total as one image named by the number, and how it adds up", () => {
@@ -34,27 +40,28 @@ describe('the score header', () => {
         expect(status()).toHaveTextContent('');
     });
 
-    it('says each new total, and only who is next after a turn, in the same status line', () => {
+    it('says each new total, and only who is next after a turn, in the same status line', async () => {
         const { rerender } = render(<ScoreHeader name="Ann" total={0} line="" />);
         const line = status();
         rerender(<ScoreHeader name="Ann" total={12} line="" />);
         expect(status()).toBe(line);
-        expect(line).toHaveTextContent("Ann's total is 12.");
+        await heard(line, "Ann's total is 12.");
         rerender(<ScoreHeader name="Ben" total={-3} line="" />);
         expect(status()).toBe(line);
-        expect(line).toHaveTextContent('Ben is next.');
+        await heard(line, 'Ben is next.');
         rerender(<ScoreHeader name="Ben" total={-5} line="" />);
-        expect(line).toHaveTextContent("Ben's total is minus 5.");
+        await heard(line, "Ben's total is minus 5.");
     });
 
-    it('says the same change again when it is made twice', () => {
+    it('says the same change again when it is made twice', async () => {
         const { rerender } = render(<ScoreHeader name="Ann" total={0} line="" />);
         rerender(<ScoreHeader name="Ben" total={0} line="" />);
-        const first = status().firstElementChild;
+        await heard(status(), 'Ben is next.');
         rerender(<ScoreHeader name="Ann" total={0} line="" />);
         rerender(<ScoreHeader name="Ben" total={0} line="" />);
-        expect(status()).toHaveTextContent('Ben is next.');
-        expect(status().firstElementChild).not.toBe(first);
+        // The line is emptied before the words are put in again, so they are heard again.
+        expect(status()).toHaveTextContent('');
+        await heard(status(), 'Ben is next.');
     });
 
     it('draws the first total still, then flips only the card whose character changed', () => {

@@ -1,4 +1,4 @@
-import { Button } from '@jasonsdevspace/design-kit/react';
+import { Button, InputField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -6,9 +6,10 @@ import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
-import { Announce, NAME_LENGTH, usePlayersRead, useRunning, useSay } from './player-parts.js';
+import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
 import { gamesOf, nameRefusal, playersChanged } from './players.js';
 import { cleanName } from './seats.js';
+import { useStatus } from './status.js';
 
 /**
  * A player's own page, named by `?id=`: their name, how many games they have played, the field
@@ -55,36 +56,22 @@ const RenameField = ({
 
     return (
         <form
-            className="dk-field"
             noValidate
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
                 event.preventDefault();
                 void save();
             }}
         >
-            <label className="dk-field-label" htmlFor="player-name">
-                Name
-            </label>
-            <p className="dk-field-hint" id="player-name-hint">
-                Saved as you leave the field or press Enter.
-            </p>
-            {error === '' ? null : (
-                <p className="dk-field-error" id="player-name-error">
-                    <span className="dk-visually-hidden">Error:</span> {error}
-                </p>
-            )}
-            <input
-                className="dk-input"
+            <InputField
                 id="player-name"
+                label="Name"
+                hint="Saved as you leave the field or press Enter."
+                error={error}
                 autoComplete="off"
                 autoCapitalize="words"
                 enterKeyHint="done"
                 maxLength={NAME_LENGTH}
                 value={name}
-                aria-invalid={error === '' ? undefined : true}
-                aria-describedby={
-                    error === '' ? 'player-name-hint' : 'player-name-hint player-name-error'
-                }
                 onChange={(event) => {
                     setName(event.currentTarget.value);
                     setError('');
@@ -107,7 +94,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     const running = useRunning();
     const show = useToast();
     const { read, setRead, unread } = usePlayersRead(open, UNREAD);
-    const [said, say] = useSay();
+    const [line, say] = useStatus();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;
     const player = read?.players.find((one) => one.id === id && !one.removed);
@@ -217,7 +204,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
             <h2 className="gtt-player-name">{player.name}</h2>
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
             <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
-            <Announce said={said} />
+            <StatusLine ref={line} />
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>

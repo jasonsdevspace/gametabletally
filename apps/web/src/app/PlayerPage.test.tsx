@@ -86,9 +86,11 @@ describe("a player's page", () => {
         fireEvent.change(nameField(), { target: { value: ' Annie ' } });
         fireEvent.blur(nameField());
         expect(await screen.findByRole('heading', { name: 'Annie' })).toBeVisible();
-        expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent(
-            'Saved as Annie.'
-        );
+        await waitFor(() => {
+            expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent(
+                'Saved as Annie.'
+            );
+        });
         expect((await players(open)).find(({ id }) => id === 'ann')?.name).toBe('Annie');
     });
 

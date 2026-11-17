@@ -1,7 +1,7 @@
+import { Button, InputField } from '@jasonsdevspace/design-kit/react';
 import {
     type FormEvent,
     type RefObject,
-    useCallback,
     useEffect,
     useRef,
     useState,
@@ -14,37 +14,11 @@ import { cleanName } from './seats.js';
 
 /*
  * What the screens that name players share: the longest name, a way to tell the prerender from the
- * running screen, words said to a screen reader, the saved players as read, and the field a new
- * player's name is typed in.
+ * running screen, the saved players as read, and the form a new player's name is typed in.
  */
 
 /** The longest name a player can be given, which fits a seat's row and a table of scores. */
 export const NAME_LENGTH = 30;
-
-/** Something said to a screen reader, counted so the same words said twice are heard twice. */
-export interface Said {
-    readonly words: string;
-    readonly count: number;
-}
-
-/** The words to say to a screen reader, and the function that says the next. */
-export const useSay = (): readonly [Said, (words: string) => void] => {
-    const [said, setSaid] = useState<Said>({ words: '', count: 0 });
-    const say = useCallback((words: string) => {
-        setSaid((before) => ({ words, count: before.count + 1 }));
-    }, []);
-    return [said, say];
-};
-
-/**
- * A status line out of sight that says each message once it is set. Each is drawn in an element
- * of its own, so the same words said twice are heard twice.
- */
-export const Announce = ({ said }: { readonly said: Said }) => (
-    <p className="dk-visually-hidden" role="status">
-        {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
-    </p>
-);
 
 /**
  * The saved players and how many games each has played, read once the screen is running and again
@@ -95,7 +69,7 @@ export const useRunning = (): boolean =>
     );
 
 /**
- * The field a new player's name is typed in, with its button. `onAdd` takes the name and resolves
+ * The form a new player's name is typed in: the kit's field, with its button as the field's action. `onAdd` takes the name and resolves
  * to why it could not, which is drawn as the field's error, or null once it is taken.
  */
 export const AddByName = ({
@@ -122,36 +96,23 @@ export const AddByName = ({
         }
     };
     return (
-        <form className="dk-field" noValidate onSubmit={(event) => void submit(event)}>
-            <label className="dk-field-label" htmlFor="new-player">
-                A new player&apos;s name
-            </label>
-            {error === '' ? null : (
-                <p className="dk-field-error" id="new-player-error">
-                    <span className="dk-visually-hidden">Error:</span> {error}
-                </p>
-            )}
-            <div className="dk-field-action">
-                <input
-                    ref={field}
-                    className="dk-input"
-                    id="new-player"
-                    autoComplete="off"
-                    autoCapitalize="words"
-                    enterKeyHint="done"
-                    maxLength={NAME_LENGTH}
-                    value={name}
-                    aria-invalid={error === '' ? undefined : true}
-                    aria-describedby={error === '' ? undefined : 'new-player-error'}
-                    onChange={(event) => {
-                        setName(event.currentTarget.value);
-                        setError('');
-                    }}
-                />
-                <button type="submit" className="dk-button">
-                    Add
-                </button>
-            </div>
+        <form noValidate onSubmit={(event) => void submit(event)}>
+            <InputField
+                ref={field}
+                id="new-player"
+                label="A new player's name"
+                error={error}
+                autoComplete="off"
+                autoCapitalize="words"
+                enterKeyHint="done"
+                maxLength={NAME_LENGTH}
+                value={name}
+                onChange={(event) => {
+                    setName(event.currentTarget.value);
+                    setError('');
+                }}
+                action={<Button type="submit">Add</Button>}
+            />
         </form>
     );
 };

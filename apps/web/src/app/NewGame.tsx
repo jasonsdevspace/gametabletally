@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -9,8 +9,9 @@ import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
-import { AddByName, Announce, useRunning, useSay } from './player-parts.js';
+import { AddByName, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
+import { useStatus } from './status.js';
 
 /**
  * The new game screen: the game, the players and their seats, and the button that starts it. The
@@ -168,7 +169,7 @@ export const NewGame = ({
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
-    const [said, say] = useSay();
+    const [line, say] = useStatus();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
     const focus = useRef<Focus | null>(null);
@@ -338,7 +339,7 @@ export const NewGame = ({
                 )}
                 <AddByName field={nameField} onAdd={addByName} />
             </section>
-            <Announce said={said} />
+            <StatusLine ref={line} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
                 {refused === '' ? null : <p role="alert">{refused}</p>}

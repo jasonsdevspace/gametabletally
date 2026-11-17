@@ -105,9 +105,9 @@ describe('the players screen', () => {
         await waitFor(() => {
             expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben', 'Cat']);
         });
-        expect(
-            within(screen.getByRole('status', { hidden: true })).getByText('Cat added.')
-        ).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Cat added.');
+        });
         const store = await open();
         expect(await store.players()).toContainEqual(
             player('cat', 'Cat', '2026-11-15T09:00:00.000Z')
