@@ -36,12 +36,12 @@ const POINTS = [
 
 export const Start = () => (
     <Website current="start">
-        <section className="gtt-hero">
-            <div className="gtt-hero-text">
+        <section className="dk-page gtt-hero">
+            <section className="gtt-hero-text">
                 <p className="dk-eyebrow">For game night</p>
                 <h1 className="gtt-display gtt-display-hero">{ROUTES[0].title}</h1>
                 <p className="gtt-display gtt-hero-line">Keep the score. Stay in the moment.</p>
-                <p className="gtt-lead">
+                <p className="dk-lead gtt-lead">
                     One phone, passed around the table. Tap in each round, and the app adds it up by
                     the rules of {NAMES}.
                 </p>
@@ -61,7 +61,7 @@ export const Start = () => (
                     <li>No account</li>
                     <li>Made for phones</li>
                 </ul>
-            </div>
+            </section>
             <img
                 className="gtt-hero-photo"
                 src={photoLarge}
@@ -75,7 +75,7 @@ export const Start = () => (
             />
         </section>
 
-        <section className="gtt-band" aria-labelledby="games">
+        <section className="dk-page gtt-band" aria-labelledby="games">
             <p className="dk-eyebrow">Your table, your game</p>
             <h2 id="games" className="gtt-display gtt-display-section">
                 The games it scores
@@ -94,7 +94,7 @@ export const Start = () => (
             </ul>
         </section>
 
-        <section className="gtt-band gtt-band-surface" aria-labelledby="why">
+        <section className="dk-page gtt-band gtt-band-surface" aria-labelledby="why">
             <h2 id="why" className="dk-visually-hidden">
                 Why it is made this way
             </h2>
@@ -108,7 +108,7 @@ export const Start = () => (
             </ul>
         </section>
 
-        <section className="gtt-band gtt-closing" aria-labelledby="another">
+        <section className="dk-page gtt-band gtt-closing" aria-labelledby="another">
             <div>
                 <p className="dk-eyebrow">Another round?</p>
                 <h2 id="another" className="gtt-display gtt-display-section">

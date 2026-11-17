@@ -19,9 +19,9 @@ export const About = () => {
     const names = GAMES.map((game) => game.name);
     return (
         <Website current="about">
-            <div className="gtt-page">
+            <div className="dk-page gtt-page">
                 <h1 className="gtt-display gtt-display-page">About</h1>
-                <p className="gtt-lead">
+                <p className="dk-lead gtt-lead">
                     Game Table Tally keeps score at the game table, for free.
                 </p>
                 <dl className="gtt-facts">

@@ -208,9 +208,16 @@ describe("the app's sheet over the design kit", () => {
         }
     );
 
-    it("keeps the website's bands clear of a notch or a rounded corner on each side", () => {
-        expect(app.get('--gtt-inset-left')).toMatch(/^calc\(\s*max\(var\(--dk-safe-left\),/);
-        expect(app.get('--gtt-inset-right')).toMatch(/^calc\(\s*max\(var\(--dk-safe-right\),/);
+    it("lines the website's bands up by the kit's own insets, with none of the app's", () => {
+        expect(rules).not.toMatch(/--gtt-inset-|padding-inline:[^;]*--dk-band-/);
+    });
+
+    it("leaves the website's header, its lead's size and the spacing of its pages to the kit", () => {
+        expect(rules).not.toMatch(/\.gtt-(?:site-header|brand)\b/);
+        // No rule that reaches into the whole website, nor any that sizes or spaces its lead.
+        expect(rules).not.toMatch(/\.gtt-site\b[^{]*\{[^}]*margin/);
+        expect(rules).not.toMatch(/\.gtt-lead\b[^{]*\{[^}]*(?:font-size|line-height|max-width)/);
+        expect(rules).not.toMatch(/\.gtt-display(?:-hero)?\b[^{]*\{[^}]*line-height:\s*1;/);
     });
 
     it('gives every mark the sheet draws itself no words for a screen reader', () => {

@@ -75,7 +75,7 @@ const Notice = ({
     readonly children: ReactNode;
 }) => (
     <Website reload={reload}>
-        <div className="gtt-page">
+        <div className="dk-page gtt-page">
             <h1 className="gtt-display gtt-display-page">{title}</h1>
             {children}
         </div>

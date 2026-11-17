@@ -34,9 +34,16 @@ const LINKS = [
 ] as const satisfies readonly { readonly name: RouteName; readonly label: string }[];
 
 /** The app's mark: four tally strokes and the fifth across them, on the accent. */
-export const TallyMark = ({ size }: { readonly size: number }) => (
+export const TallyMark = ({
+    size,
+    className,
+}: {
+    readonly size: number;
+    /** A class to draw it with besides its own, such as the kit's mark in a site's header. */
+    readonly className?: string;
+}) => (
     <svg
-        className="gtt-mark"
+        className={[className, 'gtt-mark'].filter(Boolean).join(' ')}
         width={size}
         height={size}
         viewBox="0 0 64 64"
@@ -78,9 +85,9 @@ export const Website = ({
                 source={SOURCE}
                 current={current === 'about' ? 'about' : undefined}
             />
-            <header className="gtt-site-header">
-                <Way className="gtt-brand" href={hrefOf('start')}>
-                    <TallyMark size={32} />
+            <header className="dk-site-header">
+                <Way className="dk-site-brand" href={hrefOf('start')}>
+                    <TallyMark size={32} className="dk-site-mark" />
                     Game Table Tally
                 </Way>
                 <nav aria-label="Website">
