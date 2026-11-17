@@ -102,6 +102,19 @@ test('reorders the seats by keyboard, keeping focus on the button and saying eac
     await expect(page.getByRole('main').getByRole('status')).toHaveText('Ann moves to seat 3.');
 });
 
+test("grows a seat button's icon with the text, at twice the text size", async ({ page }) => {
+    await fromTheLink(page, 'skyjo');
+    await page.getByRole('button', { name: 'Add Ann' }).click();
+    const icon = page.getByRole('button', { name: 'Remove Ann' }).locator('svg');
+    const before = (await icon.boundingBox())?.width ?? 0;
+    expect(before).toBeGreaterThan(0);
+    // A reader who raises only the text size raises the root's size, as a browser's setting does.
+    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    await expect
+        .poll(async () => (await icon.boundingBox())?.width ?? 0)
+        .toBeCloseTo(before * 2, 0);
+});
+
 test('reorders the seats by touch', async ({ page }, info) => {
     test.skip(info.project.name !== 'phone', 'A tap needs a touch screen.');
     await fromTheLink(page, 'skyjo');

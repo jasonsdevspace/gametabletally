@@ -21,20 +21,12 @@ import { useStatus } from './status.js';
  * down, which a keyboard and a thumb both reach, and a screen reader is told each seat's new place.
  */
 
-/** An icon on a seat's button, drawn in the button's color and hidden from a screen reader. */
+/**
+ * An icon on a seat's button, the kit's icon, which grows with the button's text, drawn in the
+ * button's color and hidden from a screen reader.
+ */
 const Icon = ({ children }: { readonly children: ReactNode }) => (
-    <svg
-        viewBox="0 0 24 24"
-        width="20"
-        height="20"
-        aria-hidden="true"
-        focusable="false"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
+    <svg className="dk-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         {children}
     </svg>
 );

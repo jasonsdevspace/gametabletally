@@ -26,18 +26,12 @@ import { TallyMark } from '../website/Website.js';
 /** The top-level places the tab bar reaches. */
 export type Section = 'play' | 'history' | 'players';
 
-/** An icon over a tab's label, drawn in the label's color and hidden from a screen reader. */
+/**
+ * An icon over a tab's label, the kit's icon at the tab bar's size, drawn in the label's color and
+ * hidden from a screen reader.
+ */
 const Icon = ({ children }: { readonly children: ReactNode }) => (
-    <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        focusable="false"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
+    <svg className="dk-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         {children}
     </svg>
 );
