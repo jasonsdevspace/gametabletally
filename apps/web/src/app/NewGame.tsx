@@ -63,7 +63,7 @@ const SeatRow = ({
     readonly onRemove: (id: string) => void;
 }) => {
     const button = (action: Action, off: boolean, onClick: () => void) => (
-        <Button data-seat={id} data-action={action} off={off} onClick={onClick}>
+        <Button data-seat={id} data-action={action} off={off} icon onClick={onClick}>
             <Icon>{ACTIONS[action].icon}</Icon>
             <span className="dk-visually-hidden">{ACTIONS[action].words(name)}</span>
         </Button>

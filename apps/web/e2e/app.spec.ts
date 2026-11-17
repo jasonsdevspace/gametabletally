@@ -102,6 +102,16 @@ test('keeps the tab bar at the bottom edge and one empty toast place on every sc
     }
 });
 
+test("strokes the tab bar's icons no heavier than their labels, by the kit's rule", async ({
+    page,
+}) => {
+    await page.goto(hrefOf('play'));
+    const icon = tabs(page).locator('svg').first();
+    // The kit draws a tab's icon at 1.5rem and strokes it two in twenty four of that, 2px here.
+    await expect(icon).toHaveCSS('width', '24px');
+    await expect(icon).toHaveCSS('stroke-width', '2px');
+});
+
 test('names the main region by the screen, so focus arriving there says where the visitor is', async ({
     page,
 }) => {
