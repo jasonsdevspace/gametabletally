@@ -43,7 +43,7 @@ export const TallyMark = ({
     readonly className?: string;
 }) => (
     <svg
-        className={className === undefined ? 'gtt-mark' : `${className} gtt-mark`}
+        className={[className, 'gtt-mark'].filter(Boolean).join(' ')}
         width={size}
         height={size}
         viewBox="0 0 64 64"

@@ -108,7 +108,7 @@ export const Start = () => (
             </ul>
         </section>
 
-        <section className="gtt-band gtt-closing" aria-labelledby="another">
+        <section className="dk-page gtt-band gtt-closing" aria-labelledby="another">
             <div>
                 <p className="dk-eyebrow">Another round?</p>
                 <h2 id="another" className="gtt-display gtt-display-section">
