@@ -113,12 +113,15 @@ const contrast = (one: string, two: string): number => {
 };
 
 describe("the app's sheet over the design kit", () => {
-    it('sets no kit color role, nor any kit property but the typeface and the two for the lip', () => {
+    it('sets no kit color role, nor any kit property but the typeface, the lip and the tile ground', () => {
         expect(Object.keys(sheets).length).toBeGreaterThan(0);
         expect([...app.keys()].filter((name) => name.startsWith('--dk-')).sort()).toEqual([
             '--dk-button-press',
             '--dk-button-shadow',
             '--dk-font-sans',
+            '--dk-panel-shadow',
+            '--dk-tile-ground',
+            '--dk-tile-shadow',
         ]);
         const colorRoles = [...kit].filter(([, value]) => isColor(value)).map(([name]) => name);
         expect(colorRoles.length).toBeGreaterThan(10);
@@ -173,13 +176,13 @@ describe("the app's sheet over the design kit", () => {
     );
 
     /**
-     * The ground each game is drawn on, by the game's id, from the rules that set it for its tile
-     * on the website and its link on the start screen alike.
+     * The ground each game is drawn on, by the game's id, from the rules that set the kit's tile
+     * ground for its tile on the website and on the start screen alike.
      */
     const grounds = new Map(
         [
             ...rules.matchAll(
-                /:where\(\.gtt-tile, \.gtt-game\)\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*background:\s*var\((--[a-z0-9-]+)\)/g
+                /\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*--dk-tile-ground:\s*var\((--[a-z0-9-]+)\)/g
             ),
         ].map(([, id = '', ground = '']) => [id, ground])
     );

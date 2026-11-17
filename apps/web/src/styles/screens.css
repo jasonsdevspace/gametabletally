@@ -1,28 +1,17 @@
 /*
  * The screens for keeping score, inside the design kit's app frame. The frame, the tab bar, the
- * buttons and the toast are the kit's, so this sheet lays out only what a screen holds of its own:
- * the start screen's game in play, its list of games and its small print, and the new game
- * screen's parts. Its colors are the kit's roles, and it names no kit class.
+ * buttons, the toast, the raised panel and the tiles are the kit's, so this sheet lays out only
+ * what a screen holds of its own: the line of the start screen's game in play, its small print,
+ * and the new game screen's parts. Its colors are the kit's roles, and it names no kit class.
  */
 
-/* The game in play, raised on a card with the lip, as a thing to pick up again. */
+/*
+ * The game in play is the kit's raised panel, which spaces what it holds, and its lip is set in
+ * app.css. It is a grid with no gap of its own, so the button to continue spans the panel and the
+ * kit's step is the only space between its parts. The game's name and its round share a line.
+ */
 .gtt-continue {
     display: grid;
-    gap: var(--dk-space-3);
-    padding: var(--dk-space-4);
-    border: 1px solid var(--dk-line);
-    border-radius: var(--dk-radius-large);
-    background: var(--dk-raised);
-    box-shadow: var(--gtt-lip);
-}
-
-.gtt-continue h2,
-.gtt-start h2 {
-    margin: 0;
-}
-
-.gtt-continue p {
-    margin: 0;
 }
 
 .gtt-continue-game {
@@ -48,41 +37,8 @@
     gap: var(--dk-space-3);
 }
 
-.gtt-games {
-    display: grid;
-    gap: var(--dk-space-3);
+.gtt-start h2 {
     margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-/* Each game to start, a link on its own tile ground, at the larger target, with the lip. */
-.gtt-game {
-    display: grid;
-    gap: var(--dk-space-1);
-    min-height: var(--dk-target-large);
-    padding: var(--dk-space-3) var(--dk-space-4);
-    border: 1px solid var(--dk-line);
-    border-radius: var(--dk-radius-large);
-    box-shadow: var(--gtt-lip);
-    color: inherit;
-    text-decoration: none;
-}
-
-.gtt-game strong {
-    font-size: var(--dk-text-lead);
-}
-
-.gtt-game span {
-    color: var(--dk-muted);
-    font-size: var(--dk-text-small);
-    text-wrap: pretty;
-}
-
-@media (hover: hover) {
-    .gtt-game:hover strong {
-        text-decoration: underline;
-    }
 }
 
 .gtt-fine {

@@ -57,6 +57,9 @@
     --dk-button-shadow: var(--gtt-lip);
     /* A press moves a key straight down by the lip's depth. */
     --dk-button-press: 0 var(--gtt-lip-depth);
+    /* The game in play's raised panel and each game's tile take the lip too. */
+    --dk-panel-shadow: var(--gtt-lip);
+    --dk-tile-shadow: var(--gtt-lip);
 
     /*
      * The grounds of the games, one for each game, each with a light and a dark value. Flip
@@ -69,17 +72,18 @@
 }
 
 /*
- * Each game's ground, under its tile on the website's first visit and under its link to start one
- * on the start screen, so a game offered to start looks the same in both places.
+ * Each game's ground, under its tile on the website's first visit and under its tile to start one
+ * on the start screen, so a game offered to start looks the same in both places. It is set as the
+ * kit's tile ground, which the kit's tiles draw and the website's tiles take as their background.
  */
-:where(.gtt-tile, .gtt-game)[data-game='flip-7'] {
-    background: var(--gtt-ground-flip-7);
+[data-game='flip-7'] {
+    --dk-tile-ground: var(--gtt-ground-flip-7);
 }
 
-:where(.gtt-tile, .gtt-game)[data-game='skyjo'] {
-    background: var(--gtt-ground-skyjo);
+[data-game='skyjo'] {
+    --dk-tile-ground: var(--gtt-ground-skyjo);
 }
 
-:where(.gtt-tile, .gtt-game)[data-game='wizard'] {
-    background: var(--gtt-ground-wizard);
+[data-game='wizard'] {
+    --dk-tile-ground: var(--gtt-ground-wizard);
 }
