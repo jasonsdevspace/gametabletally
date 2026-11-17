@@ -1,9 +1,9 @@
 /*
  * The app's look: the design kit's, with the few things the app adds laid over it through the
  * kit's own roles. The kit's colors stay as they are, so no rule here sets a kit color role, and
- * no rule names a kit class. This sheet adds the typeface, the lip under a key and the grounds of
- * the games, website.css lays out the website's pages, and screens.css lays out what the screens
- * for keeping score hold.
+ * no rule names a kit class. This sheet adds the typeface, the lip under a key, a raised panel and
+ * a tile, and the grounds of the games as the kit's tile ground. website.css lays out the
+ * website's pages, and screens.css lays out what the screens for keeping score hold.
  */
 @import '@jasonsdevspace/design-kit/tokens.css';
 @import '@jasonsdevspace/design-kit/base.css';
@@ -76,14 +76,14 @@
  * on the start screen, so a game offered to start looks the same in both places. It is set as the
  * kit's tile ground, which the kit's tiles draw and the website's tiles take as their background.
  */
-[data-game='flip-7'] {
+:where(.gtt-tile, .gtt-game)[data-game='flip-7'] {
     --dk-tile-ground: var(--gtt-ground-flip-7);
 }
 
-[data-game='skyjo'] {
+:where(.gtt-tile, .gtt-game)[data-game='skyjo'] {
     --dk-tile-ground: var(--gtt-ground-skyjo);
 }
 
-[data-game='wizard'] {
+:where(.gtt-tile, .gtt-game)[data-game='wizard'] {
     --dk-tile-ground: var(--gtt-ground-wizard);
 }

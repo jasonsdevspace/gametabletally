@@ -81,7 +81,11 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
                 <ul className="dk-rows dk-rows-tiles" role="list" aria-labelledby="start">
                     {GAMES.map((game) => (
                         <li key={game.id}>
-                            <Link className="dk-row" data-game={game.id} href={newGameOf(game.id)}>
+                            <Link
+                                className="dk-row gtt-game"
+                                data-game={game.id}
+                                href={newGameOf(game.id)}
+                            >
                                 <span className="dk-row-text">
                                     <span className="dk-row-title">{game.name}</span>
                                     <span className="dk-visually-hidden">, </span>

@@ -153,8 +153,10 @@ describe("the app's sheet over the design kit", () => {
         expect(app.has('--dk-font-mono')).toBe(false);
     });
 
-    it("gives the lip to the kit's keys by the kit's own properties, and a press by its depth", () => {
+    it("gives the lip to the kit's keys, raised panel and tiles by the kit's own properties, and a press by its depth", () => {
         expect(app.get('--dk-button-shadow')).toBe('var(--gtt-lip)');
+        expect(app.get('--dk-panel-shadow')).toBe('var(--gtt-lip)');
+        expect(app.get('--dk-tile-shadow')).toBe('var(--gtt-lip)');
         expect(app.get('--dk-button-press')).toBe('0 var(--gtt-lip-depth)');
         expect(kit.has('--dk-button-shadow') || tokens.includes('--dk-button-shadow')).toBe(false);
     });
@@ -182,7 +184,7 @@ describe("the app's sheet over the design kit", () => {
     const grounds = new Map(
         [
             ...rules.matchAll(
-                /\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*--dk-tile-ground:\s*var\((--[a-z0-9-]+)\)/g
+                /:where\(\.gtt-tile, \.gtt-game\)\[data-game='([a-z0-9-]+)'\]\s*\{[^}]*--dk-tile-ground:\s*var\((--[a-z0-9-]+)\)/g
             ),
         ].map(([, id = '', ground = '']) => [id, ground])
     );
