@@ -214,6 +214,7 @@ export default defineConfig(
                     // A tool the code is checked or built with, never what it ships.
                     devDependencies: [
                         '**/*.test.{ts,tsx}',
+                        '**/*.testing.ts',
                         '**/*.config.{ts,js,mjs}',
                         '**/scripts/**',
                         '**/vitest.setup.ts',

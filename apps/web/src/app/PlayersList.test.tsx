@@ -7,6 +7,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { playersChanged } from './players.js';
 import { PlayersList } from './PlayersList.js';
+import { heard, refused } from './status.testing.js';
 
 /* The players screen over a database in memory. */
 
@@ -102,12 +103,8 @@ describe('the players screen', () => {
     it('adds a player by name, saved and listed at once', async () => {
         const { open } = await draw();
         addByName(' Cat ');
-        await waitFor(() => {
-            expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben', 'Cat']);
-        });
-        await waitFor(() => {
-            expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Cat added.');
-        });
+        await heard(screen.getByRole('status', { hidden: true }), 'Cat added.');
+        expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben', 'Cat']);
         const store = await open();
         expect(await store.players()).toContainEqual(
             player('cat', 'Cat', '2026-11-15T09:00:00.000Z')
@@ -118,9 +115,17 @@ describe('the players screen', () => {
     it('refuses an empty name and one already taken, saving nothing', async () => {
         const { open } = await draw();
         addByName('');
-        expect(await screen.findByText("Enter the player's name.")).toBeVisible();
+        await refused(
+            screen.getByRole('textbox', { name: "A new player's name" }),
+            screen.getByRole('status', { hidden: true }),
+            "Enter the player's name."
+        );
         addByName('ben');
-        expect(await screen.findByText('A player is already named Ben.')).toBeVisible();
+        await refused(
+            screen.getByRole('textbox', { name: "A new player's name" }),
+            screen.getByRole('status', { hidden: true }),
+            'A player is already named Ben.'
+        );
         const store = await open();
         expect(await store.players()).toHaveLength(SAVED.length);
         store.close();

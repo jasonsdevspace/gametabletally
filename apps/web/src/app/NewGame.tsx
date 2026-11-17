@@ -337,7 +337,7 @@ export const NewGame = ({
                         ))}
                     </div>
                 )}
-                <AddByName field={nameField} onAdd={addByName} />
+                <AddByName field={nameField} onAdd={addByName} say={say} />
             </section>
             <StatusLine ref={line} />
             <Dock>

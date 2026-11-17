@@ -58,17 +58,17 @@ export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
     // The cards of the first draw, which stand still, so a total flips only as it changes and not
     // as the screen opens.
     const [still] = useState(() => new Set(keysOf(name, cardsOf(total))));
-    // The change to say, counted so the same words said twice are said twice. It is worked out in
-    // the render that draws the change and said once that render is on the page.
-    const [change, setChange] = useState({ words: '', count: 0 });
+    // The change to say, worked out in the render that draws it and said once that render is on the
+    // page. Each is an object of its own, so the same words said twice are said twice.
+    const [change, setChange] = useState<{ readonly words: string } | null>(null);
     const [status, say] = useStatus();
     if (shown.name !== name || shown.total !== total) {
         const words = changeOf(shown, { name, total });
         setShown({ name, total });
-        if (words !== null) setChange({ words, count: change.count + 1 });
+        if (words !== null) setChange({ words });
     }
     useEffect(() => {
-        if (change.words !== '') say(change.words);
+        if (change !== null) say(change.words);
     }, [change, say]);
     const cards = cardsOf(total);
     const keys = keysOf(name, cards);

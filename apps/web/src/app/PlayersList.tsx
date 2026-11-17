@@ -91,7 +91,7 @@ export const PlayersList = ({
                     ))}
                 </ul>
             )}
-            <AddByName onAdd={add} />
+            <AddByName onAdd={add} say={say} />
             <StatusLine ref={line} />
         </>
     );

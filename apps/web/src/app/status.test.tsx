@@ -38,7 +38,7 @@ describe("the screens' fields and status lines", () => {
         const written = Object.entries(sources).flatMap(([file, source]) =>
             [
                 ...source.matchAll(
-                    /className="dk-field(?:-action|-label|-error)?"|role="status"|dk-visually-hidden" role/g
+                    /className="dk-(?:field(?:-action|-label|-error)?|input)"|role="status"/g
                 ),
             ].map(([found]) => `${file}: ${found}`)
         );

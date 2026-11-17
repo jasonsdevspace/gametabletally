@@ -7,6 +7,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
+import { heard, refused } from './status.testing.js';
 
 /* The new game screen in the app's frame, over a database in memory. */
 
@@ -84,12 +85,6 @@ const addByName = (name: string) => {
 /** The screen's own status line, apart from the frame's toast. */
 const status = () => within(screen.getByRole('main')).getByRole('status', { hidden: true });
 
-/** Waits for the kit's status line to say the words, which it does a moment after it is told. */
-const heard = (line: HTMLElement, words: string) =>
-    waitFor(() => {
-        expect(line).toHaveTextContent(words);
-    });
-
 afterEach(() => {
     window.history.replaceState(null, '', '/');
 });
@@ -162,12 +157,11 @@ describe('the new game screen', () => {
         await draw();
         const field = screen.getByRole('textbox', { name: "A new player's name" });
         addByName('   ');
-        expect(await screen.findByText("Enter the player's name.")).toBeVisible();
-        expect(field).toHaveAttribute('aria-invalid', 'true');
+        await refused(field, status(), "Enter the player's name.");
         expect(field).toHaveAccessibleDescription(/^Error: ?Enter the player's name\.$/);
         fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
         addByName('ANN');
-        expect(await screen.findByText('Ann has a seat already.')).toBeVisible();
+        await refused(field, status(), 'Ann has a seat already.');
         expect(seated()).toEqual(['Ann']);
     });
 
@@ -310,9 +304,11 @@ describe('the new game screen', () => {
         };
         render(<NewGame open={slow} />);
         addByName('Ann');
-        expect(
-            await screen.findByText('Your saved players are still being read. Try again.')
-        ).toBeVisible();
+        await refused(
+            screen.getByRole('textbox', { name: "A new player's name" }),
+            screen.getByRole('status', { hidden: true }),
+            'Your saved players are still being read. Try again.'
+        );
         release();
         expect(await screen.findByRole('button', { name: 'Add Ann' })).toBeVisible();
         const store = await open();

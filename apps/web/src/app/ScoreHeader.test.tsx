@@ -1,20 +1,15 @@
 import base from '@jasonsdevspace/design-kit/base.css?raw';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { describe, expect, it } from 'vitest';
 
 import sheet from '../styles/screens.css?raw';
 import { cardsOf, changeOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
+import { heard } from './status.testing.js';
 
 /* The score header on its own, with no game screen around it. */
 
 const status = () => screen.getByRole('status');
-
-/** Waits for the kit's status line to say the words, which it does a moment after it is told. */
-const heard = (line: HTMLElement, words: string) =>
-    waitFor(() => {
-        expect(line).toHaveTextContent(words);
-    });
 
 describe('the score header', () => {
     it("shows the player's name, their total as one image named by the number, and how it adds up", () => {

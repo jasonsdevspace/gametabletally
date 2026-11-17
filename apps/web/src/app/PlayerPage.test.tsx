@@ -8,6 +8,7 @@ import { openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { PlayerPage } from './PlayerPage.js';
 import { PLAYERS_CHANGED } from './players.js';
+import { heard, refused } from './status.testing.js';
 
 /* A player's own page in the app's frame, over a database in memory. */
 
@@ -64,6 +65,7 @@ const players = async (open: () => ReturnType<typeof openStore>) => {
 };
 
 const nameField = () => screen.getByRole('textbox', { name: 'Name' });
+const line = () => within(screen.getByRole('main')).getByRole('status');
 
 /** The frame's toast, which shows its message and its Undo. */
 const toast = () => within(document.querySelector<HTMLElement>('.dk-toast') ?? document.body);
@@ -85,12 +87,8 @@ describe("a player's page", () => {
         await screen.findByRole('heading', { name: 'Ann' });
         fireEvent.change(nameField(), { target: { value: ' Annie ' } });
         fireEvent.blur(nameField());
-        expect(await screen.findByRole('heading', { name: 'Annie' })).toBeVisible();
-        await waitFor(() => {
-            expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent(
-                'Saved as Annie.'
-            );
-        });
+        await heard(line(), 'Saved as Annie.');
+        expect(screen.getByRole('heading', { name: 'Annie' })).toBeVisible();
         expect((await players(open)).find(({ id }) => id === 'ann')?.name).toBe('Annie');
     });
 
@@ -99,11 +97,11 @@ describe("a player's page", () => {
         await screen.findByRole('heading', { name: 'Ann' });
         fireEvent.change(nameField(), { target: { value: '  ' } });
         fireEvent.blur(nameField());
-        expect(await screen.findByText("Enter the player's name.")).toBeVisible();
-        expect(nameField()).toHaveAttribute('aria-invalid', 'true');
+        // Said as well as drawn, since the field may have been left as the refusal arrives.
+        await refused(nameField(), line(), "Enter the player's name.");
         fireEvent.change(nameField(), { target: { value: 'BEN' } });
         fireEvent.submit(nameField());
-        expect(await screen.findByText('A player is already named Ben.')).toBeVisible();
+        await refused(nameField(), line(), 'A player is already named Ben.');
         expect((await players(open)).find(({ id }) => id === 'ann')?.name).toBe('Ann');
     });
 

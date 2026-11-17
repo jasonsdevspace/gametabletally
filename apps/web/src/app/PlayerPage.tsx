@@ -30,10 +30,13 @@ const RenameField = ({
     player,
     players,
     onRename,
+    say,
 }: {
     readonly player: SavedPlayer;
     readonly players: readonly SavedPlayer[];
     readonly onRename: (name: string) => Promise<string | null>;
+    /** Says a refusal on the screen's status line, since the kit's field error is not live. */
+    readonly say: (words: string) => void;
 }) => {
     const [name, setName] = useState(player.name);
     const [error, setError] = useState('');
@@ -46,10 +49,12 @@ const RenameField = ({
         const refused = nameRefusal(players, typed, player.id);
         if (refused !== null) {
             setError(refused);
+            say(refused);
             return;
         }
         const failed = await onRename(typed);
         setError(failed ?? '');
+        if (failed !== null) say(failed);
         // Tidied to the name saved, unless something else has been typed since.
         if (failed === null) setName((now) => (cleanName(now) === typed ? typed : now));
     };
@@ -203,7 +208,13 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
         <>
             <h2 className="gtt-player-name">{player.name}</h2>
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
-            <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
+            <RenameField
+                key={player.id}
+                player={player}
+                players={read.players}
+                onRename={rename}
+                say={say}
+            />
             <StatusLine ref={line} />
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>

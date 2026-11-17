@@ -69,15 +69,19 @@ export const useRunning = (): boolean =>
     );
 
 /**
- * The form a new player's name is typed in: the kit's field, with its button as the field's action. `onAdd` takes the name and resolves
- * to why it could not, which is drawn as the field's error, or null once it is taken.
+ * The form a new player's name is typed in: the kit's field, with its button as the field's
+ * action. `onAdd` takes the name and resolves to why it could not, which is drawn as the field's
+ * error, or null once it is taken.
  */
 export const AddByName = ({
     field,
     onAdd,
+    say,
 }: {
     readonly field?: RefObject<HTMLInputElement | null>;
     readonly onAdd: (typed: string) => Promise<string | null>;
+    /** Says a refusal on the screen's status line, since the kit's field error is not live. */
+    readonly say: (words: string) => void;
 }) => {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
@@ -91,6 +95,7 @@ export const AddByName = ({
             const refused = await onAdd(cleanName(name));
             setError(refused ?? '');
             if (refused === null) setName('');
+            else say(refused);
         } finally {
             adding.current = false;
         }
