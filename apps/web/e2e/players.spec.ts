@@ -57,6 +57,10 @@ test('adds a player, renames them on their page and removes them, with Undo', as
     await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText(
         'Catherine removed.'
     );
+    // The toast closes by a button named Close, as the kit's toast has said since 0.8.0.
+    await expect(
+        page.locator('.dk-app-toast').getByRole('button', { name: 'Close', exact: true })
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(listed(page)).toHaveText(['Ann', 'Ben', 'Catherine']);
 
