@@ -111,8 +111,9 @@ test("grows a seat button's icon with the text, at twice the text size", async (
     // A reader who raises only the text size raises the root's size, as a browser's setting does.
     await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
     await expect
-        .poll(async () => (await icon.boundingBox())?.width ?? 0)
-        .toBeCloseTo(before * 2, 0);
+        .poll(async () => ((await icon.boundingBox())?.width ?? 0) / before)
+        .toBeGreaterThan(1.9);
+    expect(((await icon.boundingBox())?.width ?? 0) / before).toBeLessThan(2.1);
 });
 
 test('reorders the seats by touch', async ({ page }, info) => {

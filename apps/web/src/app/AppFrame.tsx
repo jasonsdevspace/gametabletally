@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import { Link } from '../navigation.js';
 import { hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
+import { Icon } from './icon.js';
 
 /**
  * The frame every screen for keeping score sits in: the design kit's app frame, with the screen's
@@ -25,16 +26,6 @@ import { TallyMark } from '../website/Website.js';
 
 /** The top-level places the tab bar reaches. */
 export type Section = 'play' | 'history' | 'players';
-
-/**
- * An icon over a tab's label, the kit's icon at the tab bar's size, drawn in the label's color and
- * hidden from a screen reader.
- */
-const Icon = ({ children }: { readonly children: ReactNode }) => (
-    <svg className="dk-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        {children}
-    </svg>
-);
 
 const TABS = [
     {

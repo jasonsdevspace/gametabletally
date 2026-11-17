@@ -1,6 +1,6 @@
 import { GAMES } from '@gametabletally/scoring';
 import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
@@ -9,6 +9,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
+import { Icon } from './icon.js';
 import { AddByName, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 import { useStatus } from './status.js';
@@ -20,16 +21,6 @@ import { useStatus } from './status.js';
  * offered from then on. The seats are a list with a button to move each one up and one to move it
  * down, which a keyboard and a thumb both reach, and a screen reader is told each seat's new place.
  */
-
-/**
- * An icon on a seat's button, the kit's icon, which grows with the button's text, drawn in the
- * button's color and hidden from a screen reader.
- */
-const Icon = ({ children }: { readonly children: ReactNode }) => (
-    <svg className="dk-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        {children}
-    </svg>
-);
 
 /** A seat's three actions, each with its icon and the words a screen reader says for it. */
 const ACTIONS = {
