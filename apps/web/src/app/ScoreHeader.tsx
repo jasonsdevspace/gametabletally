@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { StatusLine } from '@jasonsdevspace/design-kit/react';
+import { useEffect, useState } from 'react';
+
+import { useStatus } from './status.js';
 
 /**
  * The top of every game's screen: whose turn it is, their total as flip digits large enough to read
@@ -55,15 +58,18 @@ export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
     // The cards of the first draw, which stand still, so a total flips only as it changes and not
     // as the screen opens.
     const [still] = useState(() => new Set(keysOf(name, cardsOf(total))));
-    // What the status line says, counted so the same words said twice are heard twice.
-    const [said, setSaid] = useState({ words: '', count: 0 });
-    // Worked out in the render that draws the change, not in an effect, so the words and the
-    // digits arrive together.
+    // The change to say, worked out in the render that draws it and said once that render is on the
+    // page. Each is an object of its own, so the same words said twice are said twice.
+    const [change, setChange] = useState<{ readonly words: string } | null>(null);
+    const [status, say] = useStatus();
     if (shown.name !== name || shown.total !== total) {
-        const change = changeOf(shown, { name, total });
+        const words = changeOf(shown, { name, total });
         setShown({ name, total });
-        if (change !== null) setSaid({ words: change, count: said.count + 1 });
+        if (words !== null) setChange({ words });
     }
+    useEffect(() => {
+        if (change !== null) say(change.words);
+    }, [change, say]);
     const cards = cardsOf(total);
     const keys = keysOf(name, cards);
     return (
@@ -88,9 +94,7 @@ export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
                 </span>
             </div>
             {line === '' ? null : <p className="gtt-score-line">{line}</p>}
-            <p className="dk-visually-hidden" role="status">
-                {said.words === '' ? null : <span key={said.count}>{said.words}</span>}
-            </p>
+            <StatusLine ref={status} />
         </div>
     );
 };
