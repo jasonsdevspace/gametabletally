@@ -59,7 +59,7 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
         <>
             {refused === '' ? null : <p role="alert">{refused}</p>}
             {continuing ? (
-                <div className="gtt-continue">
+                <div className="dk-panel dk-panel-raised gtt-continue">
                     <h2 className="dk-eyebrow">Game in play</h2>
                     <p className="gtt-continue-game">
                         <strong>{continuing.name}</strong>
@@ -78,17 +78,23 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
                 <h2 className="dk-eyebrow" id="start">
                     Start a new game
                 </h2>
-                <ul className="gtt-games" role="list" aria-labelledby="start">
+                <ul className="dk-rows dk-rows-tiles" role="list" aria-labelledby="start">
                     {GAMES.map((game) => (
                         <li key={game.id}>
                             <Link
-                                className="gtt-game"
+                                className="dk-row gtt-game"
                                 data-game={game.id}
                                 href={newGameOf(game.id)}
                             >
-                                <strong>{game.name}</strong>
-                                <span>
-                                    {cardOf(game.id).line} {playersOf(game)}.
+                                <span className="dk-row-text">
+                                    <span className="dk-row-title">{game.name}</span>
+                                    <span className="dk-visually-hidden">, </span>
+                                    <span className="dk-row-detail">
+                                        {cardOf(game.id).line} {playersOf(game)}.
+                                    </span>
+                                </span>
+                                <span className="dk-row-sign" aria-hidden="true">
+                                    ›
                                 </span>
                             </Link>
                         </li>

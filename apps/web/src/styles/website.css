@@ -226,6 +226,7 @@
     overflow: hidden;
     border: 1px solid var(--dk-line);
     border-radius: var(--dk-radius-large);
+    background: var(--dk-tile-ground, var(--dk-surface));
     box-shadow: var(--gtt-lip);
     color: var(--dk-fg);
 }
