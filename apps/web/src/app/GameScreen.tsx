@@ -12,14 +12,13 @@ import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
 import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord } from '../store/format.js';
-import { refusalOf } from '../store/store.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
-import { type Summary, useSummary } from './summary.js';
+import { type Summary, useDiscard, useSummary } from './summary.js';
 
 /*
  * The game in play: the score header on top, and below it, in reach of a thumb, the keys a round
@@ -474,25 +473,17 @@ const GameActions = ({
     play,
     id,
     gameName,
-    summary,
 }: {
     readonly play: Play;
     readonly id: string;
     readonly gameName: string;
-    readonly summary: Summary;
 }) => {
     const [line, say] = useStatus();
+    const discardGame = useDiscard(play);
     const discard = async () => {
-        if (summary.undoing()) return;
-        summary.clear();
-        try {
-            await play.discard(id);
-        } catch (error: unknown) {
-            say(refusalOf(error) ?? 'The game could not be discarded. Try again.');
-            return;
-        }
-        summary.offer(`The game of ${gameName} is discarded.`);
-        navigate(hrefOf('play'));
+        const done = await discardGame(id, gameName);
+        if (done === true) navigate(hrefOf('play'));
+        else if (done !== null) say(done);
     };
     return (
         <>
@@ -560,14 +551,20 @@ const Entry = ({
                 </Dock>
             </>
         );
-    const actions = <GameActions play={play} id={id} gameName={gameName} summary={summary} />;
+    const actions = <GameActions play={play} id={id} gameName={gameName} />;
     const player = draft.step?.player ?? null;
-    if (player === null) return <p>Every score of the round is in.</p>;
+    if (player === null)
+        return (
+            <>
+                {isChanging(game, draft) ? null : actions}
+                <p>Every score of the round is in.</p>
+            </>
+        );
     if (!canEnter(game.saved.game))
         return (
             <div className="gtt-game">
                 <div className="gtt-game-top">
-                    {actions}
+                    {isChanging(game, draft) ? null : actions}
                     <ScoreHeader
                         name={nameIn(names, player)}
                         total={game.result.totals[player] ?? 0}

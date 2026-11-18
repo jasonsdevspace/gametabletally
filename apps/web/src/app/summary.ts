@@ -1,6 +1,7 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import type { Play } from '../play/play.js';
+import { refusalOf } from '../store/store.js';
 import { useToast } from './AppFrame.js';
 import { useSummaryState } from './opened-game.js';
 
@@ -65,4 +66,33 @@ export const useSummary = (play: Play): Summary => {
         [play, show, state]
     );
     return useMemo(() => ({ offer, clear, undoing: state.undoing }), [offer, clear, state]);
+};
+
+/**
+ * Discards a game at once, with the frame's toast offering Undo, as the app does in place of asking
+ * first, and resolves to whether it did, or to the words that say why not. A tap while an Undo or
+ * an earlier discard is under way is ignored, so a double tap discards once.
+ */
+export const useDiscard = (
+    play: Play
+): ((id: string, gameName: string) => Promise<true | string | null>) => {
+    const summary = useSummary(play);
+    const busy = useRef(false);
+    return useCallback(
+        async (id, gameName) => {
+            if (busy.current || summary.undoing()) return null;
+            busy.current = true;
+            summary.clear();
+            try {
+                await play.discard(id);
+            } catch (error: unknown) {
+                return refusalOf(error) ?? 'The game could not be discarded. Try again.';
+            } finally {
+                busy.current = false;
+            }
+            summary.offer(`The game of ${gameName} is discarded.`);
+            return true;
+        },
+        [play, summary]
+    );
 };

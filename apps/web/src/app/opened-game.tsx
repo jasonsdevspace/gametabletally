@@ -192,7 +192,9 @@ type Lent = Omit<OpenedGame, 'id'> | { readonly failed: string };
 const useLent = (
     key: string | null,
     open: () => Promise<Store>,
-    now: () => Date
+    now: () => Date,
+    /** Whether what was read for an earlier key is kept in view while a later one is read. */
+    keep = false
 ): { readonly key: string; readonly lent: Lent } | null => {
     // What was read, and for which key, so a move to another game never draws the last one.
     const [read, setRead] = useState<{ readonly key: string; readonly lent: Lent } | null>(null);
@@ -238,7 +240,7 @@ const useLent = (
             shown.release?.();
         };
     }, [key, open, now, lend]);
-    return read?.key === key ? read : null;
+    return read?.key === key || keep ? read : null;
 };
 
 /**
@@ -277,7 +279,23 @@ export const WithGames = ({
     children,
 }: OpenedGameProps & { readonly children: (games: Omit<OpenedGame, 'id'>) => ReactNode }) => {
     const running = useRunning();
-    const read = useLent(running ? 'all' : null, open, now);
+    // Read again whenever the app comes back to the front, since a game may have moved on or ended
+    // in another tab, or a player been added there, with what was read kept in view meanwhile. A
+    // read that failed is tried again the same way, and a database another tab closed is opened
+    // afresh.
+    const [arrivals, setArrivals] = useState(0);
+    useEffect(() => {
+        const again = () => {
+            if (document.visibilityState === 'visible') setArrivals((count) => count + 1);
+        };
+        document.addEventListener('visibilitychange', again);
+        window.addEventListener('pageshow', again);
+        return () => {
+            document.removeEventListener('visibilitychange', again);
+            window.removeEventListener('pageshow', again);
+        };
+    }, []);
+    const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
     if (read === null) return null;
     if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
     return children(read.lent);

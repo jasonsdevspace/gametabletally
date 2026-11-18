@@ -1,17 +1,17 @@
 import { GAMES } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { Link } from '../navigation.js';
 import type { Play } from '../play/play.js';
-import { hrefOf } from '../routes.js';
+import { changingRoundOf, hrefOf } from '../routes.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
 import { cardOf, playersOf } from '../website/games.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { type Continuing, inPlayOf } from './in-play.js';
 import { WithGames } from './opened-game.js';
 import { useStatus } from './status.js';
-import { useSummary } from './summary.js';
+import { useDiscard } from './summary.js';
 
 /**
  * The start screen, where the app opens: every game in play, to continue or discard, and each game
@@ -24,10 +24,68 @@ export const newGameOf = (game: string): string =>
     `${hrefOf('new')}?${new URLSearchParams({ game }).toString()}`;
 
 /**
+ * One game in play, to continue or discard. A game with a saved round opened to change is
+ * continued at that round, and what is let go is the change, never the game, as the round's own
+ * screen offers only Cancel then.
+ */
+const GamePanel = ({
+    game,
+    onDiscard,
+    onLetGo,
+}: {
+    readonly game: Continuing;
+    readonly onDiscard: () => void;
+    readonly onLetGo: () => void;
+}) => (
+    <li className="dk-panel dk-panel-raised gtt-continue">
+        <p className="gtt-continue-game">
+            <strong>{game.name}</strong>
+            <span>Round {game.round}</span>
+        </p>
+        <p>
+            {game.changing === null ? game.turn : `Round ${String(game.round)} is being changed.`}
+        </p>
+        {game.changing === null ? (
+            <>
+                <Link
+                    className="dk-button dk-button-accent dk-button-tall"
+                    href={hrefOf('game', game.id)}
+                >
+                    Continue the game{' '}
+                    <span className="dk-visually-hidden">
+                        of {game.name}, round {game.round}
+                    </span>
+                </Link>
+                <Button text onClick={onDiscard}>
+                    Discard{' '}
+                    <span className="dk-visually-hidden">
+                        the game of {game.name}, round {game.round}
+                    </span>
+                </Button>
+            </>
+        ) : (
+            <>
+                <Link
+                    className="dk-button dk-button-accent dk-button-tall"
+                    href={changingRoundOf(game.id, game.changing)}
+                >
+                    Continue changing round {game.round}{' '}
+                    <span className="dk-visually-hidden">of {game.name}</span>
+                </Link>
+                <Button text onClick={onLetGo}>
+                    Cancel the change{' '}
+                    <span className="dk-visually-hidden">
+                        to round {game.round} of {game.name}
+                    </span>
+                </Button>
+            </>
+        )}
+    </li>
+);
+
+/**
  * The games in play from the model the frame shares, each to continue or to discard. A discard is
- * at once, with the frame's toast offering Undo, as the app does in place of asking first. The
- * games are read again when the app comes back to the front, since one may have moved on in
- * another tab or ended there.
+ * at once, with the frame's toast offering Undo, as the app does in place of asking first.
  */
 const InPlay = ({
     play,
@@ -37,28 +95,22 @@ const InPlay = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const games = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot).games;
-    const summary = useSummary(play);
+    const discard = useDiscard(play);
     const [line, say] = useStatus();
-    useEffect(() => {
-        const again = () => {
-            if (document.visibilityState === 'visible') void play.load();
-        };
-        document.addEventListener('visibilitychange', again);
-        window.addEventListener('pageshow', again);
-        return () => {
-            document.removeEventListener('visibilitychange', again);
-            window.removeEventListener('pageshow', again);
-        };
-    }, [play]);
     const shown = inPlayOf(games, names);
 
-    const discard = async (game: Continuing) => {
-        summary.clear();
+    const discardGame = async (game: Continuing) => {
+        const done = await discard(game.id, game.name);
+        if (typeof done === 'string') say(done);
+    };
+
+    /** Lets a round's change go, leaving the game as it was saved. */
+    const letGo = async (game: Continuing) => {
         try {
-            await play.discard(game.id);
-            summary.offer(`The game of ${game.name} is discarded.`);
+            await play.dropDraft(game.id);
+            say(`The change to round ${String(game.round)} of ${game.name} is let go.`);
         } catch (error: unknown) {
-            say(refusalOf(error) ?? 'The game could not be discarded. Try again.');
+            say(refusalOf(error) ?? 'The change could not be let go. Try again.');
         }
     };
 
@@ -71,28 +123,12 @@ const InPlay = ({
                     </h2>
                     <ul className="gtt-in-play-list" role="list">
                         {shown.map((game) => (
-                            <li key={game.id} className="dk-panel dk-panel-raised gtt-continue">
-                                <p className="gtt-continue-game">
-                                    <strong>{game.name}</strong>
-                                    <span>Round {game.round}</span>
-                                </p>
-                                <p>{game.turn}</p>
-                                <Link
-                                    className="dk-button dk-button-accent dk-button-tall"
-                                    href={hrefOf('game', game.id)}
-                                >
-                                    Continue the game{' '}
-                                    <span className="dk-visually-hidden">
-                                        of {game.name}, round {game.round}
-                                    </span>
-                                </Link>
-                                <Button text onClick={() => void discard(game)}>
-                                    Discard{' '}
-                                    <span className="dk-visually-hidden">
-                                        the game of {game.name}, round {game.round}
-                                    </span>
-                                </Button>
-                            </li>
+                            <GamePanel
+                                key={game.id}
+                                game={game}
+                                onDiscard={() => void discardGame(game)}
+                                onLetGo={() => void letGo(game)}
+                            />
                         ))}
                     </ul>
                 </section>

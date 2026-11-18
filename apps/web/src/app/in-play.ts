@@ -14,6 +14,8 @@ export interface Continuing {
     readonly round: number;
     /** Whose turn it is, or what the round waits on, as a sentence. */
     readonly turn: string;
+    /** The saved round opened to change, from 0, which is let go rather than the game, or null. */
+    readonly changing: number | null;
 }
 
 /** A game's name, as the scoring package gives it, or its id for a game the package does not know. */
@@ -63,4 +65,8 @@ export const inPlayOf = (
             name: gameNameOf(game.saved.game),
             round: (game.draft?.index ?? game.saved.rounds.length) + 1,
             turn: turnOf(game, names),
+            changing:
+                game.draft !== null && game.draft.index < game.saved.rounds.length
+                    ? game.draft.index
+                    : null,
         }));

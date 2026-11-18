@@ -154,8 +154,15 @@ describe('the game the start screen offers to continue', () => {
         await play.enter('g-new', hand([7]));
         await play.saveRound('g-new');
         expect(inPlayOf(play.snapshot().games, NAMES)).toEqual([
-            { id: 'g-new', name: 'Flip 7', round: 2, turn: "Ann's score is next." },
-            { id: 'g-old', name: 'Wizard', round: 1, turn: "Ann's bid is next." },
+            { id: 'g-new', name: 'Flip 7', round: 2, turn: "Ann's score is next.", changing: null },
+            { id: 'g-old', name: 'Wizard', round: 1, turn: "Ann's bid is next.", changing: null },
         ]);
+        // A saved round opened to change is named, so it is let go rather than the game.
+        await play.reopen('g-new', 0);
+        expect(inPlayOf(play.snapshot().games, NAMES)[0]).toMatchObject({
+            id: 'g-new',
+            round: 1,
+            changing: 0,
+        });
     });
 });
