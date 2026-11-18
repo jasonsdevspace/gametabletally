@@ -8,8 +8,8 @@ import { audit, expect, type Page, seed, smallTargets, test } from './support.js
 
 /*
  * The new game screen, as deployed: a game of each kind started from the start screen's link, the
- * seats reordered by keyboard and by touch, the start button off until the game takes the players
- * seated, and the screen audited on a desktop and a phone profile in each theme.
+ * seats reordered by keyboard and by touch, a refused name taking focus to its field, a removed seat
+ * put back from the toast, the start button off until the game takes the players seated, and the screen audited on a desktop and a phone profile in each theme.
  */
 
 const NAMES = ['Ann', 'Ben', 'Cat', 'Dan'];
@@ -117,6 +117,34 @@ test("draws a seat button's icon at the kit's icon-only size, growing with the t
         .poll(async () => ((await icon.boundingBox())?.width ?? 0) / before)
         .toBeGreaterThan(1.9);
     expect(((await icon.boundingBox())?.width ?? 0) / before).toBeLessThan(2.1);
+});
+
+test('moves focus to the name field when the Add button is refused, the field described by why', async ({
+    page,
+}) => {
+    await fromTheLink(page, 'skyjo');
+    await page.getByRole('button', { name: 'Add Ann' }).click();
+    await nameField(page).fill('ann');
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(nameField(page)).toBeFocused();
+    await expect(nameField(page)).toHaveAttribute('aria-invalid', 'true');
+    await expect(nameField(page)).toHaveAccessibleDescription(/Ann has a seat already\./);
+    await audit(page);
+});
+
+test('puts a removed seat back in the seat it left, from the toast', async ({ page }) => {
+    await fromTheLink(page, 'skyjo');
+    for (const name of ['Ann', 'Ben', 'Cat'])
+        await page.getByRole('button', { name: `Add ${name}` }).click();
+    await page.getByRole('button', { name: 'Remove Ben' }).click();
+    await expect(seated(page)).toHaveText(['Ann', 'Cat']);
+    await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText(
+        'Ben is off the seats.'
+    );
+    await audit(page);
+    await page.locator('.dk-app-toast').getByRole('button', { name: 'Undo' }).click();
+    await expect(seated(page)).toHaveText(['Ann', 'Ben', 'Cat']);
+    await expect(page.getByRole('main').getByRole('status')).toHaveText('Ben takes seat 2 again.');
 });
 
 test('reorders the seats by touch', async ({ page }, info) => {

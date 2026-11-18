@@ -7,7 +7,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
-import { heard, refused } from './status.testing.js';
+import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* The new game screen in the app's frame, over a database in memory. */
 
@@ -157,12 +157,16 @@ describe('the new game screen', () => {
         await draw();
         const field = screen.getByRole('textbox', { name: "A new player's name" });
         addByName('   ');
-        await refused(field, status(), "Enter the player's name.");
+        await refusedInPlace(field, "Enter the player's name.");
         expect(field).toHaveAccessibleDescription(/^Error: ?Enter the player's name\.$/);
         fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
         addByName('ANN');
-        await refused(field, status(), 'Ann has a seat already.');
+        await refusedInPlace(field, 'Ann has a seat already.');
         expect(seated()).toEqual(['Ann']);
+        // Refused by Enter in the field, where focus already is, the refusal is said instead.
+        field.focus();
+        fireEvent.submit(field);
+        await refused(field, status(), 'Ann has a seat already.');
     });
 
     it('moves a seat up and down, says its new place and keeps focus on the button', async () => {
@@ -207,12 +211,26 @@ describe('the new game screen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
         fireEvent.click(screen.getByRole('button', { name: 'Remove Ann' }));
         expect(seated()).toEqual(['Ben']);
-        await heard(status(), 'Ann is off the seats.');
+        const toast = () => document.querySelector<HTMLElement>('.dk-app-toast [role="status"]');
+        await waitFor(() => {
+            expect(toast()).toHaveTextContent('Ann is off the seats.');
+        });
         expect(screen.getByRole('button', { name: 'Remove Ben' })).toHaveFocus();
         fireEvent.click(screen.getByRole('button', { name: 'Remove Ben' }));
         expect(screen.queryByRole('list', { name: 'Players, in seat order' })).toBeNull();
         expect(screen.getByText(/No one is seated yet/)).toBeVisible();
         expect(screen.getByRole('textbox', { name: "A new player's name" })).toHaveFocus();
+    });
+
+    it('puts a removed seat back in the seat it left from the toast', async () => {
+        await draw([player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')]);
+        for (const name of ['Ann', 'Ben', 'Cat'])
+            fireEvent.click(screen.getByRole('button', { name: `Add ${name}` }));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Ben' }));
+        expect(seated()).toEqual(['Ann', 'Cat']);
+        fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+        expect(seated()).toEqual(['Ann', 'Ben', 'Cat']);
+        await heard(status(), 'Ben takes seat 2 again.');
     });
 
     it('keeps the start button off, saying how many the game takes, until enough are seated', async () => {
@@ -304,9 +322,8 @@ describe('the new game screen', () => {
         };
         render(<NewGame open={slow} />);
         addByName('Ann');
-        await refused(
+        await refusedInPlace(
             screen.getByRole('textbox', { name: "A new player's name" }),
-            screen.getByRole('status', { hidden: true }),
             'Your saved players are still being read. Try again.'
         );
         release();
