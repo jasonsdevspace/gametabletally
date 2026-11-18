@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type GameInPlay, openPlay } from '../play/play.js';
 import { openStore } from '../store/store.js';
-import { continuingOf, readContinuing, turnOf } from './in-play.js';
+import { inPlayOf, turnOf } from './in-play.js';
 
 /*
  * The game the start screen offers to continue, worked out from games the app's own model
@@ -132,9 +132,9 @@ describe('the game the start screen offers to continue', () => {
         expect(turnOf(only(play.snapshot().games), NAMES)).toBe('Next, say who ended the round.');
     });
 
-    it('offers the game in play changed last, by name and round, and none when there is none', async () => {
+    it('lists every game in play, last changed first, by name, round and turn, and none when there is none', async () => {
         const { play } = await setUp();
-        expect(continuingOf(play.snapshot().games, NAMES)).toBeNull();
+        expect(inPlayOf(play.snapshot().games, NAMES)).toEqual([]);
         await play.start({
             id: 'g-old',
             game: 'wizard',
@@ -153,36 +153,9 @@ describe('the game the start screen offers to continue', () => {
         await play.enter('g-new', hand([6]));
         await play.enter('g-new', hand([7]));
         await play.saveRound('g-new');
-        expect(continuingOf(play.snapshot().games, NAMES)).toEqual({
-            id: 'g-new',
-            name: 'Flip 7',
-            round: 2,
-            turn: "Ann's score is next.",
-        });
-    });
-
-    it('reads the game from the database and lets it go, asking the browser for nothing', async () => {
-        const { factory, play, store } = await setUp();
-        await play.start({
-            id: 'g-1',
-            game: 'flip-7',
-            rules: 1,
-            options: {},
-            players: ['ann', 'ben'],
-        });
-        store.close();
-        let closed = 0;
-        const found = await readContinuing(async () => {
-            const opened = await openStore(factory, 'start');
-            return {
-                ...opened,
-                close: () => {
-                    closed += 1;
-                    opened.close();
-                },
-            };
-        });
-        expect(found).toMatchObject({ id: 'g-1', turn: "Ann's score is next." });
-        expect(closed).toBe(1);
+        expect(inPlayOf(play.snapshot().games, NAMES)).toEqual([
+            { id: 'g-new', name: 'Flip 7', round: 2, turn: "Ann's score is next." },
+            { id: 'g-old', name: 'Wizard', round: 1, turn: "Ann's bid is next." },
+        ]);
     });
 });

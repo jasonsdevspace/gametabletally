@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -52,42 +52,27 @@ const database = async (withGame: boolean) => {
             },
         };
     };
-    return { open, read };
+    return { open, read, factory };
 };
 
 describe('the start screen', () => {
     it('offers to continue the game in play, naming the game and whose turn it is', async () => {
         const { open } = await database(true);
         render(<PlayStart open={open} />);
-        const heading = await screen.findByRole('heading', { name: 'Game in play' });
-        const card = within(heading.parentElement ?? document.body);
+        const section = await screen.findByRole('region', { name: 'Game in play' });
+        const card = within(section);
         expect(card.getByText('Skyjo')).toBeVisible();
         expect(card.getByText('Round 1')).toBeVisible();
         expect(card.getByText("Ann's score is next.")).toBeVisible();
-        expect(card.getByRole('link', { name: 'Continue the game' })).toHaveAttribute(
-            'href',
-            '/game/?id=g-1'
-        );
+        expect(
+            card.getByRole('link', { name: 'Continue the game of Skyjo, round 1' })
+        ).toHaveAttribute('href', '/game/?id=g-1');
+        expect(
+            card.getByRole('button', { name: 'Discard the game of Skyjo, round 1' })
+        ).toBeVisible();
     });
 
     it('offers only to start a game when none is in play, each game named in plain text', async () => {
-        const { open, read } = await database(false);
-        render(<PlayStart open={open} />);
-        const games = within(screen.getByRole('list', { name: 'Start a new game' }));
-        expect(games.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
-            GAMES.map((game) => `/new/?game=${game.id}`)
-        );
-        for (const game of GAMES) expect(games.getByText(game.name)).toBeVisible();
-        await act(() => read);
-        expect(screen.queryByRole('heading', { name: 'Game in play' })).toBeNull();
-    });
-
-    it("says why the games could not be read, in the store's own words", async () => {
-        render(<PlayStart open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
-        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
-    });
-
-    it('reads the game in play again when the app comes back to the front', async () => {
         const { open } = await database(false);
         let opened = 0;
         render(
@@ -98,11 +83,64 @@ describe('the start screen', () => {
                 }}
             />
         );
-        expect(opened).toBe(1);
+        const games = within(screen.getByRole('list', { name: 'Start a new game' }));
+        expect(games.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(
+            GAMES.map((game) => `/new/?game=${game.id}`)
+        );
+        for (const game of GAMES) expect(games.getByText(game.name)).toBeVisible();
+        await waitFor(() => {
+            expect(opened).toBe(1);
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(screen.queryByRole('region', { name: /in play/ })).toBeNull();
+    });
+
+    it("says why the games could not be read, in the store's own words", async () => {
+        render(<PlayStart open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
+        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+    });
+
+    it('reads the games in play again when the app comes back to the front', async () => {
+        const { open, factory } = await database(false);
+        render(<PlayStart open={open} />);
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        // Another tab starts a game meanwhile.
+        const other = await openStore(factory);
+        await openPlay(other, undefined, () => Promise.resolve()).start({
+            id: 'g-2',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
+        other.close();
         act(() => {
             window.dispatchEvent(new Event('pageshow'));
         });
-        expect(opened).toBe(2);
+        expect(await screen.findByText('Flip 7', { selector: 'strong' })).toBeVisible();
+    });
+
+    it('lists two games in play, each to continue or discard, and takes a discarded one away at once', async () => {
+        const { open, factory } = await database(true);
+        const other = await openStore(factory);
+        await openPlay(other, undefined, () => Promise.resolve()).start({
+            id: 'g-2',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
+        other.close();
+        render(<PlayStart open={open} />);
+        const section = await screen.findByRole('region', { name: 'Games in play' });
+        expect(within(section).getAllByRole('listitem')).toHaveLength(2);
+        fireEvent.click(
+            within(section).getByRole('button', { name: 'Discard the game of Skyjo, round 1' })
+        );
+        await waitFor(() => {
+            expect(screen.queryByText('Skyjo', { selector: 'strong' })).toBeNull();
+        });
+        expect(screen.getByRole('region', { name: 'Game in play' })).toBeTruthy();
     });
 
     it('says the app is not affiliated with the games’ publishers', () => {

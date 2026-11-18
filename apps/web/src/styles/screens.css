@@ -168,6 +168,12 @@
     min-height: 100%;
 }
 
+/* The top of the round's screen: the ways out of the game, then the score header. */
+.gtt-game-top {
+    display: grid;
+    gap: var(--dk-space-3);
+}
+
 .gtt-keys {
     display: grid;
     align-self: end;

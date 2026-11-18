@@ -6,12 +6,13 @@ import {
     type Problem,
 } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
 import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord } from '../store/format.js';
+import { refusalOf } from '../store/store.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
@@ -285,9 +286,12 @@ const Flip7Round = ({
     player,
     names,
     summary,
+    actions,
 }: {
     readonly play: Play;
     readonly summary: Summary;
+    /** The ways out of the game, above its header, where the round is not one being changed. */
+    readonly actions: ReactNode;
     readonly game: GameInPlay & { readonly draft: NonNullable<GameInPlay['draft']> };
     readonly player: string;
     readonly names: ReadonlyMap<string, string>;
@@ -430,11 +434,14 @@ const Flip7Round = ({
 
     return (
         <div className="gtt-game">
-            <ScoreHeader
-                name={name}
-                total={before + taken}
-                line={lineOf({ before, round: taken, first: draft.index === 0, hand })}
-            />
+            <div className="gtt-game-top">
+                {changing ? null : actions}
+                <ScoreHeader
+                    name={name}
+                    total={before + taken}
+                    line={lineOf({ before, round: taken, first: draft.index === 0, hand })}
+                />
+            </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
             <StatusLine ref={line} />
             {game.error === null ? null : <p role="alert">{game.error}</p>}
@@ -455,6 +462,50 @@ const Flip7Round = ({
                 onCancel={() => void cancel()}
             />
         </div>
+    );
+};
+
+/**
+ * The ways out of a game in play, at the top of its screen, out of the way of the keys: leaving it
+ * as it is, which the start screen offers to continue, and discarding it, at once, with the
+ * frame's toast offering Undo, as the app does in place of asking first.
+ */
+const GameActions = ({
+    play,
+    id,
+    gameName,
+    summary,
+}: {
+    readonly play: Play;
+    readonly id: string;
+    readonly gameName: string;
+    readonly summary: Summary;
+}) => {
+    const [line, say] = useStatus();
+    const discard = async () => {
+        if (summary.undoing()) return;
+        summary.clear();
+        try {
+            await play.discard(id);
+        } catch (error: unknown) {
+            say(refusalOf(error) ?? 'The game could not be discarded. Try again.');
+            return;
+        }
+        summary.offer(`The game of ${gameName} is discarded.`);
+        navigate(hrefOf('play'));
+    };
+    return (
+        <>
+            <p className="dk-actions gtt-game-actions">
+                <Link className="dk-button dk-button-text" href={hrefOf('play')}>
+                    Leave for now
+                </Link>
+                <Button text onClick={() => void discard()}>
+                    Discard the game
+                </Button>
+            </p>
+            <StatusLine ref={line} />
+        </>
     );
 };
 
@@ -509,16 +560,20 @@ const Entry = ({
                 </Dock>
             </>
         );
+    const actions = <GameActions play={play} id={id} gameName={gameName} summary={summary} />;
     const player = draft.step?.player ?? null;
     if (player === null) return <p>Every score of the round is in.</p>;
     if (!canEnter(game.saved.game))
         return (
             <div className="gtt-game">
-                <ScoreHeader
-                    name={nameIn(names, player)}
-                    total={game.result.totals[player] ?? 0}
-                    line=""
-                />
+                <div className="gtt-game-top">
+                    {actions}
+                    <ScoreHeader
+                        name={nameIn(names, player)}
+                        total={game.result.totals[player] ?? 0}
+                        line=""
+                    />
+                </div>
                 <p>Entering a round of {gameName} comes to the app after Flip 7.</p>
                 {scores}
             </div>
@@ -530,6 +585,7 @@ const Entry = ({
             player={player}
             names={names}
             summary={summary}
+            actions={actions}
         />
     );
 };
