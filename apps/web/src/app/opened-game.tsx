@@ -25,6 +25,10 @@ export interface OpenedGame {
     readonly names: ReadonlyMap<string, string>;
 }
 
+/** A player's name, or words that stand for one this phone no longer holds. */
+export const nameIn = (names: ReadonlyMap<string, string>, player: string): string =>
+    names.get(player) ?? 'Another player';
+
 const today = () => new Date();
 
 /**
@@ -47,7 +51,11 @@ export const WithOpenedGame = ({
     useEffect(() => {
         if (id === null) return undefined;
         // Set once the screen is left, so a database opened after that is let go at once.
-        const shown: { left: boolean; store: Store | null } = { left: false, store: null };
+        const shown: { left: boolean; store: Store | null; play: Play | null } = {
+            left: false,
+            store: null,
+            play: null,
+        };
         const left = () => shown.left;
         const read = async () => {
             const ready = await open();
@@ -57,6 +65,7 @@ export const WithOpenedGame = ({
                 return;
             }
             const play = openPlay(ready, () => now().toISOString());
+            shown.play = play;
             const [, players] = await Promise.all([play.load(), ready.players()]);
             // Read again past the wait, since the screen may have been left during it.
             if (!left())
@@ -71,7 +80,13 @@ export const WithOpenedGame = ({
         });
         return () => {
             shown.left = true;
-            shown.store?.close();
+            // A tap or a save still being written when the screen is left, as a link in its dock
+            // or the tab bar moves on at once, is written before the database is let go.
+            const { store, play } = shown;
+            if (store === null) return;
+            void (play?.settled() ?? Promise.resolve()).finally(() => {
+                store.close();
+            });
         };
     }, [id, open, now]);
 

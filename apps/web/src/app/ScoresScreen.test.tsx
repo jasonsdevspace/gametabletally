@@ -62,10 +62,10 @@ describe('the standings in words', () => {
                 'highest'
             )
         ).toEqual([
-            { player: 'ben', total: 30, place: 1, shared: false },
-            { player: 'ann', total: 10, place: 2, shared: true },
-            { player: 'cat', total: 10, place: 2, shared: true },
-            { player: 'dan', total: 5, place: 4, shared: false },
+            { player: 'ben', total: 30, place: 1, shared: false, missed: false },
+            { player: 'ann', total: 10, place: 2, shared: true, missed: false },
+            { player: 'cat', total: 10, place: 2, shared: true, missed: false },
+            { player: 'dan', total: 5, place: 4, shared: false, missed: false },
         ]);
     });
 
@@ -73,6 +73,25 @@ describe('the standings in words', () => {
         expect(
             standingsOf(['ann', 'ben'], { ann: 40, ben: -12 }, 'lowest').map(({ player }) => player)
         ).toEqual(['ben', 'ann']);
+    });
+
+    it('ranks a player who missed a scored round behind those who did not, as the rules do', () => {
+        expect(
+            standingsOf(['ann', 'ben', 'cat'], { ann: 90, ben: 40, cat: 30 }, 'highest', ['ann'])
+        ).toEqual([
+            { player: 'ben', total: 40, place: 1, shared: false, missed: false },
+            { player: 'cat', total: 30, place: 2, shared: false, missed: false },
+            { player: 'ann', total: 90, place: 3, shared: false, missed: true },
+        ]);
+        // Where every player has missed one, none is held behind another for it.
+        expect(
+            standingsOf(['ann', 'ben'], { ann: 90, ben: 40 }, 'highest', ['ann', 'ben']).map(
+                ({ player, missed }) => [player, missed]
+            )
+        ).toEqual([
+            ['ann', false],
+            ['ben', false],
+        ]);
     });
 
     it('says a place as a number with its ending', () => {
@@ -101,6 +120,10 @@ describe('the standings in words', () => {
         );
         expect(leadWords({ ...words, counted: false, leaders: ['Ann'] })).toBe(
             'No round is counted yet.'
+        );
+        expect(leadWords({ ...words, over: true, leaders: ['Ann'] })).toBe('Ann won with 30.');
+        expect(leadWords({ ...words, over: true, leaders: ['Ann', 'Ben'] })).toBe(
+            'Ann and Ben won together, level on 30.'
         );
     });
 });
@@ -136,6 +159,49 @@ describe('the scores screen', () => {
             'Ben, 3rd place, 40 points',
         ]);
         expect(screen.getByText('Ann leads with -12, the lowest total.')).toBeTruthy();
+    });
+
+    it('gives no one a place before a round is counted, in seat order', async () => {
+        const said = await standingsSaid(
+            saved('flip-7', [], {
+                index: 0,
+                round: { entries: {}, out: [] },
+                step: { part: 'entry', player: 'ann' },
+            })
+        );
+        expect(said).toEqual(['Ann, 0 points', 'Ben, 0 points', 'Cat, 0 points']);
+        expect(screen.getByText('No round is counted yet.')).toBeTruthy();
+    });
+
+    it('says one point as one, and says who won once the game is over', async () => {
+        const said = await standingsSaid(
+            saved('flip-7', [
+                {
+                    entries: {
+                        ann: hand([1]),
+                        ben: hand([12, 11, 10, 9, 8, 7, 6]),
+                        cat: hand([0]),
+                    },
+                },
+                {
+                    entries: {
+                        ann: hand([0]),
+                        ben: {
+                            numbers: [12, 11, 10, 9, 8, 7, 5],
+                            modifiers: ['x2', '+10'],
+                            bust: false,
+                        },
+                        cat: hand([0]),
+                    },
+                },
+            ])
+        );
+        expect(said).toEqual([
+            'Ben, 1st place, 227 points',
+            'Ann, 2nd place, 1 point',
+            'Cat, 3rd place, 0 points',
+        ]);
+        expect(screen.getByText('Ben won with 227.')).toBeTruthy();
     });
 
     it('marks a round still being entered as not yet counted, with what stands so far', async () => {

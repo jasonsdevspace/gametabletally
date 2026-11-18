@@ -150,6 +150,11 @@ export interface Play {
     readonly dismissUndo: () => void;
     /** Saves a game again whose last save failed. */
     readonly retry: (id: string) => Promise<void>;
+    /**
+     * Resolves once every change asked for so far is saved or refused, so a screen that is left
+     * lets its database go only after the last tap is written.
+     */
+    readonly settled: () => Promise<void>;
 }
 
 /** The game scored as it is saved. */
@@ -531,5 +536,6 @@ export const openPlay = (
                 await save(game);
                 publish();
             }),
+        settled: () => queue.then(() => undefined),
     };
 };

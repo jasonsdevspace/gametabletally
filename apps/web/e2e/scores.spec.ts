@@ -2,7 +2,16 @@ import { THEME_KEY } from '@jasonsdevspace/design-kit/theme';
 
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, buildGame, expect, type Page, seed, test } from './support.js';
+import {
+    audit,
+    buildGame,
+    doubleTheText,
+    expect,
+    type Page,
+    seed,
+    smallTargets,
+    test,
+} from './support.js';
 
 /*
  * The scores of a game in play, as deployed: opened from the dock of the round's screen, the
@@ -163,4 +172,43 @@ test("reaches the table's frame by the keyboard and scrolls it with the arrow ke
         .poll(() => frame(page).evaluate((element) => element.scrollLeft))
         .toBeGreaterThan(0);
     expect(await frame(page).getAttribute('tabindex')).toBe('0');
+});
+
+/** The round's screen of the game in its third round, at Ben's turn. */
+const openRound = async (page: Page) => {
+    await page.goto('/');
+    await seed(page, [await inThirdRound()], NAMES.map(player));
+    await page.goto(hrefOf('game', 'g-1'));
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+};
+
+test("keeps the way to the scores beside the round's main button on the narrowest phone at twice the text size", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await openRound(page);
+    const dock = page.getByRole('region', { name: 'Actions' });
+    const scores = dock.getByRole('link', { name: 'Scores' });
+    await doubleTheText(page, scores, 'height');
+    const [link, next] = await Promise.all([
+        scores.boundingBox(),
+        dock.getByRole('button', { name: 'Next: Cat' }).boundingBox(),
+    ]);
+    // One row, so the dock takes no second row from the keys on every hand.
+    expect(Math.round(link?.y ?? 0)).toBe(Math.round(next?.y ?? -1));
+    expect(await smallTargets(page)).toEqual([]);
+});
+
+test('shows nothing yet for a hand still being tapped, rather than the cards tapped so far', async ({
+    page,
+}) => {
+    await openRound(page);
+    await page.getByRole('button', { name: '5', exact: true }).click();
+    await page
+        .getByRole('region', { name: 'Actions' })
+        .getByRole('link', { name: 'Scores' })
+        .click();
+    const ben = table(page).getByRole('row', { name: /^Ben/ });
+    await expect(ben.getByRole('cell').first()).toHaveText('Nothing yet');
 });

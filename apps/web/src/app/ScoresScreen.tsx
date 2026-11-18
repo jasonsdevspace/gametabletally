@@ -4,9 +4,10 @@ import { useSyncExternalStore } from 'react';
 import { Link } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
 import { hrefOf } from '../routes.js';
+import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
-import { type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
 
 /*
  * The scores of a game in play: the standings first, ranked the way the game ranks, with who is
@@ -16,34 +17,53 @@ import { type OpenedGameProps, WithOpenedGame } from './opened-game.js';
  * screen and goes back to it from its own.
  */
 
-/** A player's place in the standings, and whether another player shares it. */
+/** A player's place in the standings, whether another player shares it, and whether they missed a round. */
 export interface Standing {
     readonly player: string;
     readonly total: number;
     /** The place, from 1, which players level on a total share. */
     readonly place: number;
     readonly shared: boolean;
+    /** Whether the player missed a scored round, so the rules rank them behind those who did not. */
+    readonly missed: boolean;
 }
 
 /**
- * The players ranked the way the game ranks, the highest total first or the lowest, with players
- * level on a total sharing a place and the next place counted past them, as 1, 1, 3. Players level
- * keep their seat order.
+ * The players ranked as the rules rank them: those who missed no scored round first, as the rules
+ * let only them lead or win while any of them is left, then those who did, each group the highest
+ * total first or the lowest, as the game ranks. Players level on a total share a place and the next
+ * place is counted past them, as 1, 1, 3. Players level keep their seat order.
  */
 export const standingsOf = (
     players: readonly string[],
     totals: Readonly<Record<string, number>>,
-    ahead: 'highest' | 'lowest'
+    ahead: 'highest' | 'lowest',
+    missed: readonly string[] = []
 ): Standing[] => {
     const totalOf = (player: string) => totals[player] ?? 0;
-    const ranked = [...players].sort((first, second) =>
-        ahead === 'highest' ? totalOf(second) - totalOf(first) : totalOf(first) - totalOf(second)
+    // Where every player has missed a round, none is held behind another for it.
+    const behind = (player: string) =>
+        missed.includes(player) && !players.every((one) => missed.includes(one));
+    const byTotal = (first: string, second: string) =>
+        ahead === 'highest' ? totalOf(second) - totalOf(first) : totalOf(first) - totalOf(second);
+    const ranked = [...players].sort(
+        (first, second) => Number(behind(first)) - Number(behind(second)) || byTotal(first, second)
     );
-    return ranked.map((player) => {
-        const total = totalOf(player);
-        const before = ranked.findIndex((other) => totalOf(other) === total);
-        const level = ranked.filter((other) => totalOf(other) === total).length;
-        return { player, total, place: before + 1, shared: level > 1 };
+    const keyOf = (player: string) => `${String(behind(player))}|${String(totalOf(player))}`;
+    const level = new Map<string, number>();
+    for (const player of ranked) level.set(keyOf(player), (level.get(keyOf(player)) ?? 0) + 1);
+    let place = 0;
+    let last = '';
+    return ranked.map((player, at) => {
+        if (keyOf(player) !== last) place = at + 1;
+        last = keyOf(player);
+        return {
+            player,
+            total: totalOf(player),
+            place,
+            shared: (level.get(keyOf(player)) ?? 0) > 1,
+            missed: behind(player),
+        };
     });
 };
 
@@ -56,32 +76,37 @@ export const placeWords = (place: number): string => {
     return `${String(place)}${ending}`;
 };
 
-/** Names in a sentence, such as "Ann", "Ann and Ben" or "Ann, Ben and Cat". */
-const listed = (names: readonly string[]): string =>
-    names.length < 2
-        ? (names[0] ?? '')
-        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
+/** A total's unit, one point or several. */
+const pointsOf = (total: number): string => (Math.abs(total) === 1 ? 'point' : 'points');
 
 /**
- * Who is ahead, in a sentence: the leaders the rules name, with their total, said as the lowest
- * where the lowest total leads, or that no round is counted yet.
+ * Who is ahead, in a sentence: the winners once the game is over, or the leaders the rules name,
+ * with their total, said as the lowest where the lowest total leads, or that no round is counted
+ * yet.
  */
 export const leadWords = ({
     leaders,
     total,
     ahead,
     counted,
+    over = false,
 }: {
     readonly leaders: readonly string[];
     readonly total: number;
     readonly ahead: 'highest' | 'lowest';
     readonly counted: boolean;
+    readonly over?: boolean;
 }): string => {
     if (!counted || leaders.length === 0) return 'No round is counted yet.';
     const lowest = ahead === 'lowest' ? ', the lowest total' : '';
+    const names = listOf(leaders, 'and');
+    if (over)
+        return leaders.length === 1
+            ? `${names} won with ${String(total)}${lowest}.`
+            : `${names} won together, level on ${String(total)}${lowest}.`;
     return leaders.length === 1
-        ? `${listed(leaders)} leads with ${String(total)}${lowest}.`
-        : `${listed(leaders)} lead, level on ${String(total)}${lowest}.`;
+        ? `${names} leads with ${String(total)}${lowest}.`
+        : `${names} lead, level on ${String(total)}${lowest}.`;
 };
 
 /** A column of the table: a round, what the rules made of it, and whether it is counted yet. */
@@ -107,7 +132,12 @@ const columnsOf = (game: GameInPlay): Column[] => {
                   {
                       index: draft.index,
                       result: current,
-                      entered: new Set(Object.keys(draft.round.entries)),
+                      // The player whose turn it is holds a hand still being tapped, not entered.
+                      entered: new Set(
+                          Object.keys(draft.round.entries).filter(
+                              (player) => player !== draft.step?.player
+                          )
+                      ),
                   },
               ]
             : [];
@@ -120,10 +150,11 @@ const Cell = ({ column, player }: { readonly column: Column; readonly player: st
     if (result.out.includes(player))
         return <td className="dk-table-number gtt-score-quiet">Out</td>;
     const score = result.scores[player];
-    if (score === undefined || (entered !== null && !entered.has(player)))
+    const waiting = entered !== null && !entered.has(player);
+    if (score === undefined || waiting)
         return (
             <td className="dk-table-number gtt-score-quiet">
-                <span className="dk-visually-hidden">Nothing yet</span>
+                <span className="dk-visually-hidden">{waiting ? 'Nothing yet' : 'No score'}</span>
             </td>
         );
     return <td className="dk-table-number">{score}</td>;
@@ -142,11 +173,22 @@ const Scores = ({
     const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const game = snapshot.games.find(({ saved }) => saved.id === id);
     if (!game) return <p>This game is not on this phone.</p>;
-    const nameOf = (player: string) => names.get(player) ?? 'Another player';
+    const nameOf = (player: string) => nameIn(names, player);
     const { result, saved, draft } = game;
     const ahead = GAMES.find((one) => one.id === saved.game)?.ahead ?? 'highest';
-    const standings = standingsOf(saved.players, result.totals, ahead);
     const counted = result.rounds.some((round) => round.state === 'scored');
+    const over = result.state === 'over';
+    const shown = over ? result.winners : result.leaders;
+    // Before a round is counted no one has a place, so the players keep their seats.
+    const standings = counted
+        ? standingsOf(saved.players, result.totals, ahead, result.missed)
+        : saved.players.map((player) => ({
+              player,
+              total: 0,
+              place: 0,
+              shared: false,
+              missed: false,
+          }));
     const columns = columnsOf(game);
     const back =
         draft !== null && draft.index === result.rounds.length
@@ -154,41 +196,47 @@ const Scores = ({
             : 'Back to the game';
     return (
         <div className="gtt-scores">
-            <section aria-labelledby="standings-title">
+            <section>
                 <h2 id="standings-title">Standings</h2>
                 <p>
                     {leadWords({
-                        leaders: result.leaders.map(nameOf),
-                        total: result.totals[result.leaders[0] ?? ''] ?? 0,
+                        leaders: shown.map(nameOf),
+                        total: result.totals[shown[0] ?? ''] ?? 0,
                         ahead,
                         counted,
+                        over,
                     })}
                 </p>
                 <ol className="dk-rows" role="list" aria-labelledby="standings-title">
-                    {standings.map(({ player, total, place, shared }) => (
+                    {standings.map(({ player, total, place, shared, missed }) => (
                         <li key={player}>
                             <div className="dk-row">
                                 <span className="dk-row-text">
                                     <span className="dk-row-title">{nameOf(player)}</span>
-                                    <span className="dk-visually-hidden">, </span>
-                                    <span className="dk-row-detail">
-                                        {shared ? 'Level for ' : ''}
-                                        {placeWords(place)}
-                                        {shared ? '' : ' place'}
-                                    </span>
+                                    {place === 0 ? null : (
+                                        <>
+                                            <span className="dk-visually-hidden">, </span>
+                                            <span className="dk-row-detail">
+                                                {shared ? 'Level for ' : ''}
+                                                {placeWords(place)}
+                                                {shared ? '' : ' place'}
+                                                {missed ? ', missed a round' : ''}
+                                            </span>
+                                        </>
+                                    )}
                                 </span>
                                 <span className="dk-visually-hidden">, </span>
                                 <span className="dk-row-figure">
                                     {total}
-                                    <span className="dk-visually-hidden"> points</span>
+                                    <span className="dk-visually-hidden"> {pointsOf(total)}</span>
                                 </span>
                             </div>
                         </li>
                     ))}
                 </ol>
             </section>
-            <section aria-labelledby="rounds-title">
-                <h2 id="rounds-title">By round</h2>
+            <section>
+                <h2>By round</h2>
                 {columns.length === 0 ? (
                     <p>No round of this game of {gameNameOf(saved.game)} is entered yet.</p>
                 ) : (

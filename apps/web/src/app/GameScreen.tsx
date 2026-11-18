@@ -14,7 +14,7 @@ import { hrefOf } from '../routes.js';
 import { isRecord } from '../store/format.js';
 import { Dock, useToast } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
-import { type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
@@ -300,7 +300,7 @@ const Flip7Round = ({
 }) => {
     const { draft } = game;
     const id = game.saved.id;
-    const nameOf = (one: string) => names.get(one) ?? 'Another player';
+    const nameOf = (one: string) => nameIn(names, one);
     const name = nameOf(player);
     const before = totalBefore(game, player, draft.index);
     const round = draft.preview.rounds[draft.index]?.scores[player] ?? 0;
@@ -462,18 +462,33 @@ const Entry = ({
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
-    if (draft === null) return <Over name={gameName} focus={entering} />;
+    // The scores, from the dock, wherever the screen has no round to enter.
+    const scores = (
+        <Dock>
+            <Link className="dk-button dk-button-accent dk-button-tall" href={hrefOf('scores', id)}>
+                Scores
+            </Link>
+        </Dock>
+    );
+    if (draft === null)
+        return (
+            <>
+                <Over name={gameName} focus={entering} />
+                {scores}
+            </>
+        );
     const player = draft.step?.player ?? null;
     if (player === null) return <p>Every score of the round is in.</p>;
     if (game.saved.game !== 'flip-7')
         return (
             <div className="gtt-game">
                 <ScoreHeader
-                    name={names.get(player) ?? 'Another player'}
+                    name={nameIn(names, player)}
                     total={game.result.totals[player] ?? 0}
                     line=""
                 />
                 <p>Entering a round of {gameName} comes to the app after Flip 7.</p>
+                {scores}
             </div>
         );
     return (
