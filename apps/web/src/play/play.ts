@@ -115,6 +115,12 @@ export interface Play {
      * the start again after the last.
      */
     readonly enter: (id: string, value: unknown) => Promise<void>;
+    /**
+     * Keeps a value for the step the round is at without moving on, as a hand is tapped in a card
+     * at a time, so a page loaded again in the middle of a hand comes back to it. It is taken back
+     * by tapping again, so it offers no undo of its own, and leaves the last one in place.
+     */
+    readonly hold: (id: string, value: unknown) => Promise<void>;
     /** Moves the round to a step of its own, to correct an entry. */
     readonly goTo: (id: string, step: SavedStep) => Promise<void>;
     /**
@@ -163,6 +169,20 @@ const nextStep = (steps: readonly SavedStep[], round: DraftRound, from: number):
     steps.slice(from).find((step) => read(round, step) === undefined) ??
     steps.find((step) => read(round, step) === undefined) ??
     null;
+
+/**
+ * The step a round moves to once the value given is entered for the step it is at, or null when
+ * none is left, as `enter` moves it. A screen names what comes next by it.
+ */
+export const stepAfter = (game: GameInPlay, value: unknown): SavedStep | null => {
+    const draft = game.draft;
+    const step = draft?.step ?? null;
+    if (draft === null || step === null) return null;
+    const round = write(draft.round, step, value);
+    const steps = stepsOf(game.saved.game, game.saved.players, round);
+    const at = steps.findIndex((one) => sameStep(one, step));
+    return nextStep(steps, round, at + 1);
+};
 
 /** A draft of a new round at a place, at its first step. */
 const newDraft = (game: SavedGame, index: number): SavedDraft => {
@@ -307,11 +327,19 @@ export const openPlay = (
      */
     const keep = async (
         game: SavedGame,
-        undo: { readonly kind: UndoKind; readonly before: SavedGame } | null
+        undo: { readonly kind: UndoKind; readonly before: SavedGame } | null | 'carry'
     ): Promise<string | null> => {
         const changed = { ...game, changed: now() };
         games.set(changed.id, changed);
         const why = await save(changed);
+        // A change offered no undo of its own leaves the last one in place, still able to take
+        // the game back past it, since the store now holds this change.
+        if (undo === 'carry') {
+            if (last !== null && last.game === changed.id && why === null)
+                last = { ...last, after: changed.changed };
+            publish();
+            return why;
+        }
         // Undo expects the store to hold the copy this change left there: the change itself, or,
         // where its save was refused, the copy from before it.
         last =
@@ -381,6 +409,14 @@ export const openPlay = (
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'entry', before: game }
                 );
+            }),
+        hold: (id, value) =>
+            inOrder(async () => {
+                const game = gameOf(id);
+                const draft = draftOf(game);
+                if (draft.step === null) throw new Error('Every step of the round is entered.');
+                const round = write(toDraftRound(draft.round), draft.step, value);
+                await keep({ ...game, draft: { ...draft, round } }, 'carry');
             }),
         goTo: (id, step) =>
             inOrder(async () => {

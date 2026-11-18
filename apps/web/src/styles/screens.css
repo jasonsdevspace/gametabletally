@@ -155,3 +155,33 @@
         transform: rotateX(80deg);
     }
 }
+
+/*
+ * The game in play: the score header on top and the keys a round is entered with at the foot of
+ * the body, in reach of a thumb, the room between them taking up whatever a tall phone has to
+ * spare. Bust stands in a grid of one, so pressed it fills as a held card does.
+ */
+.gtt-game {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: var(--dk-space-4);
+    min-height: 100%;
+}
+
+.gtt-keys {
+    display: grid;
+    align-self: end;
+    gap: var(--dk-space-3);
+}
+
+.gtt-bust {
+    --dk-button-grid-columns: 1;
+}
+
+.gtt-numbers {
+    --dk-button-grid-columns: 5;
+}
+
+.gtt-modifiers {
+    --dk-button-grid-columns: 6;
+}

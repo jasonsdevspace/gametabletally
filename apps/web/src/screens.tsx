@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { GameScreen } from './app/GameScreen.js';
 import { NewGame } from './app/NewGame.js';
 import { PlayerPage } from './app/PlayerPage.js';
 import { PlayersList } from './app/PlayersList.js';
@@ -30,6 +31,8 @@ export const AppScreen = ({ route }: { readonly route: Route }) => {
             return <PlayStart />;
         case 'new':
             return <NewGame />;
+        case 'game':
+            return <GameScreen />;
         case 'players':
             return <PlayersList />;
         case 'player':

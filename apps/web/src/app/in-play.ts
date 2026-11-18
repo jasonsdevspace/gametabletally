@@ -17,6 +17,10 @@ export interface Continuing {
     readonly turn: string;
 }
 
+/** A game's name, as the scoring package gives it, or its id for a game the package does not know. */
+export const gameNameOf = (game: string): string =>
+    GAMES.find(({ id }) => id === game)?.name ?? game;
+
 /** What a player enters at each part of a round, as the sentence names it. */
 const ENTERED = { entry: 'score is', bid: 'bid is', tricks: 'tricks are' } as const;
 
@@ -50,7 +54,7 @@ export const continuingOf = (
     if (!game) return null;
     return {
         id: game.saved.id,
-        name: GAMES.find(({ id }) => id === game.saved.game)?.name ?? game.saved.game,
+        name: gameNameOf(game.saved.game),
         round: (game.draft?.index ?? game.saved.rounds.length) + 1,
         turn: turnOf(game, names),
     };
