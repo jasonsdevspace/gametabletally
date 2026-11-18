@@ -134,19 +134,19 @@ describe('the game screen', () => {
         store.close();
     });
 
-    it('clears the hand on a bust, names it, and takes it back', async () => {
+    it('clears the hand on a bust, says so beside it, and takes it back', async () => {
         await draw();
         press('5');
         press('Bust');
-        const bust = screen.getByRole('button', { name: 'Ann bust. Tap to take it back' });
+        const bust = screen.getByRole('button', { name: 'Bust' });
         expect(bust).toHaveAttribute('aria-pressed', 'true');
+        expect(bust).toHaveAccessibleDescription(
+            'Ann bust, so nothing counts this round. Press Bust again to take it back.'
+        );
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-disabled', 'true');
-        fireEvent.click(bust);
-        expect(screen.getByRole('button', { name: 'Bust' })).toHaveAttribute(
-            'aria-pressed',
-            'false'
-        );
+        press('Bust');
+        expect(bust).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('says in words beside the keys why a hand is refused, and holds the next player', async () => {

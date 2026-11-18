@@ -94,7 +94,12 @@ export const lineOf = ({
         : `${String(before)} before this round, and ${now}.`;
 };
 
-/** The keys a Flip 7 hand is tapped in with: the numbers, the modifiers, and Bust. */
+/**
+ * The keys a Flip 7 hand is tapped in with: Bust first, since a table settles whether a player bust
+ * before what they hold, then the numbers, what the rules refuse in them, and the modifiers. Bust
+ * keeps its name, its pressed state saying whether the player bust, so the keys it turns off sit
+ * under it and the button for the next player is the whole hand away.
+ */
 export const Flip7Keys = ({
     name,
     hand,
@@ -108,6 +113,22 @@ export const Flip7Keys = ({
     readonly onChange: (hand: Flip7Entry) => void;
 }) => (
     <section className="gtt-keys" aria-label={`${name}'s cards`}>
+        <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
+            <Button
+                pressed={hand.bust}
+                aria-describedby={hand.bust ? 'bust-hint' : undefined}
+                onClick={() => {
+                    onChange(hand.bust ? EMPTY : { ...EMPTY, bust: true });
+                }}
+            >
+                Bust
+            </Button>
+        </div>
+        {hand.bust ? (
+            <div className="dk-field-hint" id="bust-hint">
+                {name} bust, so nothing counts this round. Press Bust again to take it back.
+            </div>
+        ) : null}
         <div
             className="dk-button-grid gtt-numbers"
             role="group"
@@ -128,6 +149,11 @@ export const Flip7Keys = ({
                 </Button>
             ))}
         </div>
+        {why === '' ? null : (
+            <div className="dk-field-hint" id="hand-why">
+                {why}
+            </div>
+        )}
         <div className="dk-button-grid gtt-modifiers" role="group" aria-label="Modifier cards">
             {FLIP_7_MODIFIERS.map((card) => (
                 <Button
@@ -153,21 +179,6 @@ export const Flip7Keys = ({
                 </Button>
             ))}
         </div>
-        {why === '' ? null : (
-            <p className="dk-field-error gtt-why" id="hand-why">
-                {why}
-            </p>
-        )}
-        <div className="gtt-bust">
-            <Button
-                pressed={hand.bust}
-                onClick={() => {
-                    onChange(hand.bust ? EMPTY : { ...EMPTY, bust: true });
-                }}
-            >
-                {hand.bust ? `${name} bust. Tap to take it back` : 'Bust'}
-            </Button>
-        </div>
     </section>
 );
 
@@ -185,7 +196,11 @@ const followingPlayer = (game: GameInPlay): string | null => {
     return (steps.slice(at + 1).find(empty) ?? steps.slice(0, at).find(empty))?.player ?? null;
 };
 
-/** A round of Flip 7 being entered, at one player's turn. */
+/**
+ * A round of Flip 7 being entered. It stays on the page from player to player, so the button for
+ * the next player keeps focus as the turn moves on, and the header and the status line, staying
+ * too, say who is next and that a round was saved.
+ */
 const Flip7Round = ({
     play,
     game,
@@ -199,11 +214,6 @@ const Flip7Round = ({
 }) => {
     const { draft } = game;
     const id = game.saved.id;
-    // The hand as tapped, which runs ahead of what is kept while a save takes, so two taps made at
-    // once both count. The screen draws this afresh for each player, from what is kept.
-    const [hand, setHand] = useState(() => handOf(draft.round.entries[player]));
-    const [busy, setBusy] = useState(false);
-    const [line, say] = useStatus();
     const nameOf = (one: string) => names.get(one) ?? 'Another player';
     const name = nameOf(player);
     const before = game.result.totals[player] ?? 0;
@@ -213,9 +223,32 @@ const Flip7Round = ({
     );
     const why = problem ? refusalWords(problem) : '';
     const following = followingPlayer(game);
+    const turn = `${String(draft.index)}|${player}`;
+    // The hand as tapped, which runs ahead of what is kept while a save takes, so two taps made at
+    // once both count, and the round's last score the rules took, which the header keeps showing
+    // while a hand is refused, so a refusal never reads as a total of nothing. Both start again
+    // from what is kept at each turn.
+    const [state, setState] = useState(() => ({
+        turn,
+        hand: handOf(draft.round.entries[player]),
+        taken: round,
+    }));
+    let shown = state;
+    if (state.turn !== turn)
+        shown = { turn, hand: handOf(draft.round.entries[player]), taken: round };
+    else if (problem === undefined && state.taken !== round) shown = { ...state, taken: round };
+    if (shown !== state) setState(shown);
+    const { hand, taken } = shown;
+    const [busy, setBusy] = useState(false);
+    const [line, say] = useStatus();
+
+    // A refusal is said once as it appears, since focus is on the key that caused it.
+    useEffect(() => {
+        if (why !== '') say(why);
+    }, [why, say]);
 
     const change = (next: Flip7Entry) => {
-        setHand(next);
+        setState((now) => ({ ...now, hand: next }));
         void play.hold(id, next);
     };
 
@@ -235,9 +268,12 @@ const Flip7Round = ({
         if (why !== '' || busy) return;
         setBusy(true);
         try {
-            await play.enter(id, hand);
-            const after = play.snapshot().games.find(({ saved }) => saved.id === id);
-            if (after?.draft?.step === null) await saveRound();
+            // After the last player the hand is kept where it is and the round saved at once, so
+            // the round never stands with no step, which would take this view off the page.
+            if (following === null) {
+                await play.hold(id, hand);
+                await saveRound();
+            } else await play.enter(id, hand);
         } finally {
             setBusy(false);
         }
@@ -247,8 +283,8 @@ const Flip7Round = ({
         <div className="gtt-game">
             <ScoreHeader
                 name={name}
-                total={before + round}
-                line={lineOf({ before, round, first: draft.index === 0, hand })}
+                total={before + taken}
+                line={lineOf({ before, round: taken, first: draft.index === 0, hand })}
             />
             <Flip7Keys name={name} hand={hand} why={why} onChange={change} />
             <StatusLine ref={line} />
@@ -298,15 +334,7 @@ const Entry = ({
                 <p>Entering a round of {gameName} comes to the app after Flip 7.</p>
             </div>
         );
-    return (
-        <Flip7Round
-            key={`${String(draft.index)}|${player}`}
-            play={play}
-            game={{ ...game, draft }}
-            player={player}
-            names={names}
-        />
-    );
+    return <Flip7Round play={play} game={{ ...game, draft }} player={player} names={names} />;
 };
 
 export interface GameScreenProps {

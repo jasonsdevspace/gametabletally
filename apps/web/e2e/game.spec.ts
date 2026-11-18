@@ -47,6 +47,10 @@ const key = (page: Page, name: string) => page.getByRole('button', { name, exact
 const total = (page: Page) => page.locator('.gtt-digits');
 const next = (page: Page) => page.getByRole('region', { name: 'Actions' }).getByRole('button');
 
+/** The screen's own status line, and the score header's, each saying what changed. */
+const said = (page: Page) => page.locator('.gtt-game > [role="status"]');
+const headerSaid = (page: Page) => page.locator('.gtt-score [role="status"]');
+
 test('enters a round of Flip 7 by tapping cards, player by player, and saves it after the last', async ({
     page,
 }, info) => {
@@ -64,11 +68,14 @@ test('enters a round of Flip 7 by tapping cards, player by player, and saves it 
     await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
     await key(page, '5').click();
     await key(page, 'Bust').click();
-    const bust = page.getByRole('button', { name: 'Ben bust. Tap to take it back' });
-    await expect(bust).toHaveAttribute('aria-pressed', 'true');
+    await expect(key(page, 'Bust')).toHaveAttribute('aria-pressed', 'true');
+    await expect(key(page, 'Bust')).toHaveAccessibleDescription(
+        'Ben bust, so nothing counts this round. Press Bust again to take it back.'
+    );
     await expect(key(page, '5')).toHaveAttribute('aria-pressed', 'false');
     await expect(total(page)).toHaveAccessibleName('0');
-    await bust.click();
+    await audit(page);
+    await key(page, 'Bust').click();
     await expect(key(page, 'Bust')).toHaveAttribute('aria-pressed', 'false');
     await key(page, 'Bust').click();
     await next(page).click();
@@ -114,6 +121,10 @@ test('says in words beside the keys why a hand of eight numbers is refused, and 
     for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) await key(page, card).click();
     const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
     await expect(page.getByText(why)).toBeVisible();
+    await expect(said(page)).toHaveText(why);
+    // The header keeps the last score the rules took, so a refusal never reads as nothing.
+    await expect(total(page)).toHaveAccessibleName('36');
+    await audit(page);
     await expect(page.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
         why
     );
@@ -189,3 +200,31 @@ for (const [kind, rounds, shown] of [
             320
         );
     });
+
+test('keeps focus on the button for the next player as the turn moves on, and says who is next and the saved round', async ({
+    page,
+}) => {
+    await open(page);
+    await next(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+    await expect(page.getByRole('button', { name: 'Next: Cat' })).toBeFocused();
+    await expect(headerSaid(page)).toHaveText('Ben is next.');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Save the round' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
+    await expect(said(page)).toHaveText('Round 1 saved.');
+    await expect(page.getByRole('button', { name: 'Next: Ben' })).toBeFocused();
+});
+
+test('sets the keys at the foot of the body on a tall phone, in reach of a thumb', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page);
+    const modifiers = await page.getByRole('group', { name: 'Modifier cards' }).boundingBox();
+    const dock = await page.getByRole('region', { name: 'Actions' }).boundingBox();
+    // The last row of keys ends a step or two above the dock, with the spare room above the keys.
+    expect((dock?.y ?? 0) - ((modifiers?.y ?? 0) + (modifiers?.height ?? 0))).toBeLessThan(48);
+});
