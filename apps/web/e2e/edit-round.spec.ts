@@ -168,3 +168,24 @@ test('says why a round cannot be opened while the round in play holds an entry',
     );
     await expect(page).toHaveURL(/\/scores\//);
 });
+
+test('opens the recap when a changed round ends the game', async ({ page }) => {
+    await openScores(page);
+    await change(page, 3);
+    for (const card of ['12', '11', '10', '9', '8', '7', 'Times 2', '+10'])
+        await key(page, card).click();
+    for (const name of ['Next: Ben', 'Next: Cat'])
+        await dock(page).getByRole('button', { name }).click();
+    // One such round takes Ann to 150, short of two hundred, so the game goes on.
+    await dock(page).getByRole('button', { name: 'Save round 3' }).click();
+    await expect(page).toHaveURL(/\/scores\//);
+    await change(page, 2);
+    // Ann's 6 is held already, so six more numbers make seven.
+    for (const card of ['12', '11', '10', '9', '8', '7', 'Times 2', '+10'])
+        await key(page, card).click();
+    for (const name of ['Next: Ben', 'Next: Cat'])
+        await dock(page).getByRole('button', { name }).click();
+    await dock(page).getByRole('button', { name: 'Save round 2' }).click();
+    await expect(page).toHaveURL(/\/recap\/\?id=g-1&round=2$/);
+    await expect(page.getByText(/^Ann wins with/)).toBeVisible();
+});

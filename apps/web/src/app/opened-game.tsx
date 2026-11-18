@@ -1,7 +1,14 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import {
+    createContext,
+    type ReactNode,
+    useContext,
+    useEffect,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 
 import { usePlace } from '../navigation.js';
-import { openPlay, type Play } from '../play/play.js';
+import { type GameInPlay, openPlay, type Play } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
 import { useRunning } from './player-parts.js';
@@ -158,7 +165,15 @@ export interface OpenedGame {
     readonly id: string;
     readonly play: Play;
     readonly names: ReadonlyMap<string, string>;
+    /** The ids of the players this phone still holds, not removed, as a new game may seat them. */
+    readonly present: ReadonlySet<string>;
 }
+
+/** The game in play of the id given, as the model holds it now, kept in step with every change. */
+export const useGame = (play: Play, id: string): GameInPlay | undefined =>
+    useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot).games.find(
+        ({ saved }) => saved.id === id
+    );
 
 /** A player's name, or words that stand for one this phone no longer holds. */
 export const nameIn = (names: ReadonlyMap<string, string>, player: string): string =>
@@ -204,7 +219,12 @@ export const WithOpenedGame = ({
             const [, players] = await Promise.all([play.load(), store.players()]);
             // Read again past the wait, since the screen may have been left during it.
             if (!left())
-                setOpened({ id, play, names: new Map(players.map((one) => [one.id, one.name])) });
+                setOpened({
+                    id,
+                    play,
+                    names: new Map(players.map((one) => [one.id, one.name])),
+                    present: new Set(players.filter((one) => !one.removed).map((one) => one.id)),
+                });
         };
         read().catch((error: unknown) => {
             if (!left())

@@ -61,16 +61,27 @@ export const hrefOf = (name: RouteName, id?: string): string => {
 export const titleOf = (heading: string): string =>
     heading === ROUTES[0].title ? heading : `${heading}, Game Table Tally`;
 
+/** The pages a round is opened from to change it, which it goes back to once saved or let go. */
+export type ChangedFrom = 'scores' | 'recap';
+
 /**
  * The round's screen for a saved round opened again to change it, which names the round in its
- * address, so the bar and the page's title name it from the moment the screen arrives.
+ * address, so the bar and the page's title name it from the moment the screen arrives, and the
+ * page it was opened from, which it goes back to.
  */
-export const changingRoundOf = (id: string, index: number): string =>
-    `${hrefOf('game', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
+export const changingRoundOf = (id: string, index: number, from: ChangedFrom = 'scores'): string =>
+    `${hrefOf('game', id)}&${new URLSearchParams({
+        round: String(index + 1),
+        ...(from === 'scores' ? {} : { from }),
+    }).toString()}`;
 
-/** The scores of a game, arrived at from one of its rounds, whose heading takes focus there. */
-export const scoresAtRound = (id: string, index: number): string =>
-    `${hrefOf('scores', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
+/** A game's scores or recap, arrived at from one of its rounds, whose heading takes focus there. */
+export const atRound = (id: string, index: number, page: ChangedFrom = 'scores'): string =>
+    `${hrefOf(page, id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
+
+/** The page a round being changed was opened from, as its address names it. */
+export const changedFrom = (search: string): ChangedFrom =>
+    new URLSearchParams(search).get('from') === 'recap' ? 'recap' : 'scores';
 
 /** The round a screen's address names, from 1, or null where it names none. */
 export const roundIn = (search: string): number | null => {

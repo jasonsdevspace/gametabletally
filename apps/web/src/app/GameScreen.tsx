@@ -6,15 +6,15 @@ import {
     type Problem,
 } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
-import { changingRoundOf, hrefOf, roundIn, scoresAtRound } from '../routes.js';
+import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord } from '../store/format.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
@@ -339,8 +339,12 @@ const Flip7Round = ({
     // A saved round opened again from the scores, which its address and so the bar name, and
     // which goes back to its heading there once it is saved or let go.
     const changing = isChanging(game, draft);
-    const backToScores = () => {
-        navigate(scoresAtRound(id, draft.index), { replace: true });
+    // The scores or the recap, whichever the round was opened from.
+    const { search } = usePlace();
+    const backToScores = (ended = false) => {
+        navigate(atRound(id, draft.index, ended ? 'recap' : changedFrom(search)), {
+            replace: true,
+        });
     };
 
     /** Lets the change go, and goes back to the scores once that is kept, or says why it is not. */
@@ -378,7 +382,11 @@ const Flip7Round = ({
         // changed round goes back to the scores.
         if (saved.saved) {
             summary.offer(roundSummary(kept.index, lines));
-            if (changing) backToScores();
+            // A round that ends the game opens its recap, where the table looks at the phone
+            // together, and a changed round that does not goes back to the page it was opened from.
+            const ended = saved.outcome === 'ended';
+            if (changing) backToScores(ended);
+            else if (ended) navigate(hrefOf('recap', id));
         } else if (saved.error !== null) say(saved.error);
         else
             say(
@@ -450,19 +458,6 @@ const Flip7Round = ({
     );
 };
 
-/** The words that say a game is over, focused where it ended on this screen. */
-const Over = ({ name, focus }: { readonly name: string; readonly focus: boolean }) => {
-    const words = useRef<HTMLParagraphElement>(null);
-    useEffect(() => {
-        if (focus) words.current?.focus();
-    }, [focus]);
-    return (
-        <p ref={words} tabIndex={-1}>
-            This game of {name} is over.
-        </p>
-    );
-};
-
 /** The round being entered of one game, drawn from the model as it stands. */
 const Entry = ({
     play,
@@ -473,25 +468,21 @@ const Entry = ({
     readonly id: string;
     readonly names: ReadonlyMap<string, string>;
 }) => {
-    const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const summary = useSummary(play);
-    const game = snapshot.games.find(({ saved }) => saved.id === id);
-    // Whether a round was being entered here, so a game that ends on this screen takes focus to
-    // the words that say so, rather than leave it on a button that has gone.
-    const [entering, setEntering] = useState(false);
-    if (!entering && game?.draft) setEntering(true);
+    const game = useGame(play, id);
     // The address names a round being changed, so the bar and the page's title do. One arrived at
     // another way, such as Back to the game, is put right in place, as is one that names a round
     // no longer opened.
     const { search } = usePlace();
     const named = roundIn(search);
+    const from = changedFrom(search);
     const opened = game?.draft && isChanging(game, game.draft) ? game.draft.index + 1 : null;
     useEffect(() => {
         if (game === undefined || named === opened) return;
-        navigate(opened === null ? hrefOf('game', id) : changingRoundOf(id, opened - 1), {
+        navigate(opened === null ? hrefOf('game', id) : changingRoundOf(id, opened - 1, from), {
             replace: true,
         });
-    }, [game, named, opened, id]);
+    }, [game, named, opened, id, from]);
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
@@ -503,11 +494,19 @@ const Entry = ({
             </Link>
         </Dock>
     );
+    // A finished game's screen says so, and its recap is in the dock.
     if (draft === null)
         return (
             <>
-                <Over name={gameName} focus={entering} />
-                {scores}
+                <p>This game of {gameName} is over.</p>
+                <Dock>
+                    <Link
+                        className="dk-button dk-button-accent dk-button-tall"
+                        href={hrefOf('recap', id)}
+                    >
+                        See the recap
+                    </Link>
+                </Dock>
             </>
         );
     const player = draft.step?.player ?? null;
