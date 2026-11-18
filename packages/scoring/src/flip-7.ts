@@ -53,9 +53,16 @@ export interface Flip7Round {
 }
 
 const HIGHEST_NUMBER = 12;
+
+/**
+ * The bonus for a hand of seven different numbers, which ends the round: how many numbers earn it
+ * and what it adds, never doubled. A screen that names the bonus reads it here.
+ */
+export const FLIP_7_BONUS = { numbers: 7, points: 15 } as const;
+
 /** How many different numbers end the round and earn the bonus. */
-const FLIP = 7;
-const BONUS = 15;
+const FLIP = FLIP_7_BONUS.numbers;
+const BONUS = FLIP_7_BONUS.points;
 const TARGET = 200;
 
 /** What each plus card adds. The x2 card adds nothing and doubles the numbers instead. */

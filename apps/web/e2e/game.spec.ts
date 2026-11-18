@@ -287,7 +287,7 @@ test('says what each player scored as a round is saved, and Undo puts it back at
     await next(page).click();
     await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
     await expect(toast(page).getByRole('status')).toContainText(
-        'Round 1 saved. Ann 20, numbers doubled by the x2. Ben 0, bust. Cat 43, with 15 for 7 numbers.'
+        'Round 1 saved. Ann 20, x2 doubled the numbers. Ben 0, bust. Cat 43, 15 for 7 numbers.'
     );
     await audit(page);
     await undo(page).click();
@@ -356,4 +356,33 @@ test('draws the summary clear of the keys, the dock and the tab bar on the narro
     );
     await undo(page).scrollIntoViewIfNeeded();
     await expect(undo(page)).toBeInViewport({ ratio: 1 });
+});
+
+test('takes the summary away as the next player moves on with no tap, so Undo takes back their entry', async ({
+    page,
+}) => {
+    await open(page);
+    for (const card of ['5', '+4']) await key(page, card).click();
+    await next(page).click();
+    await expect(toast(page).getByRole('status')).toContainText("Ann's entry is in: 9.");
+    // Ben moves on without a card, which is his entry, so the summary now speaks of his.
+    await next(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Cat');
+    await expect(toast(page).getByRole('status')).toContainText("Ben's entry is in: 0.");
+    await undo(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
+});
+
+test('takes the summary and its Undo away with the screen', async ({ page }) => {
+    await open(page);
+    await key(page, '5').click();
+    await next(page).click();
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await page
+        .getByRole('navigation', { name: 'Sections' })
+        .getByRole('link', { name: 'Players' })
+        .click();
+    await expect(page).toHaveURL(new RegExp(hrefOf('players')));
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
 });

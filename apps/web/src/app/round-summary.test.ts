@@ -12,15 +12,15 @@ describe('a round in words', () => {
     it("says the round and each player's score in seat order", () => {
         expect(
             roundSummary(1, [
-                { name: 'Ann', score: 20, note: 'numbers doubled by the x2' },
+                { name: 'Ann', score: 20, note: 'x2 doubled the numbers' },
                 { name: 'Ben', score: 0, note: 'bust' },
                 { name: 'Cat', score: 12 },
             ])
-        ).toBe('Round 2 saved. Ann 20, numbers doubled by the x2. Ben 0, bust. Cat 12.');
+        ).toBe('Round 2 saved. Ann 20, x2 doubled the numbers. Ben 0, bust. Cat 12.');
     });
 
     it('says a player out of the round is out of it, with no score', () => {
-        expect(roundSummary(0, [{ name: 'Ann', score: null }])).toBe(
+        expect(roundSummary(0, [{ name: 'Ann', out: true }])).toBe(
             'Round 1 saved. Ann out of the round.'
         );
     });
@@ -30,6 +30,11 @@ describe('a round in words', () => {
         expect(entrySummary({ name: 'Ben', score: 0, note: 'bust' })).toBe(
             "Ben's entry is in: 0, bust."
         );
+    });
+
+    it('states no score the rules did not give, rather than a zero', () => {
+        expect(entrySummary({ name: 'Ann' })).toBe("Ann's entry is in.");
+        expect(roundSummary(0, [{ name: 'Ann' }])).toBe('Round 1 saved. Ann.');
     });
 });
 
@@ -42,11 +47,16 @@ describe("what Flip 7's rules did to a hand", () => {
         expect(flip7Note(hand([3, 7], ['x2'], true))).toBe('bust');
     });
 
-    it('says the x2 doubled the numbers, and the bonus for seven numbers', () => {
-        expect(flip7Note(hand([3], ['x2']))).toBe('numbers doubled by the x2');
-        expect(flip7Note(hand([1, 2, 3, 4, 5, 6, 7]))).toBe('with 15 for 7 numbers');
+    it('says the x2 doubled the numbers only where it had numbers to double', () => {
+        expect(flip7Note(hand([3], ['x2']))).toBe('x2 doubled the numbers');
+        expect(flip7Note(hand([], ['x2', '+4']))).toBe('');
+        expect(flip7Note(hand([0], ['x2']))).toBe('');
+    });
+
+    it('says the bonus for seven numbers, as the rules set it', () => {
+        expect(flip7Note(hand([1, 2, 3, 4, 5, 6, 7]))).toBe('15 for 7 numbers');
         expect(flip7Note(hand([1, 2, 3, 4, 5, 6, 7], ['x2']))).toBe(
-            'numbers doubled by the x2 with 15 for 7 numbers'
+            'x2 doubled the numbers and 15 for 7 numbers'
         );
     });
 });
