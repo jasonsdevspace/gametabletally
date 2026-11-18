@@ -7,6 +7,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import { heard } from './status.testing.js';
 
 /* The game in play in the app's frame, over a database in memory, and the words it draws. */
 
@@ -62,6 +63,19 @@ const press = (name: string) => {
 };
 
 const digits = () => document.querySelector('.gtt-digits');
+
+/** The score header's status line, and the screen's own, each saying what changed. */
+const headerLine = () => document.querySelector<HTMLElement>('.gtt-score [role="status"]');
+const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+
+/**
+ * Waits for a line to say its words. The kit's line puts them in a moment after it is told, so a
+ * test waits for them before it ends, or the moment would come after the page is gone.
+ */
+const said = async (line: HTMLElement | null, words: string) => {
+    if (line === null) throw new Error('The status line is not on the page.');
+    await heard(line, words);
+};
 
 describe('the words the game screen draws', () => {
     it('words a hand of too many numbers from its code and data', () => {
@@ -126,6 +140,7 @@ describe('the game screen', () => {
         await waitFor(() => {
             expect(digits()).toHaveAccessibleName('14');
         });
+        await said(headerLine(), "Ann's total is 14.");
         expect(screen.getByRole('button', { name: '7' })).toHaveAttribute('aria-pressed', 'true');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
@@ -145,6 +160,7 @@ describe('the game screen', () => {
         );
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-disabled', 'true');
+        await said(headerLine(), "Ann's total is 0.");
         press('Bust');
         expect(bust).toHaveAttribute('aria-pressed', 'false');
     });
@@ -154,6 +170,7 @@ describe('the game screen', () => {
         for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) press(card);
         const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
         expect(await screen.findByText(why)).toBeVisible();
+        await said(screenLine(), why);
         expect(screen.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
             why
         );
@@ -166,9 +183,8 @@ describe('the game screen', () => {
     it('names the next player, and moves to them', async () => {
         await draw();
         press('Next: Ben');
-        await waitFor(() => {
-            expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
-        });
+        await said(headerLine(), 'Ben is next.');
+        expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
         expect(screen.getByRole('button', { name: 'Next: Cat' })).toBeVisible();
     });
 
@@ -188,14 +204,10 @@ describe('the game screen as the turn moves on', () => {
     it('ignores a tap made while the hand is entered, so it never lands in the next seat', async () => {
         const { open } = await draw();
         press('3');
-        await waitFor(() => {
-            expect(digits()).toHaveAccessibleName('3');
-        });
+        await said(headerLine(), "Ann's total is 3.");
         press('Next: Ben');
         press('9');
-        await waitFor(() => {
-            expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
-        });
+        await said(headerLine(), 'Ben is next.');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
             ann: { numbers: [3], modifiers: [], bust: false },
