@@ -4,7 +4,7 @@ import { THEME_KEY } from '@jasonsdevspace/design-kit/theme';
 import { newGameOf } from '../src/app/PlayStart.js';
 import { hrefOf } from '../src/routes.js';
 import type { SavedPlayer } from '../src/store/format.js';
-import { audit, expect, type Page, seed, smallTargets, test } from './support.js';
+import { audit, expect, fontsReady, type Page, seed, smallTargets, test } from './support.js';
 
 /*
  * The new game screen, as deployed: a game of each kind started from the start screen's link, the
@@ -117,6 +117,56 @@ test("draws a seat button's icon at the kit's icon-only size, growing with the t
         .poll(async () => ((await icon.boundingBox())?.width ?? 0) / before)
         .toBeGreaterThan(1.9);
     expect(((await icon.boundingBox())?.width ?? 0) / before).toBeLessThan(2.1);
+});
+
+test("keeps a seat's name on one line on a phone at twice the text size, its buttons under it", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fromTheLink(page, 'skyjo');
+    await page.getByRole('button', { name: 'Add Ann' }).click();
+    await fontsReady(page);
+    const title = seated(page).first();
+    const height = async () => (await title.boundingBox())?.height ?? 0;
+    const before = await height();
+    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    // The row is measured once the doubled text size has reached it.
+    await expect.poll(async () => (await height()) / before).toBeGreaterThan(1.9);
+    const remove = page.getByRole('button', { name: 'Remove Ann' });
+    // The name and its seat each read across on one line, rather than down the screen a letter at
+    // a time, and the seat's buttons start below them both.
+    const drawn = await page
+        .getByRole('list', { name: 'Players, in seat order' })
+        .locator('.dk-row')
+        .first()
+        .evaluate((row) => {
+            const lines = (selector: string) => {
+                const range = document.createRange();
+                range.selectNodeContents(row.querySelector(selector) ?? row);
+                const rects = [...range.getClientRects()].filter((rect) => rect.width > 0);
+                return {
+                    lines: new Set(rects.map((rect) => Math.round(rect.top))).size,
+                    bottom: Math.max(...rects.map((rect) => rect.bottom)),
+                };
+            };
+            const firstButton = row.querySelector('button')?.getBoundingClientRect().top ?? 0;
+            return {
+                name: lines('.dk-row-title'),
+                seat: lines('.dk-row-detail'),
+                firstButton,
+            };
+        });
+    expect(drawn.name.lines).toBe(1);
+    expect(drawn.seat.lines).toBe(1);
+    expect(drawn.firstButton).toBeGreaterThanOrEqual(drawn.seat.bottom - 1);
+    // At twice the text size the seats sit below the fold, so the check scrolls down to them.
+    await remove.scrollIntoViewIfNeeded();
+    await expect(remove).toBeInViewport({ ratio: 1 });
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+        )
+    ).toBe(0);
 });
 
 test('moves focus to the name field when the Add button is refused, the field described by why', async ({
