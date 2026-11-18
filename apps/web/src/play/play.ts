@@ -115,6 +115,12 @@ export interface Play {
      * the start again after the last.
      */
     readonly enter: (id: string, value: unknown) => Promise<void>;
+    /**
+     * Keeps a value for the step the round is at without moving on, as a hand is tapped in a card
+     * at a time, so a page loaded again in the middle of a hand comes back to it. It is taken back
+     * by tapping again, so it offers no undo.
+     */
+    readonly hold: (id: string, value: unknown) => Promise<void>;
     /** Moves the round to a step of its own, to correct an entry. */
     readonly goTo: (id: string, step: SavedStep) => Promise<void>;
     /**
@@ -381,6 +387,14 @@ export const openPlay = (
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'entry', before: game }
                 );
+            }),
+        hold: (id, value) =>
+            inOrder(async () => {
+                const game = gameOf(id);
+                const draft = draftOf(game);
+                if (draft.step === null) throw new Error('Every step of the round is entered.');
+                const round = write(toDraftRound(draft.round), draft.step, value);
+                await keep({ ...game, draft: { ...draft, round } }, null);
             }),
         goTo: (id, step) =>
             inOrder(async () => {

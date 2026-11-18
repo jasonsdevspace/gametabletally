@@ -155,3 +155,33 @@
         transform: rotateX(80deg);
     }
 }
+
+/*
+ * The game in play: the score header on top, then the keys a round is entered with, a step apart,
+ * with Bust on a row of its own under them, apart from the button for the next player in the dock.
+ */
+.gtt-game,
+.gtt-keys {
+    display: grid;
+    gap: var(--dk-space-4);
+}
+
+.gtt-keys {
+    gap: var(--dk-space-3);
+}
+
+.gtt-numbers {
+    --dk-button-grid-columns: 5;
+}
+
+.gtt-modifiers {
+    --dk-button-grid-columns: 6;
+}
+
+.gtt-why {
+    margin: 0;
+}
+
+.gtt-bust {
+    display: grid;
+}

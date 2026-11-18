@@ -177,6 +177,24 @@ describe('saving every change', () => {
         expect(game.result.totals).toEqual({ ann: 5, ben: 6, cat: 7 });
     });
 
+    it('keeps a hand tapped in without moving on, and comes back to it opened again', async () => {
+        const { factory, play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.hold('g-1', hand([3]));
+        await play.hold('g-1', hand([3, 7], ['+4']));
+        const held = shown(play, 'g-1').draft;
+        expect(held?.step).toEqual({ part: 'entry', player: 'ann' });
+        expect(held?.round.entries['ann']).toEqual(hand([3, 7], ['+4']));
+        expect(held?.preview.rounds[0]?.scores['ann']).toBe(14);
+        expect(play.snapshot().undo).toBeNull();
+        const again = await reopenFrom(factory);
+        expect(shown(again, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
+        expect(shown(again, 'g-1').draft?.round.entries['ann']).toEqual(hand([3, 7], ['+4']));
+        // Entered, the hand moves the round on to the next seat.
+        await again.enter('g-1', hand([3, 7], ['+4']));
+        expect(shown(again, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
+    });
+
     it('saves a Wizard round between its bids and its tricks', async () => {
         const { factory, play } = await setUp();
         await play.start(newGame('wizard'));

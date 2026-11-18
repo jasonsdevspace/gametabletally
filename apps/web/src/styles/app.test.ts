@@ -113,9 +113,10 @@ const contrast = (one: string, two: string): number => {
 };
 
 describe("the app's sheet over the design kit", () => {
-    it('sets no kit color role, nor any kit property but the typeface, the lip and the tile ground', () => {
+    it("sets no kit color role, nor any kit property but the typeface, the lip, the tile ground and a button grid's columns", () => {
         expect(Object.keys(sheets).length).toBeGreaterThan(0);
         expect([...app.keys()].filter((name) => name.startsWith('--dk-')).sort()).toEqual([
+            '--dk-button-grid-columns',
             '--dk-button-press',
             '--dk-button-shadow',
             '--dk-font-sans',
