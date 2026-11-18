@@ -390,6 +390,20 @@ describe('a reopened round', () => {
         expect(shown(play, 'g-1').draft).toMatchObject({ index: 2 });
     });
 
+    it('is put back by Undo as it was saved, with the round in play as it was before it was opened', async () => {
+        const { play } = await twoRounds();
+        const before = shown(play, 'g-1').saved;
+        await play.reopen('g-1', 0);
+        await play.enter('g-1', hand([11]));
+        await play.enter('g-1', hand([6]));
+        await play.enter('g-1', hand([7]));
+        await play.saveRound('g-1');
+        expect(await play.undo()).toBe(true);
+        const back = shown(play, 'g-1').saved;
+        expect(back.rounds).toEqual(before.rounds);
+        expect(back.draft).toEqual(before.draft);
+    });
+
     it('is scored by the version of the rules the game was started under, saved or not', async () => {
         const { play } = await twoRounds();
         const rules = shown(play, 'g-1').saved.rules;

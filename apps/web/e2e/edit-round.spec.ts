@@ -93,6 +93,35 @@ test('saves a change to the first round, moves every total after it, and goes ba
     await expect(toast.getByRole('status')).toContainText('Round 1 saved. Ann 13.');
     await toast.getByRole('button', { name: 'Undo' }).click();
     await expect(row(page, 'Ann')).toContainText('Ann, 10 in all');
+    // Undo leaves the round in play as it was, with no round left open to change.
+    await dock(page).getByRole('link', { name: 'Back to round 4' }).click();
+    await expect(bar(page)).toHaveText('Game in play');
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
+    await expect(key(page, '3')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test("names the round being changed in the page's title as well as the bar, from the moment it opens", async ({
+    page,
+}) => {
+    await openScores(page);
+    await heading(page, 2).click();
+    await expect(page).toHaveTitle('Changing round 2, Game Table Tally');
+    await expect(page.locator('#main')).toBeFocused();
+    await expect(page.locator('#main')).toHaveAccessibleName('Changing round 2');
+});
+
+test('takes a summary from an earlier save away as a round is opened, so its Undo cannot reach past it', async ({
+    page,
+}) => {
+    await openScores(page);
+    await change(page, 1);
+    await key(page, '10').click();
+    for (const name of ['Next: Ben', 'Next: Cat', 'Save round 1'])
+        await dock(page).getByRole('button', { name }).click();
+    const toast = page.locator('.dk-app-toast .dk-toast');
+    await expect(toast).toHaveAttribute('data-shown');
+    await change(page, 2);
+    await expect(toast).not.toHaveAttribute('data-shown');
 });
 
 test('leaves the round as it was when the change is let go, and goes back to its heading', async ({

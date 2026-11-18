@@ -60,3 +60,28 @@ export const hrefOf = (name: RouteName, id?: string): string => {
 /** The title of a page: its heading, then the app's name, or the name alone for the start. */
 export const titleOf = (heading: string): string =>
     heading === ROUTES[0].title ? heading : `${heading}, Game Table Tally`;
+
+/**
+ * The round's screen for a saved round opened again to change it, which names the round in its
+ * address, so the bar and the page's title name it from the moment the screen arrives.
+ */
+export const changingRoundOf = (id: string, index: number): string =>
+    `${hrefOf('game', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
+
+/** The scores of a game, arrived at from one of its rounds, whose heading takes focus there. */
+export const scoresAtRound = (id: string, index: number): string =>
+    `${hrefOf('scores', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
+
+/** The round a screen's address names, from 1, or null where it names none. */
+export const roundIn = (search: string): number | null => {
+    const round = Number(new URLSearchParams(search).get('round'));
+    return Number.isSafeInteger(round) && round > 0 ? round : null;
+};
+
+/** A screen's title at its address: a round being changed names the round, as the bar says it. */
+export const titleAt = (route: Route, search: string): string => {
+    const round = roundIn(search);
+    return route.name === 'game' && round !== null
+        ? `Changing round ${String(round)}`
+        : route.title;
+};

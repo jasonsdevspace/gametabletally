@@ -6,19 +6,19 @@ import {
     type Problem,
 } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-import { Link, navigate } from '../navigation.js';
+import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
-import { hrefOf } from '../routes.js';
+import { changingRoundOf, hrefOf, roundIn, scoresAtRound } from '../routes.js';
 import { isRecord } from '../store/format.js';
-import { Dock, useBarTitle, useToast } from './AppFrame.js';
-import { gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, useSummaryState, WithOpenedGame } from './opened-game.js';
+import { Dock } from './AppFrame.js';
+import { canEnter, gameNameOf } from './in-play.js';
+import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
-import { scoresAtRound } from './ScoresScreen.js';
 import { useStatus } from './status.js';
+import { type Summary, useSummary } from './summary.js';
 
 /*
  * The game in play: the score header on top, and below it, in reach of a thumb, the keys a round
@@ -203,63 +203,6 @@ const totalBefore = (game: GameInPlay, player: string, index: number): number =>
             0
         );
 
-/** What the screen's summary gives a round: a way to show one, to take it away, and whether its Undo is under way. */
-interface Summary {
-    readonly offer: (words: string) => void;
-    readonly clear: () => void;
-    readonly undoing: () => boolean;
-}
-
-const UNDO_REFUSED = 'This could not be put back, since the game changed in another tab.';
-const UNDO_FAILED = 'This could not be put back.';
-
-/**
- * The summary after an entry or a save, in the frame's toast with one Undo, which puts the round
- * back as it stood before the change the summary describes. Its state is the frame's, as the toast
- * and the model of the games are, so it stays as the visitor moves to another screen of the frame,
- * its Undo still works there, and the next entry takes it away wherever it begins. Taking it away
- * forgets its change, so no Undo outlives the words that offer it, and while an Undo is under way
- * the round takes no tap, so none lands in the player it puts back.
- */
-const useSummary = (play: Play): Summary => {
-    const show = useToast();
-    const state = useSummaryState();
-    const clear = useCallback(() => {
-        const dismiss = state.take();
-        if (dismiss === null) return;
-        dismiss();
-        play.dismissUndo();
-    }, [play, state]);
-    const offer = useCallback(
-        (words: string) => {
-            state.hold(
-                show(words, {
-                    label: 'Undo',
-                    onAction: () => {
-                        state.hold(null);
-                        state.setUndoing(true);
-                        void play
-                            .undo()
-                            .then(
-                                (back) => {
-                                    if (!back) show(UNDO_REFUSED);
-                                },
-                                () => {
-                                    show(UNDO_FAILED);
-                                }
-                            )
-                            .finally(() => {
-                                state.setUndoing(false);
-                            });
-                    },
-                })
-            );
-        },
-        [play, show, state]
-    );
-    return useMemo(() => ({ offer, clear, undoing: state.undoing }), [offer, clear, state]);
-};
-
 /** A game as the model holds it now, read once a change is kept. */
 const keptOf = (play: Play, id: string): GameInPlay | undefined =>
     play.snapshot().games.find(({ saved }) => saved.id === id);
@@ -274,6 +217,13 @@ const flip7Line = (
     out
         ? { name, out }
         : { name, ...(score === undefined ? {} : { score }), note: flip7Note(hand) };
+
+/**
+ * Whether a round's draft is a saved round opened again to change it, which the model walks seat
+ * by seat, as it counts the saved rounds.
+ */
+const isChanging = (game: GameInPlay, draft: NonNullable<GameInPlay['draft']>): boolean =>
+    draft.index < game.saved.rounds.length;
 
 /**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
@@ -386,24 +336,28 @@ const Flip7Round = ({
         void play.hold(id, next);
     };
 
-    // A saved round opened again from the scores, which the bar names so it is not taken for the
-    // round in play, and which goes back to its heading there once it is saved or let go.
-    const changing = draft.index < game.result.rounds.length;
-    useBarTitle(changing ? `Changing round ${String(draft.index + 1)}` : null);
+    // A saved round opened again from the scores, which its address and so the bar name, and
+    // which goes back to its heading there once it is saved or let go.
+    const changing = isChanging(game, draft);
     const backToScores = () => {
         navigate(scoresAtRound(id, draft.index), { replace: true });
     };
 
+    /** Lets the change go, and goes back to the scores once that is kept, or says why it is not. */
     const cancel = async () => {
         if (busy || summary.undoing()) return;
         summary.clear();
         setBusy(true);
         try {
             await play.dropDraft(id);
+        } catch (error: unknown) {
+            say(error instanceof Error ? error.message : 'The change could not be let go.');
+            return;
         } finally {
             setBusy(false);
         }
-        backToScores();
+        // A save the store refused is said by the screen's alert, and the change stays.
+        if (keptOf(play, id)?.error === null) backToScores();
     };
 
     const saveRound = async () => {
@@ -526,6 +480,18 @@ const Entry = ({
     // the words that say so, rather than leave it on a button that has gone.
     const [entering, setEntering] = useState(false);
     if (!entering && game?.draft) setEntering(true);
+    // The address names a round being changed, so the bar and the page's title do. One arrived at
+    // another way, such as Back to the game, is put right in place, as is one that names a round
+    // no longer opened.
+    const { search } = usePlace();
+    const named = roundIn(search);
+    const opened = game?.draft && isChanging(game, game.draft) ? game.draft.index + 1 : null;
+    useEffect(() => {
+        if (game === undefined || named === opened) return;
+        navigate(opened === null ? hrefOf('game', id) : changingRoundOf(id, opened - 1), {
+            replace: true,
+        });
+    }, [game, named, opened, id]);
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
@@ -546,7 +512,7 @@ const Entry = ({
         );
     const player = draft.step?.player ?? null;
     if (player === null) return <p>Every score of the round is in.</p>;
-    if (game.saved.game !== 'flip-7')
+    if (!canEnter(game.saved.game))
         return (
             <div className="gtt-game">
                 <ScoreHeader

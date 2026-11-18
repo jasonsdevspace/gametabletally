@@ -162,88 +162,101 @@ export interface Store {
      */
     readonly importFile: (file: SavedFile) => Promise<Imported>;
     readonly close: () => void;
+    /**
+     * Whether the store is closed, by its own `close` or by a newer build in another tab upgrading
+     * the database, after which a page that keeps a store opens it afresh.
+     */
+    readonly closed: () => boolean;
 }
 
-const storeOver = (database: IDBDatabase): Store => ({
-    players: () =>
-        within(database, [PLAYERS], 'readonly', async (transaction) =>
-            readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded)
-        ),
-    games: () =>
-        within(database, [GAMES], 'readonly', async (transaction) =>
-            readRows(await rows(transaction, GAMES), readGame).saved.sort(lastChangedFirst)
-        ),
-    savePlayer: async (player) => {
-        if (readPlayer(player) === null)
-            throw new Error('This is not a player, so it was not saved.');
-        await within(database, [PLAYERS], 'readwrite', (transaction) =>
-            settled(transaction.objectStore(PLAYERS).put(player))
-        );
-    },
-    removePlayer: (id) =>
-        // The games are read in the transaction that removes the player, so a game saved in
-        // between cannot name a player who is then deleted.
-        within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
-            const records = transaction.objectStore(PLAYERS);
-            const row: unknown = await settled<unknown>(records.get(id));
-            const player = readPlayer(row);
-            const played = (await rows(transaction, GAMES)).some((game) => names(game, id));
-            if (played && player) await settled(records.put({ ...player, removed: true }));
-            else if (!played) await settled(records.delete(id));
-        }),
-    game: (id) =>
-        within(database, [GAMES], 'readonly', async (transaction) => {
-            const row: unknown = await settled<unknown>(transaction.objectStore(GAMES).get(id));
-            return readGame(row);
-        }),
-    saveGame: async (game) => {
-        if (readGame(game) === null) throw new Error('This is not a game, so it was not saved.');
-        await within(database, [GAMES], 'readwrite', (transaction) =>
-            settled(transaction.objectStore(GAMES).put(game))
-        );
-    },
-    removeGame: (id) =>
-        within(database, [GAMES], 'readwrite', (transaction) =>
-            settled(transaction.objectStore(GAMES).delete(id))
-        ),
-    damaged: () =>
-        within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => {
-            const players = readRows(await rows(transaction, PLAYERS), readPlayer);
-            const games = readRows(await rows(transaction, GAMES), readGame);
-            return players.damaged + games.damaged;
-        }),
-    exportFile: (exported) =>
-        within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => ({
-            format: FORMAT,
-            version: FORMAT_VERSION,
-            exported,
-            players: readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded),
-            games: readRows(await rows(transaction, GAMES), readGame).saved.sort(lastChangedFirst),
-        })),
-    importFile: (file) =>
-        // What is here is read in the transaction that writes, so an entry saved while a file is
-        // being merged is weighed against the file's copy and never lost under it.
-        within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
-            const here = {
-                players: readRows(await rows(transaction, PLAYERS), readPlayer).saved,
-                games: readRows(await rows(transaction, GAMES), readGame).saved,
-            };
-            const known = new Set(here.players.map(({ id }) => id));
-            const changedAt = new Map(here.games.map(({ id, changed }) => [id, changed]));
-            const players = file.players.filter(({ id }) => !known.has(id));
-            const games = file.games.filter(({ id, changed }) => {
-                const saved = changedAt.get(id);
-                return saved === undefined || compareInstants(changed, saved) > 0;
-            });
-            for (const player of players)
-                await settled(transaction.objectStore(PLAYERS).put(player));
-            for (const game of games) await settled(transaction.objectStore(GAMES).put(game));
-            return { players: players.length, games: games.length };
-        }),
-    close: () => {
-        database.close();
-    },
-});
+const storeOver = (database: IDBDatabase): Store => {
+    let closed = false;
+    return {
+        players: () =>
+            within(database, [PLAYERS], 'readonly', async (transaction) =>
+                readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded)
+            ),
+        games: () =>
+            within(database, [GAMES], 'readonly', async (transaction) =>
+                readRows(await rows(transaction, GAMES), readGame).saved.sort(lastChangedFirst)
+            ),
+        savePlayer: async (player) => {
+            if (readPlayer(player) === null)
+                throw new Error('This is not a player, so it was not saved.');
+            await within(database, [PLAYERS], 'readwrite', (transaction) =>
+                settled(transaction.objectStore(PLAYERS).put(player))
+            );
+        },
+        removePlayer: (id) =>
+            // The games are read in the transaction that removes the player, so a game saved in
+            // between cannot name a player who is then deleted.
+            within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
+                const records = transaction.objectStore(PLAYERS);
+                const row: unknown = await settled<unknown>(records.get(id));
+                const player = readPlayer(row);
+                const played = (await rows(transaction, GAMES)).some((game) => names(game, id));
+                if (played && player) await settled(records.put({ ...player, removed: true }));
+                else if (!played) await settled(records.delete(id));
+            }),
+        game: (id) =>
+            within(database, [GAMES], 'readonly', async (transaction) => {
+                const row: unknown = await settled<unknown>(transaction.objectStore(GAMES).get(id));
+                return readGame(row);
+            }),
+        saveGame: async (game) => {
+            if (readGame(game) === null)
+                throw new Error('This is not a game, so it was not saved.');
+            await within(database, [GAMES], 'readwrite', (transaction) =>
+                settled(transaction.objectStore(GAMES).put(game))
+            );
+        },
+        removeGame: (id) =>
+            within(database, [GAMES], 'readwrite', (transaction) =>
+                settled(transaction.objectStore(GAMES).delete(id))
+            ),
+        damaged: () =>
+            within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => {
+                const players = readRows(await rows(transaction, PLAYERS), readPlayer);
+                const games = readRows(await rows(transaction, GAMES), readGame);
+                return players.damaged + games.damaged;
+            }),
+        exportFile: (exported) =>
+            within(database, [PLAYERS, GAMES], 'readonly', async (transaction) => ({
+                format: FORMAT,
+                version: FORMAT_VERSION,
+                exported,
+                players: readRows(await rows(transaction, PLAYERS), readPlayer).saved.sort(byAdded),
+                games: readRows(await rows(transaction, GAMES), readGame).saved.sort(
+                    lastChangedFirst
+                ),
+            })),
+        importFile: (file) =>
+            // What is here is read in the transaction that writes, so an entry saved while a file is
+            // being merged is weighed against the file's copy and never lost under it.
+            within(database, [PLAYERS, GAMES], 'readwrite', async (transaction) => {
+                const here = {
+                    players: readRows(await rows(transaction, PLAYERS), readPlayer).saved,
+                    games: readRows(await rows(transaction, GAMES), readGame).saved,
+                };
+                const known = new Set(here.players.map(({ id }) => id));
+                const changedAt = new Map(here.games.map(({ id, changed }) => [id, changed]));
+                const players = file.players.filter(({ id }) => !known.has(id));
+                const games = file.games.filter(({ id, changed }) => {
+                    const saved = changedAt.get(id);
+                    return saved === undefined || compareInstants(changed, saved) > 0;
+                });
+                for (const player of players)
+                    await settled(transaction.objectStore(PLAYERS).put(player));
+                for (const game of games) await settled(transaction.objectStore(GAMES).put(game));
+                return { players: players.length, games: games.length };
+            }),
+        close: () => {
+            closed = true;
+            database.close();
+        },
+        closed: () => closed,
+    };
+};
 
 /**
  * Opens the phone's saved players and games, making the place for them on a first visit.
@@ -282,10 +295,11 @@ export const openStore = async (
             );
         };
     });
+    const store = storeOver(database);
     database.onversionchange = () => {
-        database.close();
+        store.close();
     };
-    return storeOver(database);
+    return store;
 };
 
 /**

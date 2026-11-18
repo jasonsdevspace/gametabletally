@@ -472,11 +472,15 @@ export const openPlay = (
                 const rounds = withRound(game.rounds, draft.index, draft.round);
                 const next = { ...game, rounds, draft: null };
                 const after = scored(next);
+                // Undo puts a round being entered back as it was being entered. A saved round opened
+                // again and saved is put back as it was saved, with the round in play as it was
+                // before it was opened, since a round can be opened only while that one is empty.
+                const reopened = draft.index < game.rounds.length;
                 const why = await keep(
                     { ...next, draft: followingDraft(next) },
                     {
                         kind: 'round',
-                        before: game,
+                        before: reopened ? { ...game, draft: followingDraft(game) } : game,
                     }
                 );
                 if (why !== null) return { saved: false, problems: [], error: why };

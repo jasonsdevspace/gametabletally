@@ -29,7 +29,7 @@ type Lend = (open: () => Promise<Store>, now: () => Date) => Promise<Lease>;
  */
 const lendAlone: Lend = async (open, now) => {
     const store = await open();
-    const play = openPlay(store, () => now().toISOString());
+    const play = playOver(store, now);
     return {
         store,
         play,
@@ -91,19 +91,32 @@ interface Shared {
     current: Promise<{ readonly store: Store; readonly play: Play }> | null;
 }
 
-/** Lends what is shared, opening it for the first screen that asks. */
+/** The model of the games over a store, keeping time by the clock given. */
+const playOver = (store: Store, now: () => Date): Play =>
+    openPlay(store, () => now().toISOString());
+
+/**
+ * Lends what is shared, opening it for the first screen that asks, and afresh where the store has
+ * been closed since, as a newer build in another tab closes it when it upgrades the database. The
+ * first screen's way of opening the database and its clock are the frame's from then on.
+ */
 const lenderOf =
     (shared: Shared): Lend =>
-    (open, now) => {
+    async (open, now) => {
         const held = (shared.current ??= open().then((store) => ({
             store,
-            play: openPlay(store, () => now().toISOString()),
+            play: playOver(store, now),
         })));
-        // A failure to open is the screen's to say, and the next screen asks afresh.
-        held.catch(() => {
+        try {
+            const both = await held;
+            if (!both.store.closed()) return { ...both, release: () => undefined };
+        } catch (error: unknown) {
+            // A failure to open is the screen's to say, and the next screen asks afresh.
             if (shared.current === held) shared.current = null;
-        });
-        return held.then((both) => ({ ...both, release: () => undefined }));
+            throw error;
+        }
+        if (shared.current === held) shared.current = null;
+        return lenderOf(shared)(open, now);
     };
 
 /**

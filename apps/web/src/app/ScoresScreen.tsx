@@ -5,12 +5,13 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
-import { hrefOf } from '../routes.js';
+import { changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
-import { gameNameOf } from './in-play.js';
+import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
 import { useStatus } from './status.js';
+import { useSummary } from './summary.js';
 
 /*
  * The scores of a game in play: the standings first, ranked the way the game ranks, with who is
@@ -19,10 +20,6 @@ import { useStatus } from './status.js';
  * stands so far, marked as not yet counted. The screen is opened from the dock of the round's
  * screen and goes back to it from its own.
  */
-
-/** The scores of a game, arrived at from one of its rounds, whose heading takes focus there. */
-export const scoresAtRound = (id: string, index: number): string =>
-    `${hrefOf('scores', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
 
 /** A player's place in the standings, whether another player shares it, and whether they missed a round. */
 export interface Standing {
@@ -179,8 +176,9 @@ const Scores = ({
 }) => {
     const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const [line, say] = useStatus();
+    const summary = useSummary(play);
     const { search } = usePlace();
-    const arrivedFrom = new URLSearchParams(search).get('round');
+    const arrivedFrom = roundIn(search);
     const frame = useRef<HTMLDivElement>(null);
     const loaded = snapshot.games.some(({ saved }) => saved.id === id);
     // A frame whose headings hold buttons brings the one the keyboard reaches clear of the pinned
@@ -190,15 +188,20 @@ const Scores = ({
         const element = frame.current;
         if (!loaded || element === null) return undefined;
         const detach = attachTable(element);
-        if (arrivedFrom !== null) document.getElementById(`round-${arrivedFrom}`)?.focus();
+        if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
         return detach;
     }, [loaded, arrivedFrom]);
 
-    /** Opens a saved round on its entry screen, filled with what was entered, to change it. */
+    /**
+     * Opens a saved round on its entry screen, filled with what was entered, to change it, in the
+     * scores' place, so the scores it goes back to are the one place in the history. A summary
+     * from an earlier save goes first, since its Undo would reach past the round opened.
+     */
     const change = async (index: number) => {
+        summary.clear();
         try {
             await play.reopen(id, index);
-            navigate(hrefOf('game', id));
+            navigate(changingRoundOf(id, index), { replace: true });
         } catch (error: unknown) {
             say(
                 error instanceof Error
@@ -226,6 +229,8 @@ const Scores = ({
               missed: false,
           }));
     const columns = columnsOf(game);
+    // A round opens only on a screen its game has for entering one.
+    const enterable = canEnter(saved.game);
     const back =
         draft !== null && draft.index === result.rounds.length
             ? `Back to round ${String(draft.index + 1)}`
@@ -300,7 +305,7 @@ const Scores = ({
                                                 scope="col"
                                                 className="dk-table-number"
                                             >
-                                                {column.entered === null ? (
+                                                {column.entered === null && enterable ? (
                                                     <Button
                                                         text
                                                         id={`round-${String(column.index + 1)}`}
