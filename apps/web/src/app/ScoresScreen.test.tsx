@@ -1,0 +1,159 @@
+import { render, screen, within } from '@testing-library/react';
+import { IDBFactory } from 'fake-indexeddb';
+import { describe, expect, it } from 'vitest';
+
+import type { SavedGame, SavedPlayer } from '../store/format.js';
+import { openStore } from '../store/store.js';
+import { AppFrame } from './AppFrame.js';
+import { leadWords, placeWords, ScoresScreen, standingsOf } from './ScoresScreen.js';
+
+/* The scores of a game in play in the app's frame, over a database in memory, and their words. */
+
+const player = (id: string, name: string): SavedPlayer => ({
+    id,
+    name,
+    added: '2026-11-01T10:00:00Z',
+    removed: false,
+});
+
+const hand = (numbers: number[]) => ({ numbers, modifiers: [], bust: false });
+
+const saved = (game: string, rounds: unknown[], draft: SavedGame['draft'] = null): SavedGame => ({
+    id: 'g-1',
+    game,
+    rules: 1,
+    options: {},
+    players: ['ann', 'ben', 'cat'],
+    rounds,
+    draft,
+    started: '2026-11-14T10:00:00Z',
+    changed: '2026-11-14T10:00:00Z',
+});
+
+/** The screen at the game's address, over a database holding the game and its players. */
+const draw = async (game: SavedGame) => {
+    window.history.replaceState(null, '', '/scores/?id=g-1');
+    const factory = new IDBFactory();
+    const store = await openStore(factory);
+    for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
+        await store.savePlayer(one);
+    await store.saveGame(game);
+    store.close();
+    render(
+        <AppFrame screen="scores" title="Scores">
+            <ScoresScreen open={() => openStore(factory)} />
+        </AppFrame>
+    );
+    return screen.findByRole('list', { name: 'Standings' });
+};
+
+/** Each standing's words, as its row says them, in order. */
+const standingsSaid = async (game: SavedGame) =>
+    within(await draw(game))
+        .getAllByRole('listitem')
+        .map((row) => row.textContent);
+
+describe('the standings in words', () => {
+    it('ranks the highest total first, with players level sharing a place and the next counted past them', () => {
+        expect(
+            standingsOf(
+                ['ann', 'ben', 'cat', 'dan'],
+                { ann: 10, ben: 30, cat: 10, dan: 5 },
+                'highest'
+            )
+        ).toEqual([
+            { player: 'ben', total: 30, place: 1, shared: false },
+            { player: 'ann', total: 10, place: 2, shared: true },
+            { player: 'cat', total: 10, place: 2, shared: true },
+            { player: 'dan', total: 5, place: 4, shared: false },
+        ]);
+    });
+
+    it('ranks the lowest total first where the lowest leads', () => {
+        expect(
+            standingsOf(['ann', 'ben'], { ann: 40, ben: -12 }, 'lowest').map(({ player }) => player)
+        ).toEqual(['ben', 'ann']);
+    });
+
+    it('says a place as a number with its ending', () => {
+        expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map(placeWords)).toEqual([
+            '1st',
+            '2nd',
+            '3rd',
+            '4th',
+            '11th',
+            '12th',
+            '13th',
+            '21st',
+            '22nd',
+            '103rd',
+        ]);
+    });
+
+    it('says who leads, alone or level, and the lowest where it leads', () => {
+        const words = { total: 30, ahead: 'highest', counted: true } as const;
+        expect(leadWords({ ...words, leaders: ['Ben'] })).toBe('Ben leads with 30.');
+        expect(leadWords({ ...words, leaders: ['Ann', 'Ben', 'Cat'] })).toBe(
+            'Ann, Ben and Cat lead, level on 30.'
+        );
+        expect(leadWords({ ...words, ahead: 'lowest', leaders: ['Ann'] })).toBe(
+            'Ann leads with 30, the lowest total.'
+        );
+        expect(leadWords({ ...words, counted: false, leaders: ['Ann'] })).toBe(
+            'No round is counted yet.'
+        );
+    });
+});
+
+describe('the scores screen', () => {
+    it('lists the standings of a game the highest total leads, highest first, and says who leads', async () => {
+        const said = await standingsSaid(
+            saved('flip-7', [
+                { entries: { ann: hand([3, 7]), ben: hand([12]), cat: hand([10]) } },
+                { entries: { ann: hand([2]), ben: hand([1]), cat: hand([5]) } },
+            ])
+        );
+        expect(said).toEqual([
+            'Cat, 1st place, 15 points',
+            'Ben, 2nd place, 13 points',
+            'Ann, 3rd place, 12 points',
+        ]);
+        expect(screen.getByText('Cat leads with 15.')).toBeTruthy();
+    });
+
+    it('lists the standings of a game the lowest total leads, lowest first, and says who leads', async () => {
+        const said = await standingsSaid(
+            saved('skyjo', [
+                {
+                    entries: { ann: { total: -12 }, ben: { total: 40 }, cat: { total: 30 } },
+                    ender: 'ann',
+                },
+            ])
+        );
+        expect(said).toEqual([
+            'Ann, 1st place, -12 points',
+            'Cat, 2nd place, 30 points',
+            'Ben, 3rd place, 40 points',
+        ]);
+        expect(screen.getByText('Ann leads with -12, the lowest total.')).toBeTruthy();
+    });
+
+    it('marks a round still being entered as not yet counted, with what stands so far', async () => {
+        await draw(
+            saved('flip-7', [{ entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) } }], {
+                index: 1,
+                round: { entries: { ann: hand([9]) }, out: [] },
+                step: { part: 'entry', player: 'ben' },
+            })
+        );
+        const heads = within(screen.getByRole('table', { name: 'Scores by round, newest first' }))
+            .getAllByRole('columnheader')
+            .map((head) => head.textContent);
+        expect(heads).toEqual(['Player and total', 'Round 2 not yet counted', 'Round 1']);
+        const ann = screen.getByRole('rowheader', { name: /^Ann/ }).closest('tr');
+        expect(ann?.textContent).toBe('Ann, 3 in all93');
+        const ben = screen.getByRole('rowheader', { name: /^Ben/ }).closest('tr');
+        expect(ben?.textContent).toBe('Ben, 4 in allNothing yet4');
+        expect(screen.getByRole('link', { name: 'Back to round 2' })).toBeTruthy();
+    });
+});
