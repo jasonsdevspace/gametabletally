@@ -8,7 +8,7 @@ import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
-import { Dock } from './AppFrame.js';
+import { Dock, useToast } from './AppFrame.js';
 import { Icon } from './icon.js';
 import { AddByName, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
@@ -153,6 +153,7 @@ export const NewGame = ({
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
     const [line, say] = useStatus();
+    const show = useToast();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
     const focus = useRef<Focus | null>(null);
@@ -205,7 +206,19 @@ export const NewGame = ({
         const next = left[at] ?? left[at - 1];
         focus.current = next === undefined ? 'name' : { seat: next, action: 'remove' };
         setSeats(left);
-        say(`${nameOf(id)} is off the seats.`);
+        // The frame's toast says it and offers Undo, so a double tap that removes two seats can be
+        // put right, and Undo puts the player back in the seat they left.
+        const name = nameOf(id);
+        show(`${name} is off the seats.`, {
+            label: 'Undo',
+            onAction: () => {
+                const now = latest.current.seats;
+                if (now.includes(id)) return;
+                const back = Math.min(at, now.length);
+                setSeats([...now.slice(0, back), id, ...now.slice(back)]);
+                say(`${name} takes seat ${String(back + 1)} again.`);
+            },
+        });
     };
 
     const seatSaved = (player: SavedPlayer) => {

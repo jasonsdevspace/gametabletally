@@ -71,7 +71,10 @@ export const useRunning = (): boolean =>
 /**
  * The form a new player's name is typed in: the kit's field, with its button as the field's
  * action. `onAdd` takes the name and resolves to why it could not, which is drawn as the field's
- * error, or null once it is taken.
+ * error, or null once it is taken. A name refused from the Add button moves focus to the field
+ * once its error is drawn, so a screen reader says its label, that it is invalid and the error
+ * together, as the kit's reference asks of a refused submit. One refused by Enter in the field,
+ * where focus already is and moving it says nothing, is said on the status line instead.
  */
 export const AddByName = ({
     field,
@@ -83,8 +86,15 @@ export const AddByName = ({
     /** Says a refusal on the screen's status line, since the kit's field error is not live. */
     readonly say: (words: string) => void;
 }) => {
+    const own = useRef<HTMLInputElement>(null);
+    const input = field ?? own;
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    // Counts the refusals, so focus moves after each one is drawn, the same words twice included.
+    const [refusals, setRefusals] = useState(0);
+    useEffect(() => {
+        if (refusals > 0) input.current?.focus();
+    }, [refusals, input]);
     // Set while a name is being saved, so a second press does not save it twice.
     const adding = useRef(false);
     const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -95,7 +105,8 @@ export const AddByName = ({
             const refused = await onAdd(cleanName(name));
             setError(refused ?? '');
             if (refused === null) setName('');
-            else say(refused);
+            else if (document.activeElement === input.current) say(refused);
+            else setRefusals((count) => count + 1);
         } finally {
             adding.current = false;
         }
@@ -103,7 +114,7 @@ export const AddByName = ({
     return (
         <form noValidate onSubmit={(event) => void submit(event)}>
             <InputField
-                ref={field}
+                ref={input}
                 id="new-player"
                 label="A new player's name"
                 error={error}
