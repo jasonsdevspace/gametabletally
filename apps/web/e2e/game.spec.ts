@@ -214,7 +214,7 @@ test('keeps focus on the button for the next player as the turn moves on, and sa
     await expect(page.getByRole('button', { name: 'Save the round' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
-    await expect(said(page)).toHaveText('Round 1 saved.');
+    await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText('Round 1 saved.');
     await expect(page.getByRole('button', { name: 'Next: Ben' })).toBeFocused();
 });
 
@@ -227,4 +227,36 @@ test('sets the keys at the foot of the body on a tall phone, in reach of a thumb
     const dock = await page.getByRole('region', { name: 'Actions' }).boundingBox();
     // The last row of keys ends a step or two above the dock, with the spare room above the keys.
     expect((dock?.y ?? 0) - ((modifiers?.y ?? 0) + (modifiers?.height ?? 0))).toBeLessThan(48);
+});
+
+test('takes focus to the words that say the game is over when its last round is saved', async ({
+    page,
+}) => {
+    const bust = { numbers: [], modifiers: [], bust: true };
+    await open(
+        page,
+        game('flip-7', [
+            {
+                entries: {
+                    ann: {
+                        numbers: [12, 11, 10, 9, 8, 7, 6],
+                        modifiers: ['x2', '+10'],
+                        bust: false,
+                    },
+                    ben: bust,
+                    cat: bust,
+                },
+            },
+        ])
+    );
+    for (const card of ['12', '11', '10', 'Times 2']) await key(page, card).click();
+    await expect(total(page)).toHaveAccessibleName('217');
+    await next(page).click();
+    await key(page, 'Bust').click();
+    await next(page).click();
+    await key(page, 'Bust').click();
+    await next(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('This game of Flip 7 is over.')).toBeFocused();
+    await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText('Round 2 saved.');
 });

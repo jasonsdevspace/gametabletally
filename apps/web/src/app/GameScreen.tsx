@@ -2,18 +2,18 @@ import {
     FLIP_7_MODIFIERS,
     type Flip7Entry,
     type Flip7Modifier,
-    GAMES,
     type Problem,
 } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { usePlace } from '../navigation.js';
-import { type GameInPlay, openPlay, type Play } from '../play/play.js';
+import { type GameInPlay, openPlay, type Play, stepAfter } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { isRecord } from '../store/format.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
-import { Dock } from './AppFrame.js';
+import { Dock, useToast } from './AppFrame.js';
+import { gameNameOf } from './in-play.js';
 import { useRunning } from './player-parts.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
@@ -104,20 +104,25 @@ export const Flip7Keys = ({
     name,
     hand,
     why,
+    off = false,
     onChange,
 }: {
     readonly name: string;
     readonly hand: Flip7Entry;
     /** What the rules refuse in the hand, in words, or an empty string. */
     readonly why: string;
+    /** Whether every key is off, as while the turn moves on. */
+    readonly off?: boolean;
     readonly onChange: (hand: Flip7Entry) => void;
 }) => (
     <section className="gtt-keys" aria-label={`${name}'s cards`}>
         <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
             <Button
                 pressed={hand.bust}
+                off={off}
                 aria-describedby={hand.bust ? 'bust-hint' : undefined}
                 onClick={() => {
+                    if (off) return;
                     onChange(hand.bust ? EMPTY : { ...EMPTY, bust: true });
                 }}
             >
@@ -139,9 +144,9 @@ export const Flip7Keys = ({
                 <Button
                     key={card}
                     pressed={hand.numbers.includes(card)}
-                    off={hand.bust}
+                    off={hand.bust || off}
                     onClick={() => {
-                        if (hand.bust) return;
+                        if (hand.bust || off) return;
                         onChange({ ...hand, numbers: toggled(hand.numbers, card, NUMBERS) });
                     }}
                 >
@@ -159,9 +164,9 @@ export const Flip7Keys = ({
                 <Button
                     key={card}
                     pressed={hand.modifiers.includes(card)}
-                    off={hand.bust}
+                    off={hand.bust || off}
                     onClick={() => {
-                        if (hand.bust) return;
+                        if (hand.bust || off) return;
                         onChange({
                             ...hand,
                             modifiers: toggled(hand.modifiers, card, FLIP_7_MODIFIERS),
@@ -182,19 +187,18 @@ export const Flip7Keys = ({
     </section>
 );
 
-/** The step after the one the round is at that still has nothing entered, or null for none. */
-const followingPlayer = (game: GameInPlay): string | null => {
-    const draft = game.draft;
-    const step = draft?.step ?? null;
-    if (draft === null || step === null) return null;
-    const { steps, round } = draft;
-    const at = steps.findIndex((one) => one.player === step.player && one.part === step.part);
-    const empty = (one: (typeof steps)[number]) =>
-        one.player !== null &&
-        one.player !== step.player &&
-        !Object.hasOwn(round.entries, one.player);
-    return (steps.slice(at + 1).find(empty) ?? steps.slice(0, at).find(empty))?.player ?? null;
-};
+/**
+ * A player's total over the scored rounds before the one being entered, so a reopened round is
+ * never counted twice, once as saved and again as it stands.
+ */
+const totalBefore = (game: GameInPlay, player: string, index: number): number =>
+    game.result.rounds
+        .slice(0, index)
+        .reduce(
+            (total, round) =>
+                round.state === 'scored' ? total + (round.scores[player] ?? 0) : total,
+            0
+        );
 
 /**
  * A round of Flip 7 being entered. It stays on the page from player to player, so the button for
@@ -216,13 +220,12 @@ const Flip7Round = ({
     const id = game.saved.id;
     const nameOf = (one: string) => names.get(one) ?? 'Another player';
     const name = nameOf(player);
-    const before = game.result.totals[player] ?? 0;
+    const before = totalBefore(game, player, draft.index);
     const round = draft.preview.rounds[draft.index]?.scores[player] ?? 0;
     const problem = draft.preview.problems.find(
         (one) => one.round === draft.index && one.player === player
     );
     const why = problem ? refusalWords(problem) : '';
-    const following = followingPlayer(game);
     const turn = `${String(draft.index)}|${player}`;
     // The hand as tapped, which runs ahead of what is kept while a save takes, so two taps made at
     // once both count, and the round's last score the rules took, which the header keeps showing
@@ -239,8 +242,10 @@ const Flip7Round = ({
     else if (problem === undefined && state.taken !== round) shown = { ...state, taken: round };
     if (shown !== state) setState(shown);
     const { hand, taken } = shown;
+    const following = stepAfter(game, hand)?.player ?? null;
     const [busy, setBusy] = useState(false);
     const [line, say] = useStatus();
+    const show = useToast();
 
     // A refusal is said once as it appears, since focus is on the key that caused it.
     useEffect(() => {
@@ -248,13 +253,17 @@ const Flip7Round = ({
     }, [why, say]);
 
     const change = (next: Flip7Entry) => {
+        // While a hand is entered or a round saved, the turn is moving on, and a tap would land
+        // in whichever step the save reaches.
+        if (busy) return;
         setState((now) => ({ ...now, hand: next }));
         void play.hold(id, next);
     };
 
     const saveRound = async () => {
         const saved = await play.saveRound(id);
-        if (saved.saved) say(`Round ${String(draft.index + 1)} saved.`);
+        // Said by the frame's toast, which stays on the page when the round ends the game.
+        if (saved.saved) show(`Round ${String(draft.index + 1)} saved.`);
         else if (saved.error !== null) say(saved.error);
         else
             say(
@@ -286,7 +295,7 @@ const Flip7Round = ({
                 total={before + taken}
                 line={lineOf({ before, round: taken, first: draft.index === 0, hand })}
             />
-            <Flip7Keys name={name} hand={hand} why={why} onChange={change} />
+            <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
             <StatusLine ref={line} />
             {game.error === null ? null : <p role="alert">{game.error}</p>}
             <Dock>
@@ -304,6 +313,19 @@ const Flip7Round = ({
     );
 };
 
+/** The words that say a game is over, focused where it ended on this screen. */
+const Over = ({ name, focus }: { readonly name: string; readonly focus: boolean }) => {
+    const words = useRef<HTMLParagraphElement>(null);
+    useEffect(() => {
+        if (focus) words.current?.focus();
+    }, [focus]);
+    return (
+        <p ref={words} tabIndex={-1}>
+            This game of {name} is over.
+        </p>
+    );
+};
+
 /** The round being entered of one game, drawn from the model as it stands. */
 const Entry = ({
     play,
@@ -316,11 +338,14 @@ const Entry = ({
 }) => {
     const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const game = snapshot.games.find(({ saved }) => saved.id === id);
+    // Whether a round was being entered here, so a game that ends on this screen takes focus to
+    // the words that say so, rather than leave it on a button that has gone.
+    const [entering, setEntering] = useState(false);
+    if (!entering && game?.draft) setEntering(true);
     if (!game) return <p>This game is not on this phone.</p>;
-    const gameName =
-        GAMES.find(({ id: known }) => known === game.saved.game)?.name ?? game.saved.game;
+    const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
-    if (draft === null) return <p>This game of {gameName} is over.</p>;
+    if (draft === null) return <Over name={gameName} focus={entering} />;
     const player = draft.step?.player ?? null;
     if (player === null) return <p>Every score of the round is in.</p>;
     if (game.saved.game !== 'flip-7')
@@ -353,9 +378,14 @@ export const GameScreen = ({ open = openStore, now = today }: GameScreenProps) =
     const running = useRunning();
     const { search } = usePlace();
     const id = running ? new URLSearchParams(search).get('id') : null;
+    // What was read, and for which address, so a move to another game never draws the last one.
     const [opened, setOpened] = useState<
-        | { readonly play: Play; readonly names: ReadonlyMap<string, string> }
-        | { readonly failed: string }
+        | {
+              readonly id: string;
+              readonly play: Play;
+              readonly names: ReadonlyMap<string, string>;
+          }
+        | { readonly id: string; readonly failed: string }
         | null
     >(null);
 
@@ -364,26 +394,26 @@ export const GameScreen = ({ open = openStore, now = today }: GameScreenProps) =
         // Set once the screen is left, so a database opened after that is let go at once.
         const shown: { left: boolean; store: Store | null } = { left: false, store: null };
         const left = () => shown.left;
-        open().then(
-            async (ready) => {
-                shown.store = ready;
-                if (shown.left) {
-                    ready.close();
-                    return;
-                }
-                const play = openPlay(ready, () => now().toISOString());
-                const [, players] = await Promise.all([play.load(), ready.players()]);
-                // Read again past the wait, since the screen may have been left during it.
-                if (!left())
-                    setOpened({ play, names: new Map(players.map((one) => [one.id, one.name])) });
-            },
-            (error: unknown) => {
-                if (!shown.left)
-                    setOpened({
-                        failed: refusalOf(error) ?? 'Your saved games could not be read.',
-                    });
+        const read = async () => {
+            const ready = await open();
+            shown.store = ready;
+            if (left()) {
+                ready.close();
+                return;
             }
-        );
+            const play = openPlay(ready, () => now().toISOString());
+            const [, players] = await Promise.all([play.load(), ready.players()]);
+            // Read again past the wait, since the screen may have been left during it.
+            if (!left())
+                setOpened({ id, play, names: new Map(players.map((one) => [one.id, one.name])) });
+        };
+        read().catch((error: unknown) => {
+            if (!left())
+                setOpened({
+                    id,
+                    failed: refusalOf(error) ?? 'Your saved games could not be read.',
+                });
+        });
         return () => {
             shown.left = true;
             shown.store?.close();
@@ -397,7 +427,7 @@ export const GameScreen = ({ open = openStore, now = today }: GameScreenProps) =
                 No game is named here. <a href={hrefOf('play')}>Start or continue a game</a>.
             </p>
         );
-    if (opened === null) return null;
+    if (opened?.id !== id) return null;
     if ('failed' in opened) return <p role="alert">{opened.failed}</p>;
     return <Entry play={opened.play} id={id} names={opened.names} />;
 };

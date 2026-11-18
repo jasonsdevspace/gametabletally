@@ -183,3 +183,75 @@ describe('the game screen', () => {
         expect(await screen.findByText('This game of Flip 7 is over.')).toBeVisible();
     });
 });
+
+describe('the game screen as the turn moves on', () => {
+    it('ignores a tap made while the hand is entered, so it never lands in the next seat', async () => {
+        const { open } = await draw();
+        press('3');
+        await waitFor(() => {
+            expect(digits()).toHaveAccessibleName('3');
+        });
+        press('Next: Ben');
+        press('9');
+        await waitFor(() => {
+            expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
+        });
+        const store = await open();
+        expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
+            ann: { numbers: [3], modifiers: [], bust: false },
+        });
+        store.close();
+    });
+
+    it('counts a reopened round once in the header, as it stands', async () => {
+        const saved: SavedGame = {
+            ...flip7({
+                index: 0,
+                round: {
+                    entries: {
+                        ann: { numbers: [12, 8], modifiers: [], bust: false },
+                        ben: { numbers: [], modifiers: [], bust: true },
+                        cat: { numbers: [], modifiers: [], bust: true },
+                    },
+                    out: [],
+                },
+                step: { part: 'entry', player: 'ann' },
+            }),
+            rounds: [
+                {
+                    entries: {
+                        ann: { numbers: [12, 8], modifiers: [], bust: false },
+                        ben: { numbers: [], modifiers: [], bust: true },
+                        cat: { numbers: [], modifiers: [], bust: true },
+                    },
+                },
+            ],
+        };
+        await draw(saved);
+        await waitFor(() => {
+            expect(digits()).toHaveAccessibleName('20');
+        });
+        expect(document.querySelector('.gtt-score-line')).toHaveTextContent('20 this round.');
+    });
+
+    it('says the games could not be read when reading them fails', async () => {
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen
+                    open={async () => {
+                        const store = await openStore(factory);
+                        return {
+                            ...store,
+                            games: () => Promise.reject(new Error('The record is not readable.')),
+                        };
+                    }}
+                />
+            </AppFrame>
+        );
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Your saved games could not be read.'
+        );
+    });
+});

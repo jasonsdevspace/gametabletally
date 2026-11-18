@@ -195,6 +195,18 @@ describe('saving every change', () => {
         expect(shown(again, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
     });
 
+    it('leaves the last undo in place through a hand tapped in, still taking the game back', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([3]));
+        await play.hold('g-1', hand([9]));
+        expect(play.snapshot().undo).toEqual({ kind: 'entry', game: 'g-1' });
+        expect(await play.undo()).toBe(true);
+        const back = shown(play, 'g-1').draft;
+        expect(back?.step).toEqual({ part: 'entry', player: 'ann' });
+        expect(back?.round.entries).toEqual({});
+    });
+
     it('saves a Wizard round between its bids and its tricks', async () => {
         const { factory, play } = await setUp();
         await play.start(newGame('wizard'));
