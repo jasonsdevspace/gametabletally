@@ -197,8 +197,8 @@ describe('the game screen', () => {
         await draw(flip7(null));
         await act(() => Promise.resolve());
         expect(await screen.findByText('This game of Flip 7 is over.')).toBeVisible();
-        expect(screen.getByRole('link', { name: 'Scores' }).getAttribute('href')).toBe(
-            '/scores/?id=g-1'
+        expect(screen.getByRole('link', { name: 'See the recap' }).getAttribute('href')).toBe(
+            '/recap/?id=g-1'
         );
     });
 });

@@ -5,6 +5,7 @@ import { NewGame } from './app/NewGame.js';
 import { PlayerPage } from './app/PlayerPage.js';
 import { PlayersList } from './app/PlayersList.js';
 import { PlayStart } from './app/PlayStart.js';
+import { RecapScreen } from './app/RecapScreen.js';
 import { ScoresScreen } from './app/ScoresScreen.js';
 import { Link } from './navigation.js';
 import { hrefOf, type Route, ROUTES } from './routes.js';
@@ -36,6 +37,8 @@ export const AppScreen = ({ route }: { readonly route: Route }) => {
             return <GameScreen />;
         case 'scores':
             return <ScoresScreen />;
+        case 'recap':
+            return <RecapScreen />;
         case 'players':
             return <PlayersList />;
         case 'player':

@@ -231,3 +231,27 @@
 .gtt-score-quiet {
     color: var(--dk-muted);
 }
+
+/*
+ * The winner of a finished game, the one place the app allows itself a little ceremony: the words
+ * at the title's size, rising into place over the kit's medium duration, and still where a reader
+ * asks for less motion.
+ */
+.gtt-winner {
+    margin: 0;
+    font-size: var(--dk-text-title);
+    font-weight: var(--dk-weight-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .gtt-winner {
+        animation: gtt-arrive var(--dk-duration-medium) ease-out both;
+    }
+}
+
+@keyframes gtt-arrive {
+    from {
+        opacity: 0;
+        transform: translateY(var(--dk-space-2));
+    }
+}

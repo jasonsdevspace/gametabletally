@@ -246,7 +246,7 @@ test('draws the six modifier cards in two even rows of three on the narrowest ph
     expect(tops.filter((top) => top === tops[5])).toHaveLength(3);
 });
 
-test('takes focus to the words that say the game is over when its last round is saved', async ({
+test('opens the recap, with focus on it, when the last round of the game is saved', async ({
     page,
 }) => {
     const bust = { numbers: [], modifiers: [], bust: true };
@@ -274,7 +274,10 @@ test('takes focus to the words that say the game is over when its last round is 
     await key(page, 'Bust').click();
     await next(page).focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByText('This game of Flip 7 is over.')).toBeFocused();
+    await expect(page).toHaveURL(new RegExp(`\\${hrefOf('recap', 'g-1').replace('?', '\\?')}$`));
+    await expect(page.locator('#main')).toBeFocused();
+    await expect(page.locator('#main')).toHaveAccessibleName('Recap');
+    await expect(page.getByText('This game of Flip 7 is over.')).toBeVisible();
     await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText('Round 2 saved.');
 });
 

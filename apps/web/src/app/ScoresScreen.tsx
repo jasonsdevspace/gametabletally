@@ -5,7 +5,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
-import { changingRoundOf, hrefOf, roundIn } from '../routes.js';
+import { type ChangedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
@@ -164,44 +164,53 @@ const Cell = ({ column, player }: { readonly column: Column; readonly player: st
     return <td className="dk-table-number">{score}</td>;
 };
 
-/** The scores of one game, drawn from the model as it stands. */
-const Scores = ({
+/**
+ * The standings and every round of one game, as the scores page and the recap both show them, with
+ * each saved round's heading opening the round to change it, and the page it was opened from
+ * putting focus back on that heading once the change is saved or let go. A page that names the
+ * winners itself leaves the sentence that says who leads out.
+ */
+export const GameTables = ({
     play,
     id,
     names,
+    game,
+    from,
+    lead = true,
 }: {
     readonly play: Play;
     readonly id: string;
     readonly names: ReadonlyMap<string, string>;
+    readonly game: GameInPlay;
+    readonly from: ChangedFrom;
+    readonly lead?: boolean;
 }) => {
-    const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const [line, say] = useStatus();
     const summary = useSummary(play);
     const { search } = usePlace();
     const arrivedFrom = roundIn(search);
     const frame = useRef<HTMLDivElement>(null);
-    const loaded = snapshot.games.some(({ saved }) => saved.id === id);
     // A frame whose headings hold buttons brings the one the keyboard reaches clear of the pinned
-    // column, and a screen arrived at from a round it changed puts focus back on that round's
+    // column, and a page arrived at from a round it changed puts focus back on that round's
     // heading.
     useEffect(() => {
         const element = frame.current;
-        if (!loaded || element === null) return undefined;
+        if (element === null) return undefined;
         const detach = attachTable(element);
         if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
         return detach;
-    }, [loaded, arrivedFrom]);
+    }, [arrivedFrom]);
 
     /**
-     * Opens a saved round on its entry screen, filled with what was entered, to change it, in the
-     * scores' place, so the scores it goes back to are the one place in the history. A summary
-     * from an earlier save goes first, since its Undo would reach past the round opened.
+     * Opens a saved round on its entry screen, filled with what was entered, to change it, in this
+     * page's place, so the page it goes back to is the one place in the history. A summary from an
+     * earlier save goes first, since its Undo would reach past the round opened.
      */
     const change = async (index: number) => {
         summary.clear();
         try {
             await play.reopen(id, index);
-            navigate(changingRoundOf(id, index), { replace: true });
+            navigate(changingRoundOf(id, index, from), { replace: true });
         } catch (error: unknown) {
             say(
                 error instanceof Error
@@ -210,10 +219,8 @@ const Scores = ({
             );
         }
     };
-    const game = snapshot.games.find(({ saved }) => saved.id === id);
-    if (!game) return <p>This game is not on this phone.</p>;
     const nameOf = (player: string) => nameIn(names, player);
-    const { result, saved, draft } = game;
+    const { result, saved } = game;
     const ahead = GAMES.find((one) => one.id === saved.game)?.ahead ?? 'highest';
     const counted = result.rounds.some((round) => round.state === 'scored');
     const over = result.state === 'over';
@@ -231,23 +238,21 @@ const Scores = ({
     const columns = columnsOf(game);
     // A round opens only on a screen its game has for entering one.
     const enterable = canEnter(saved.game);
-    const back =
-        draft !== null && draft.index === result.rounds.length
-            ? `Back to round ${String(draft.index + 1)}`
-            : 'Back to the game';
     return (
-        <div className="gtt-scores">
+        <>
             <section>
                 <h2 id="standings-title">Standings</h2>
-                <p>
-                    {leadWords({
-                        leaders: shown.map(nameOf),
-                        total: result.totals[shown[0] ?? ''] ?? 0,
-                        ahead,
-                        counted,
-                        over,
-                    })}
-                </p>
+                {lead ? (
+                    <p>
+                        {leadWords({
+                            leaders: shown.map(nameOf),
+                            total: result.totals[shown[0] ?? ''] ?? 0,
+                            ahead,
+                            counted,
+                            over,
+                        })}
+                    </p>
+                ) : null}
                 <ol className="dk-rows" role="list" aria-labelledby="standings-title">
                     {standings.map(({ player, total, place, shared, missed }) => (
                         <li key={player}>
@@ -359,6 +364,31 @@ const Scores = ({
                 )}
             </section>
             <StatusLine ref={line} />
+        </>
+    );
+};
+
+/** The scores of one game, drawn from the model as it stands. */
+const Scores = ({
+    play,
+    id,
+    names,
+}: {
+    readonly play: Play;
+    readonly id: string;
+    readonly names: ReadonlyMap<string, string>;
+}) => {
+    const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
+    const game = snapshot.games.find(({ saved }) => saved.id === id);
+    if (!game) return <p>This game is not on this phone.</p>;
+    const { result, draft } = game;
+    const back =
+        draft !== null && draft.index === result.rounds.length
+            ? `Back to round ${String(draft.index + 1)}`
+            : 'Back to the game';
+    return (
+        <div className="gtt-scores">
+            <GameTables play={play} id={id} names={names} game={game} from="scores" />
             <Dock>
                 <Link
                     className="dk-button dk-button-accent dk-button-tall"
