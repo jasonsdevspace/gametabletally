@@ -5,6 +5,15 @@
  * and the new game screen's parts. Its colors are the kit's roles, and it names no kit class.
  */
 
+/* The games in play, one raised panel each, a step apart, in a list with no marker of its own. */
+.gtt-in-play-list {
+    display: grid;
+    gap: var(--dk-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
 /*
  * The game in play is the kit's raised panel, which spaces what it holds, and its lip is set in
  * app.css. It is a grid with no gap of its own, so the button to continue spans the panel and the
@@ -32,12 +41,14 @@
     font-variant-numeric: tabular-nums;
 }
 
-.gtt-start {
+.gtt-start,
+.gtt-in-play {
     display: grid;
     gap: var(--dk-space-3);
 }
 
-.gtt-start h2 {
+.gtt-start h2,
+.gtt-in-play h2 {
     margin: 0;
 }
 
