@@ -76,15 +76,17 @@ const SeatRow = ({
                     <span className="dk-visually-hidden">, </span>
                     <span className="dk-row-detail gtt-seat">Seat {at + 1}</span>
                 </span>
-                {button('up', at === 0, () => {
-                    onMove(id, 'up');
-                })}
-                {button('down', last, () => {
-                    onMove(id, 'down');
-                })}
-                {button('remove', false, () => {
-                    onRemove(id);
-                })}
+                <span className="dk-row-actions">
+                    {button('up', at === 0, () => {
+                        onMove(id, 'up');
+                    })}
+                    {button('down', last, () => {
+                        onMove(id, 'down');
+                    })}
+                    {button('remove', false, () => {
+                        onRemove(id);
+                    })}
+                </span>
             </div>
         </li>
     );

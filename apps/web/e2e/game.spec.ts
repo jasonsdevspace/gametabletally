@@ -232,6 +232,20 @@ test('sets the keys at the foot of the body on a tall phone, in reach of a thumb
     expect((dock?.y ?? 0) - ((modifiers?.y ?? 0) + (modifiers?.height ?? 0))).toBeLessThan(48);
 });
 
+test('draws the six modifier cards in two even rows of three on the narrowest phone', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await open(page);
+    const tops = await page
+        .getByRole('group', { name: 'Modifier cards' })
+        .getByRole('button')
+        .evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().top)));
+    expect(tops).toHaveLength(6);
+    expect(tops.filter((top) => top === tops[0])).toHaveLength(3);
+    expect(tops.filter((top) => top === tops[5])).toHaveLength(3);
+});
+
 test('takes focus to the words that say the game is over when its last round is saved', async ({
     page,
 }) => {

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { IDBFactory } from 'fake-indexeddb';
 
 import { openPlay } from '../src/play/play.js';
@@ -18,6 +18,22 @@ export type { Page };
 /** Waits for the page's fonts, so nothing is measured before its text has its final size. */
 export const fontsReady = (page: Page): Promise<unknown> =>
     page.evaluate(() => document.fonts.ready);
+
+/**
+ * Doubles the root's text size, as a reader who raises only the text size in the browser does, and
+ * waits until what is measured has grown with it, so nothing is measured before the new size lands.
+ */
+export const doubleTheText = async (
+    page: Page,
+    measured: Locator,
+    side: 'width' | 'height'
+): Promise<void> => {
+    await fontsReady(page);
+    const size = async () => (await measured.boundingBox())?.[side] ?? 0;
+    const before = await size();
+    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    await expect.poll(async () => (await size()) / before).toBeGreaterThan(1.9);
+};
 
 /**
  * Audits the page as it stands with axe, and fails naming each rule broken and the elements that
