@@ -21,3 +21,17 @@ export const refused = async (field: HTMLElement, line: HTMLElement, words: stri
     expect(error).toHaveTextContent(words);
     expect(field).toHaveAttribute('aria-invalid', 'true');
 };
+
+/**
+ * Waits for a name refused from its Add button to move focus to the field, which is then drawn
+ * invalid and described by the refusal, so a screen reader says them together.
+ */
+export const refusedInPlace = async (field: HTMLElement, words: string) => {
+    await waitFor(() => {
+        expect(field).toHaveFocus();
+    });
+    const error = document.getElementById(`${field.id}-error`);
+    expect(error).toBeVisible();
+    expect(error).toHaveTextContent(words);
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+};

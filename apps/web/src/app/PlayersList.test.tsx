@@ -7,7 +7,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { playersChanged } from './players.js';
 import { PlayersList } from './PlayersList.js';
-import { heard, refused } from './status.testing.js';
+import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* The players screen over a database in memory. */
 
@@ -114,15 +114,15 @@ describe('the players screen', () => {
 
     it('refuses an empty name and one already taken, saving nothing', async () => {
         const { open } = await draw();
+        const field = screen.getByRole('textbox', { name: "A new player's name" });
         addByName('');
-        await refused(
-            screen.getByRole('textbox', { name: "A new player's name" }),
-            screen.getByRole('status', { hidden: true }),
-            "Enter the player's name."
-        );
+        await refusedInPlace(field, "Enter the player's name.");
         addByName('ben');
+        await refusedInPlace(field, 'A player is already named Ben.');
+        field.focus();
+        fireEvent.submit(field);
         await refused(
-            screen.getByRole('textbox', { name: "A new player's name" }),
+            field,
             screen.getByRole('status', { hidden: true }),
             'A player is already named Ben.'
         );
