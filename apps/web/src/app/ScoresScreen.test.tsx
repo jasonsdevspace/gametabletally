@@ -215,7 +215,7 @@ describe('the scores screen', () => {
         const heads = within(screen.getByRole('table', { name: 'Scores by round, newest first' }))
             .getAllByRole('columnheader')
             .map((head) => head.textContent);
-        expect(heads).toEqual(['Player and total', 'Round 2 not yet counted', 'Round 1']);
+        expect(heads).toEqual(['Player and total', 'Round 2 not yet counted', 'Change Round 1']);
         const ann = screen.getByRole('rowheader', { name: /^Ann/ }).closest('tr');
         expect(ann?.textContent).toBe('Ann, 3 in all93');
         const ben = screen.getByRole('rowheader', { name: /^Ben/ }).closest('tr');

@@ -5,6 +5,7 @@ import {
     type ReactNode,
     useCallback,
     useContext,
+    useEffect,
     useLayoutEffect,
     useMemo,
     useRef,
@@ -16,6 +17,7 @@ import { Link } from '../navigation.js';
 import { hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
 import { Icon } from './icon.js';
+import { GamesProvider } from './opened-game.js';
 
 /**
  * The frame every screen for keeping score sits in: the design kit's app frame, with the screen's
@@ -109,6 +111,23 @@ const ToastContext = createContext<ShowToast>(() => () => undefined);
 /** The function a screen shows a toast with, in the frame's one place for it. */
 export const useToast = (): ShowToast => useContext(ToastContext);
 
+/** What a screen calls to name itself in the bar in its route's place, or null to give it back. */
+const TitleContext = createContext<(title: string | null) => void>(() => undefined);
+
+/**
+ * Names the screen in the frame's bar while it is shown, in place of its route's title, as a round
+ * being changed names the round. The route's title comes back once the screen is left.
+ */
+export const useBarTitle = (title: string | null): void => {
+    const name = useContext(TitleContext);
+    useEffect(() => {
+        name(title);
+        return () => {
+            name(null);
+        };
+    }, [name, title]);
+};
+
 /** Where a screen draws its main button: the frame's dock, and a way to say a screen holds it. */
 interface DockPlace {
     readonly element: HTMLElement | null;
@@ -170,6 +189,7 @@ export const AppFrame = ({
     readonly children?: ReactNode;
 }) => {
     const shown = useRef<ShowToast | null>(null);
+    const [named, setNamed] = useState<string | null>(null);
     const [dock, setDock] = useState<HTMLElement | null>(null);
     const [held, setHeld] = useState(0);
     const hold = useCallback(() => {
@@ -193,38 +213,42 @@ export const AppFrame = ({
     );
     return (
         <ToastContext.Provider value={show}>
-            <DockContext.Provider value={place}>
-                <SkipLink target="main" />
-                <div className="dk-app">
-                    <header className="dk-app-bar">
-                        <TallyMark size={32} />
-                        <h1 className="dk-app-title" id="screen-title">
-                            {title}
-                        </h1>
-                        {actionOf(screen)}
-                    </header>
-                    {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
-                    <main
-                        id="main"
-                        tabIndex={0}
-                        className="dk-app-body"
-                        aria-labelledby="screen-title"
-                    >
-                        {children}
-                    </main>
-                    <div className="dk-app-toast">
-                        <Toast ref={attach} />
-                    </div>
-                    {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
-                    <section
-                        ref={setDock}
-                        className="dk-app-dock"
-                        aria-label="Actions"
-                        hidden={held === 0}
-                    />
-                    <TabBar screen={screen} />
-                </div>
-            </DockContext.Provider>
+            <TitleContext.Provider value={setNamed}>
+                <GamesProvider>
+                    <DockContext.Provider value={place}>
+                        <SkipLink target="main" />
+                        <div className="dk-app">
+                            <header className="dk-app-bar">
+                                <TallyMark size={32} />
+                                <h1 className="dk-app-title" id="screen-title">
+                                    {named ?? title}
+                                </h1>
+                                {actionOf(screen)}
+                            </header>
+                            {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
+                            <main
+                                id="main"
+                                tabIndex={0}
+                                className="dk-app-body"
+                                aria-labelledby="screen-title"
+                            >
+                                {children}
+                            </main>
+                            <div className="dk-app-toast">
+                                <Toast ref={attach} />
+                            </div>
+                            {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
+                            <section
+                                ref={setDock}
+                                className="dk-app-dock"
+                                aria-label="Actions"
+                                hidden={held === 0}
+                            />
+                            <TabBar screen={screen} />
+                        </div>
+                    </DockContext.Provider>
+                </GamesProvider>
+            </TitleContext.Provider>
         </ToastContext.Provider>
     );
 };

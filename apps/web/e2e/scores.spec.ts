@@ -116,8 +116,8 @@ for (const theme of ['light', 'dark'] as const)
         await expect(table(page).getByRole('columnheader')).toHaveText([
             'Player and total',
             'Round 3 not yet counted',
-            'Round 2',
-            'Round 1',
+            'Change Round 2',
+            'Change Round 1',
         ]);
         await expect(table(page).getByRole('rowheader')).toHaveText([
             'Ann, 12 in all',

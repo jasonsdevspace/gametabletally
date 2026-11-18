@@ -390,6 +390,17 @@ describe('a reopened round', () => {
         expect(shown(play, 'g-1').draft).toMatchObject({ index: 2 });
     });
 
+    it('is scored by the version of the rules the game was started under, saved or not', async () => {
+        const { play } = await twoRounds();
+        const rules = shown(play, 'g-1').saved.rules;
+        await play.reopen('g-1', 0);
+        expect(shown(play, 'g-1').draft?.preview.rules).toBe(rules);
+        await play.enter('g-1', hand([11]));
+        await play.saveRound('g-1');
+        expect(shown(play, 'g-1').saved.rules).toBe(rules);
+        expect(shown(play, 'g-1').result.rules).toBe(rules);
+    });
+
     it('changes nothing saved when it is left without saving', async () => {
         const { factory, play } = await twoRounds();
         const before = shown(play, 'g-1').saved;
@@ -526,12 +537,16 @@ describe('what each change keeps and refuses', () => {
         });
     });
 
-    it('moves past entries already made after a correction, to nothing left in a reopened round', async () => {
+    it('walks a reopened round seat by seat, every entry already made, to nothing left after the last', async () => {
         const { play } = await setUp();
         await play.start(newGame('flip-7'));
         await flipRound(play, 'g-1', [hand([5]), hand([6]), hand([7])]);
         await play.reopen('g-1', 0);
         await play.enter('g-1', hand([11]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
+        await play.enter('g-1', hand([6]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.enter('g-1', hand([7]));
         expect(shown(play, 'g-1').draft?.step).toBeNull();
     });
 

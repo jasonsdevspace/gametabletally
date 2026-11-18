@@ -1,13 +1,16 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
-import { useSyncExternalStore } from 'react';
+import { attachTable } from '@jasonsdevspace/design-kit/controls';
+import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-import { Link } from '../navigation.js';
+import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { useStatus } from './status.js';
 
 /*
  * The scores of a game in play: the standings first, ranked the way the game ranks, with who is
@@ -16,6 +19,10 @@ import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
  * stands so far, marked as not yet counted. The screen is opened from the dock of the round's
  * screen and goes back to it from its own.
  */
+
+/** The scores of a game, arrived at from one of its rounds, whose heading takes focus there. */
+export const scoresAtRound = (id: string, index: number): string =>
+    `${hrefOf('scores', id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
 
 /** A player's place in the standings, whether another player shares it, and whether they missed a round. */
 export interface Standing {
@@ -171,6 +178,35 @@ const Scores = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
+    const [line, say] = useStatus();
+    const { search } = usePlace();
+    const arrivedFrom = new URLSearchParams(search).get('round');
+    const frame = useRef<HTMLDivElement>(null);
+    const loaded = snapshot.games.some(({ saved }) => saved.id === id);
+    // A frame whose headings hold buttons brings the one the keyboard reaches clear of the pinned
+    // column, and a screen arrived at from a round it changed puts focus back on that round's
+    // heading.
+    useEffect(() => {
+        const element = frame.current;
+        if (!loaded || element === null) return undefined;
+        const detach = attachTable(element);
+        if (arrivedFrom !== null) document.getElementById(`round-${arrivedFrom}`)?.focus();
+        return detach;
+    }, [loaded, arrivedFrom]);
+
+    /** Opens a saved round on its entry screen, filled with what was entered, to change it. */
+    const change = async (index: number) => {
+        try {
+            await play.reopen(id, index);
+            navigate(hrefOf('game', id));
+        } catch (error: unknown) {
+            say(
+                error instanceof Error
+                    ? error.message
+                    : `Round ${String(index + 1)} could not be opened.`
+            );
+        }
+    };
     const game = snapshot.games.find(({ saved }) => saved.id === id);
     if (!game) return <p>This game is not on this phone.</p>;
     const nameOf = (player: string) => nameIn(names, player);
@@ -245,6 +281,7 @@ const Scores = ({
                             Scores by round, newest first
                         </p>
                         <div
+                            ref={frame}
                             className="dk-table-scroll"
                             role="region"
                             aria-labelledby="scores-title"
@@ -263,7 +300,20 @@ const Scores = ({
                                                 scope="col"
                                                 className="dk-table-number"
                                             >
-                                                Round {column.index + 1}
+                                                {column.entered === null ? (
+                                                    <Button
+                                                        text
+                                                        id={`round-${String(column.index + 1)}`}
+                                                        onClick={() => void change(column.index)}
+                                                    >
+                                                        <span className="dk-visually-hidden">
+                                                            Change{' '}
+                                                        </span>
+                                                        Round {column.index + 1}
+                                                    </Button>
+                                                ) : (
+                                                    <>Round {column.index + 1}</>
+                                                )}
                                                 {column.result.state === 'scored' ? null : (
                                                     <span className="gtt-round-note">
                                                         {' '}
@@ -303,6 +353,7 @@ const Scores = ({
                     </>
                 )}
             </section>
+            <StatusLine ref={line} />
             <Dock>
                 <Link
                     className="dk-button dk-button-accent dk-button-tall"

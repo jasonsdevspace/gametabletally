@@ -8,15 +8,16 @@ import {
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
-import { Link } from '../navigation.js';
+import { Link, navigate } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { isRecord } from '../store/format.js';
-import { Dock, useToast } from './AppFrame.js';
+import { Dock, useBarTitle, useToast } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, useSummaryState, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
+import { scoresAtRound } from './ScoresScreen.js';
 import { useStatus } from './status.js';
 
 /*
@@ -214,55 +215,49 @@ const UNDO_FAILED = 'This could not be put back.';
 
 /**
  * The summary after an entry or a save, in the frame's toast with one Undo, which puts the round
- * back as it stood before the change the summary describes. It belongs to the screen rather than
- * the round, since a round that ends the game leaves the page while its summary stays, and it goes
- * with the screen, whose database closes as it leaves. Taking it away forgets its change, so no
- * Undo outlives the words that offer it, and while an Undo is under way the round takes no tap, so
- * none lands in the player it puts back.
+ * back as it stood before the change the summary describes. Its state is the frame's, as the toast
+ * and the model of the games are, so it stays as the visitor moves to another screen of the frame,
+ * its Undo still works there, and the next entry takes it away wherever it begins. Taking it away
+ * forgets its change, so no Undo outlives the words that offer it, and while an Undo is under way
+ * the round takes no tap, so none lands in the player it puts back.
  */
 const useSummary = (play: Play): Summary => {
     const show = useToast();
-    const dismiss = useRef<(() => void) | null>(null);
-    const undoing = useRef(false);
+    const state = useSummaryState();
     const clear = useCallback(() => {
-        if (dismiss.current === null) return;
-        dismiss.current();
-        dismiss.current = null;
+        const dismiss = state.take();
+        if (dismiss === null) return;
+        dismiss();
         play.dismissUndo();
-    }, [play]);
+    }, [play, state]);
     const offer = useCallback(
         (words: string) => {
-            dismiss.current = show(words, {
-                label: 'Undo',
-                onAction: () => {
-                    dismiss.current = null;
-                    undoing.current = true;
-                    void play
-                        .undo()
-                        .then(
-                            (back) => {
-                                if (!back) show(UNDO_REFUSED);
-                            },
-                            () => {
-                                show(UNDO_FAILED);
-                            }
-                        )
-                        .finally(() => {
-                            undoing.current = false;
-                        });
-                },
-            });
+            state.hold(
+                show(words, {
+                    label: 'Undo',
+                    onAction: () => {
+                        state.hold(null);
+                        state.setUndoing(true);
+                        void play
+                            .undo()
+                            .then(
+                                (back) => {
+                                    if (!back) show(UNDO_REFUSED);
+                                },
+                                () => {
+                                    show(UNDO_FAILED);
+                                }
+                            )
+                            .finally(() => {
+                                state.setUndoing(false);
+                            });
+                    },
+                })
+            );
         },
-        [play, show]
+        [play, show, state]
     );
-    useEffect(
-        () => () => {
-            dismiss.current?.();
-            dismiss.current = null;
-        },
-        []
-    );
-    return useMemo(() => ({ offer, clear, undoing: () => undoing.current }), [offer, clear]);
+    return useMemo(() => ({ offer, clear, undoing: state.undoing }), [offer, clear, state]);
 };
 
 /** A game as the model holds it now, read once a change is kept. */
@@ -279,6 +274,55 @@ const flip7Line = (
     out
         ? { name, out }
         : { name, ...(score === undefined ? {} : { score }), note: flip7Note(hand) };
+
+/**
+ * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
+ * way to the scores, or, for a saved round opened again, the way to let the change go.
+ */
+const RoundDock = ({
+    id,
+    index,
+    changing,
+    off,
+    refused,
+    label,
+    onNext,
+    onCancel,
+}: {
+    readonly id: string;
+    readonly index: number;
+    readonly changing: boolean;
+    readonly off: boolean;
+    /** Whether the rules refuse the hand, which the keys say why beside them. */
+    readonly refused: boolean;
+    readonly label: string;
+    readonly onNext: () => void;
+    readonly onCancel: () => void;
+}) => (
+    <Dock>
+        <div className="gtt-dock-row">
+            {changing ? (
+                <Button tall off={off} onClick={onCancel}>
+                    Cancel
+                    <span className="dk-visually-hidden"> the change to round {index + 1}</span>
+                </Button>
+            ) : (
+                <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
+                    Scores
+                </Link>
+            )}
+            <Button
+                accent
+                tall
+                off={refused || off}
+                aria-describedby={refused ? 'hand-why' : undefined}
+                onClick={onNext}
+            >
+                {label}
+            </Button>
+        </div>
+    </Dock>
+);
 
 /**
  * A round of Flip 7 being entered. It stays on the page from player to player, so the button for
@@ -342,6 +386,26 @@ const Flip7Round = ({
         void play.hold(id, next);
     };
 
+    // A saved round opened again from the scores, which the bar names so it is not taken for the
+    // round in play, and which goes back to its heading there once it is saved or let go.
+    const changing = draft.index < game.result.rounds.length;
+    useBarTitle(changing ? `Changing round ${String(draft.index + 1)}` : null);
+    const backToScores = () => {
+        navigate(scoresAtRound(id, draft.index), { replace: true });
+    };
+
+    const cancel = async () => {
+        if (busy || summary.undoing()) return;
+        summary.clear();
+        setBusy(true);
+        try {
+            await play.dropDraft(id);
+        } finally {
+            setBusy(false);
+        }
+        backToScores();
+    };
+
     const saveRound = async () => {
         // The round as the rules make it with the last hand kept, read before the save takes the
         // draft away.
@@ -356,9 +420,12 @@ const Flip7Round = ({
             )
         );
         const saved = await play.saveRound(id);
-        // Said by the frame's toast, which stays on the page when the round ends the game.
-        if (saved.saved) summary.offer(roundSummary(kept.index, lines));
-        else if (saved.error !== null) say(saved.error);
+        // Said by the frame's toast, which stays on the page when the round ends the game and as a
+        // changed round goes back to the scores.
+        if (saved.saved) {
+            summary.offer(roundSummary(kept.index, lines));
+            if (changing) backToScores();
+        } else if (saved.error !== null) say(saved.error);
         else
             say(
                 saved.problems[0]
@@ -409,22 +476,22 @@ const Flip7Round = ({
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
             <StatusLine ref={line} />
             {game.error === null ? null : <p role="alert">{game.error}</p>}
-            <Dock>
-                <div className="gtt-dock-row">
-                    <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
-                        Scores
-                    </Link>
-                    <Button
-                        accent
-                        tall
-                        off={why !== '' || busy}
-                        aria-describedby={why === '' ? undefined : 'hand-why'}
-                        onClick={() => void next()}
-                    >
-                        {following === null ? 'Save the round' : `Next: ${nameOf(following)}`}
-                    </Button>
-                </div>
-            </Dock>
+            <RoundDock
+                id={id}
+                index={draft.index}
+                changing={changing}
+                off={busy}
+                refused={why !== ''}
+                label={
+                    following !== null
+                        ? `Next: ${nameOf(following)}`
+                        : changing
+                          ? `Save round ${String(draft.index + 1)}`
+                          : 'Save the round'
+                }
+                onNext={() => void next()}
+                onCancel={() => void cancel()}
+            />
         </div>
     );
 };
