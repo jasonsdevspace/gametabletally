@@ -21,6 +21,9 @@ export interface Continuing {
 export const gameNameOf = (game: string): string =>
     GAMES.find(({ id }) => id === game)?.name ?? game;
 
+/** Whether the app has a screen for entering a round of the game, which it has for Flip 7 so far. */
+export const canEnter = (game: string): boolean => game === 'flip-7';
+
 /** What a player enters at each part of a round, as the sentence names it. */
 const ENTERED = { entry: 'score is', bid: 'bid is', tricks: 'tricks are' } as const;
 

@@ -2,7 +2,7 @@ import { Component, type ReactNode, useEffect, useRef } from 'react';
 
 import { AppFrame, SECTION_OF } from './app/AppFrame.js';
 import { usePlace } from './navigation.js';
-import { routeAt, titleOf } from './routes.js';
+import { routeAt, titleAt, titleOf } from './routes.js';
 import { AppScreen, ErrorPage, NotFound, Screen, ScreenFailed } from './screens.js';
 
 /**
@@ -65,8 +65,8 @@ export const App = () => {
     // between such screens, so a toast survives the move. Only the screen inside is drawn afresh.
     if (route && Object.hasOwn(SECTION_OF, route.name))
         return (
-            <AppFrame screen={route.name} title={route.title}>
-                <Boundary key={place} title={route.title} failed={<ScreenFailed />}>
+            <AppFrame screen={route.name} title={titleAt(route, search)}>
+                <Boundary key={place} title={titleAt(route, search)} failed={<ScreenFailed />}>
                     <AppScreen route={route} />
                 </Boundary>
             </AppFrame>

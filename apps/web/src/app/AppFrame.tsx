@@ -16,6 +16,7 @@ import { Link } from '../navigation.js';
 import { hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
 import { Icon } from './icon.js';
+import { GamesProvider } from './opened-game.js';
 
 /**
  * The frame every screen for keeping score sits in: the design kit's app frame, with the screen's
@@ -193,38 +194,40 @@ export const AppFrame = ({
     );
     return (
         <ToastContext.Provider value={show}>
-            <DockContext.Provider value={place}>
-                <SkipLink target="main" />
-                <div className="dk-app">
-                    <header className="dk-app-bar">
-                        <TallyMark size={32} />
-                        <h1 className="dk-app-title" id="screen-title">
-                            {title}
-                        </h1>
-                        {actionOf(screen)}
-                    </header>
-                    {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
-                    <main
-                        id="main"
-                        tabIndex={0}
-                        className="dk-app-body"
-                        aria-labelledby="screen-title"
-                    >
-                        {children}
-                    </main>
-                    <div className="dk-app-toast">
-                        <Toast ref={attach} />
+            <GamesProvider>
+                <DockContext.Provider value={place}>
+                    <SkipLink target="main" />
+                    <div className="dk-app">
+                        <header className="dk-app-bar">
+                            <TallyMark size={32} />
+                            <h1 className="dk-app-title" id="screen-title">
+                                {title}
+                            </h1>
+                            {actionOf(screen)}
+                        </header>
+                        {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
+                        <main
+                            id="main"
+                            tabIndex={0}
+                            className="dk-app-body"
+                            aria-labelledby="screen-title"
+                        >
+                            {children}
+                        </main>
+                        <div className="dk-app-toast">
+                            <Toast ref={attach} />
+                        </div>
+                        {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
+                        <section
+                            ref={setDock}
+                            className="dk-app-dock"
+                            aria-label="Actions"
+                            hidden={held === 0}
+                        />
+                        <TabBar screen={screen} />
                     </div>
-                    {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
-                    <section
-                        ref={setDock}
-                        className="dk-app-dock"
-                        aria-label="Actions"
-                        hidden={held === 0}
-                    />
-                    <TabBar screen={screen} />
-                </div>
-            </DockContext.Provider>
+                </DockContext.Provider>
+            </GamesProvider>
         </ToastContext.Provider>
     );
 };

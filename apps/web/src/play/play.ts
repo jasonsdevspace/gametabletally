@@ -167,13 +167,22 @@ const withRound = (rounds: readonly unknown[], index: number, round: unknown): u
         : [...rounds, round];
 
 /**
- * The first step of a round still to be entered, from the place given on and then from the start,
- * or null when all are.
+ * The step a round moves to from the place given: in a round being entered, the first still to be
+ * entered from there on and then from the start, or null when all are. In a saved round opened
+ * again, whose every step is entered, the next step in order, or null after the last, so each
+ * entry can be changed in turn before the round is saved.
  */
-const nextStep = (steps: readonly SavedStep[], round: DraftRound, from: number): SavedStep | null =>
-    steps.slice(from).find((step) => read(round, step) === undefined) ??
-    steps.find((step) => read(round, step) === undefined) ??
-    null;
+const nextStep = (
+    steps: readonly SavedStep[],
+    round: DraftRound,
+    from: number,
+    reopened = false
+): SavedStep | null =>
+    reopened
+        ? (steps[from] ?? null)
+        : (steps.slice(from).find((step) => read(round, step) === undefined) ??
+          steps.find((step) => read(round, step) === undefined) ??
+          null);
 
 /**
  * The step a round moves to once the value given is entered for the step it is at, or null when
@@ -186,7 +195,7 @@ export const stepAfter = (game: GameInPlay, value: unknown): SavedStep | null =>
     const round = write(draft.round, step, value);
     const steps = stepsOf(game.saved.game, game.saved.players, round);
     const at = steps.findIndex((one) => sameStep(one, step));
-    return nextStep(steps, round, at + 1);
+    return nextStep(steps, round, at + 1, draft.index < game.saved.rounds.length);
 };
 
 /** A draft of a new round at a place, at its first step. */
@@ -409,7 +418,7 @@ export const openPlay = (
                 const round = write(toDraftRound(draft.round), draft.step, value);
                 const steps = stepsOf(game.game, game.players, round);
                 const at = steps.findIndex((step) => sameStep(step, draft.step));
-                const step = nextStep(steps, round, at + 1);
+                const step = nextStep(steps, round, at + 1, draft.index < game.rounds.length);
                 await keep(
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'entry', before: game }
@@ -463,11 +472,15 @@ export const openPlay = (
                 const rounds = withRound(game.rounds, draft.index, draft.round);
                 const next = { ...game, rounds, draft: null };
                 const after = scored(next);
+                // Undo puts a round being entered back as it was being entered. A saved round opened
+                // again and saved is put back as it was saved, with the round in play as it was
+                // before it was opened, since a round can be opened only while that one is empty.
+                const reopened = draft.index < game.rounds.length;
                 const why = await keep(
                     { ...next, draft: followingDraft(next) },
                     {
                         kind: 'round',
-                        before: game,
+                        before: reopened ? { ...game, draft: followingDraft(game) } : game,
                     }
                 );
                 if (why !== null) return { saved: false, problems: [], error: why };

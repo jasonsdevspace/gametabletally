@@ -388,15 +388,38 @@ test('takes the summary away as the next player moves on with no tap, so Undo ta
     await expect(shownToast(page)).not.toHaveAttribute('data-shown');
 });
 
-test('takes the summary and its Undo away with the screen', async ({ page }) => {
-    await open(page);
-    await key(page, '5').click();
-    await next(page).click();
-    await expect(shownToast(page)).toHaveAttribute('data-shown');
+/** Moves to the players' screen by the tab bar, as a visitor might between two hands. */
+const toPlayers = async (page: Page) => {
     await page
         .getByRole('navigation', { name: 'Sections' })
         .getByRole('link', { name: 'Players' })
         .click();
     await expect(page).toHaveURL(new RegExp(hrefOf('players')));
+};
+
+test('keeps the summary and its Undo working on another screen of the app', async ({ page }) => {
+    await open(page);
+    await key(page, '5').click();
+    await next(page).click();
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await toPlayers(page);
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await undo(page).click();
+    await page.goBack();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
+    await expect(key(page, '5')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test("takes a summary offered on an earlier visit away as the round's next entry begins", async ({
+    page,
+}) => {
+    await open(page);
+    await key(page, '5').click();
+    await next(page).click();
+    await toPlayers(page);
+    await page.goBack();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await key(page, '8').click();
     await expect(shownToast(page)).not.toHaveAttribute('data-shown');
 });

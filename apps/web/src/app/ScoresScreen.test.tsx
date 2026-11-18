@@ -204,6 +204,19 @@ describe('the scores screen', () => {
         expect(screen.getByText('Ben won with 227.')).toBeTruthy();
     });
 
+    it('gives a saved round of a game with no entry screen yet no button to open it', async () => {
+        await draw(
+            saved('skyjo', [
+                {
+                    entries: { ann: { total: -12 }, ben: { total: 40 }, cat: { total: 30 } },
+                    ender: 'ann',
+                },
+            ])
+        );
+        expect(screen.queryByRole('button', { name: /Round 1/ })).toBeNull();
+        expect(screen.getByRole('columnheader', { name: 'Round 1' })).toBeTruthy();
+    });
+
     it('marks a round still being entered as not yet counted, with what stands so far', async () => {
         await draw(
             saved('flip-7', [{ entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) } }], {
@@ -215,7 +228,7 @@ describe('the scores screen', () => {
         const heads = within(screen.getByRole('table', { name: 'Scores by round, newest first' }))
             .getAllByRole('columnheader')
             .map((head) => head.textContent);
-        expect(heads).toEqual(['Player and total', 'Round 2 not yet counted', 'Round 1']);
+        expect(heads).toEqual(['Player and total', 'Round 2 not yet counted', 'Change Round 1']);
         const ann = screen.getByRole('rowheader', { name: /^Ann/ }).closest('tr');
         expect(ann?.textContent).toBe('Ann, 3 in all93');
         const ben = screen.getByRole('rowheader', { name: /^Ben/ }).closest('tr');

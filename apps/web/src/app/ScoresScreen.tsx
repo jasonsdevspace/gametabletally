@@ -1,13 +1,17 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
-import { useSyncExternalStore } from 'react';
+import { attachTable } from '@jasonsdevspace/design-kit/controls';
+import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-import { Link } from '../navigation.js';
+import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
-import { hrefOf } from '../routes.js';
+import { changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
-import { gameNameOf } from './in-play.js';
+import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { useStatus } from './status.js';
+import { useSummary } from './summary.js';
 
 /*
  * The scores of a game in play: the standings first, ranked the way the game ranks, with who is
@@ -171,6 +175,41 @@ const Scores = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
+    const [line, say] = useStatus();
+    const summary = useSummary(play);
+    const { search } = usePlace();
+    const arrivedFrom = roundIn(search);
+    const frame = useRef<HTMLDivElement>(null);
+    const loaded = snapshot.games.some(({ saved }) => saved.id === id);
+    // A frame whose headings hold buttons brings the one the keyboard reaches clear of the pinned
+    // column, and a screen arrived at from a round it changed puts focus back on that round's
+    // heading.
+    useEffect(() => {
+        const element = frame.current;
+        if (!loaded || element === null) return undefined;
+        const detach = attachTable(element);
+        if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
+        return detach;
+    }, [loaded, arrivedFrom]);
+
+    /**
+     * Opens a saved round on its entry screen, filled with what was entered, to change it, in the
+     * scores' place, so the scores it goes back to are the one place in the history. A summary
+     * from an earlier save goes first, since its Undo would reach past the round opened.
+     */
+    const change = async (index: number) => {
+        summary.clear();
+        try {
+            await play.reopen(id, index);
+            navigate(changingRoundOf(id, index), { replace: true });
+        } catch (error: unknown) {
+            say(
+                error instanceof Error
+                    ? error.message
+                    : `Round ${String(index + 1)} could not be opened.`
+            );
+        }
+    };
     const game = snapshot.games.find(({ saved }) => saved.id === id);
     if (!game) return <p>This game is not on this phone.</p>;
     const nameOf = (player: string) => nameIn(names, player);
@@ -190,6 +229,8 @@ const Scores = ({
               missed: false,
           }));
     const columns = columnsOf(game);
+    // A round opens only on a screen its game has for entering one.
+    const enterable = canEnter(saved.game);
     const back =
         draft !== null && draft.index === result.rounds.length
             ? `Back to round ${String(draft.index + 1)}`
@@ -245,6 +286,7 @@ const Scores = ({
                             Scores by round, newest first
                         </p>
                         <div
+                            ref={frame}
                             className="dk-table-scroll"
                             role="region"
                             aria-labelledby="scores-title"
@@ -263,7 +305,20 @@ const Scores = ({
                                                 scope="col"
                                                 className="dk-table-number"
                                             >
-                                                Round {column.index + 1}
+                                                {column.entered === null && enterable ? (
+                                                    <Button
+                                                        text
+                                                        id={`round-${String(column.index + 1)}`}
+                                                        onClick={() => void change(column.index)}
+                                                    >
+                                                        <span className="dk-visually-hidden">
+                                                            Change{' '}
+                                                        </span>
+                                                        Round {column.index + 1}
+                                                    </Button>
+                                                ) : (
+                                                    <>Round {column.index + 1}</>
+                                                )}
                                                 {column.result.state === 'scored' ? null : (
                                                     <span className="gtt-round-note">
                                                         {' '}
@@ -303,6 +358,7 @@ const Scores = ({
                     </>
                 )}
             </section>
+            <StatusLine ref={line} />
             <Dock>
                 <Link
                     className="dk-button dk-button-accent dk-button-tall"
