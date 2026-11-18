@@ -8,14 +8,13 @@ import {
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
-import { usePlace } from '../navigation.js';
-import { type GameInPlay, openPlay, type Play, stepAfter } from '../play/play.js';
+import { Link } from '../navigation.js';
+import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { isRecord } from '../store/format.js';
-import { openStore, refusalOf, type Store } from '../store/store.js';
 import { Dock, useToast } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
-import { useRunning } from './player-parts.js';
+import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
@@ -301,7 +300,7 @@ const Flip7Round = ({
 }) => {
     const { draft } = game;
     const id = game.saved.id;
-    const nameOf = (one: string) => names.get(one) ?? 'Another player';
+    const nameOf = (one: string) => nameIn(names, one);
     const name = nameOf(player);
     const before = totalBefore(game, player, draft.index);
     const round = draft.preview.rounds[draft.index]?.scores[player] ?? 0;
@@ -411,15 +410,20 @@ const Flip7Round = ({
             <StatusLine ref={line} />
             {game.error === null ? null : <p role="alert">{game.error}</p>}
             <Dock>
-                <Button
-                    accent
-                    tall
-                    off={why !== '' || busy}
-                    aria-describedby={why === '' ? undefined : 'hand-why'}
-                    onClick={() => void next()}
-                >
-                    {following === null ? 'Save the round' : `Next: ${nameOf(following)}`}
-                </Button>
+                <div className="gtt-dock-row">
+                    <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
+                        Scores
+                    </Link>
+                    <Button
+                        accent
+                        tall
+                        off={why !== '' || busy}
+                        aria-describedby={why === '' ? undefined : 'hand-why'}
+                        onClick={() => void next()}
+                    >
+                        {following === null ? 'Save the round' : `Next: ${nameOf(following)}`}
+                    </Button>
+                </div>
             </Dock>
         </div>
     );
@@ -458,18 +462,33 @@ const Entry = ({
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
-    if (draft === null) return <Over name={gameName} focus={entering} />;
+    // The scores, from the dock, wherever the screen has no round to enter.
+    const scores = (
+        <Dock>
+            <Link className="dk-button dk-button-accent dk-button-tall" href={hrefOf('scores', id)}>
+                Scores
+            </Link>
+        </Dock>
+    );
+    if (draft === null)
+        return (
+            <>
+                <Over name={gameName} focus={entering} />
+                {scores}
+            </>
+        );
     const player = draft.step?.player ?? null;
     if (player === null) return <p>Every score of the round is in.</p>;
     if (game.saved.game !== 'flip-7')
         return (
             <div className="gtt-game">
                 <ScoreHeader
-                    name={names.get(player) ?? 'Another player'}
+                    name={nameIn(names, player)}
                     total={game.result.totals[player] ?? 0}
                     line=""
                 />
                 <p>Entering a round of {gameName} comes to the app after Flip 7.</p>
+                {scores}
             </div>
         );
     return (
@@ -483,72 +502,14 @@ const Entry = ({
     );
 };
 
-export interface GameScreenProps {
-    /** Opens the phone's database, which a test opens in memory. */
-    readonly open?: () => Promise<Store>;
-    readonly now?: () => Date;
-}
-
-const today = () => new Date();
+export type GameScreenProps = OpenedGameProps;
 
 /**
  * The game in play named by the address, read once the screen is running, so the prerendered page
  * holds only the frame. The database stays open while the screen is shown, since every tap saves.
  */
-export const GameScreen = ({ open = openStore, now = today }: GameScreenProps) => {
-    const running = useRunning();
-    const { search } = usePlace();
-    const id = running ? new URLSearchParams(search).get('id') : null;
-    // What was read, and for which address, so a move to another game never draws the last one.
-    const [opened, setOpened] = useState<
-        | {
-              readonly id: string;
-              readonly play: Play;
-              readonly names: ReadonlyMap<string, string>;
-          }
-        | { readonly id: string; readonly failed: string }
-        | null
-    >(null);
-
-    useEffect(() => {
-        if (id === null) return undefined;
-        // Set once the screen is left, so a database opened after that is let go at once.
-        const shown: { left: boolean; store: Store | null } = { left: false, store: null };
-        const left = () => shown.left;
-        const read = async () => {
-            const ready = await open();
-            shown.store = ready;
-            if (left()) {
-                ready.close();
-                return;
-            }
-            const play = openPlay(ready, () => now().toISOString());
-            const [, players] = await Promise.all([play.load(), ready.players()]);
-            // Read again past the wait, since the screen may have been left during it.
-            if (!left())
-                setOpened({ id, play, names: new Map(players.map((one) => [one.id, one.name])) });
-        };
-        read().catch((error: unknown) => {
-            if (!left())
-                setOpened({
-                    id,
-                    failed: refusalOf(error) ?? 'Your saved games could not be read.',
-                });
-        });
-        return () => {
-            shown.left = true;
-            shown.store?.close();
-        };
-    }, [id, open, now]);
-
-    if (!running) return null;
-    if (id === null)
-        return (
-            <p>
-                No game is named here. <a href={hrefOf('play')}>Start or continue a game</a>.
-            </p>
-        );
-    if (opened?.id !== id) return null;
-    if ('failed' in opened) return <p role="alert">{opened.failed}</p>;
-    return <Entry play={opened.play} id={id} names={opened.names} />;
-};
+export const GameScreen = (props: GameScreenProps) => (
+    <WithOpenedGame {...props}>
+        {({ id, play, names }) => <Entry play={play} id={id} names={names} />}
+    </WithOpenedGame>
+);
