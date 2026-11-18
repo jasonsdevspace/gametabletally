@@ -1,3 +1,5 @@
+import type { Locator } from '@playwright/test';
+
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
 import { audit, expect, type Page, seed, smallTargets, test } from './support.js';
@@ -6,7 +8,8 @@ import { audit, expect, type Page, seed, smallTargets, test } from './support.js
  * The game in play, as deployed: a round of Flip 7 entered player by player on a phone by tapping
  * cards, with Bust taken back, the bonus named and the round saved after the last player, a hand
  * kept through a reload, a hand the rules refuse said in words beside the keys, every key at the
- * target, and the score header's digits on the narrowest phone for totals of every length.
+ * target, the score header's digits on the narrowest phone for totals of every length, and the
+ * summary after each entry and each save, with its Undo, clear of the keys at twice the text size.
  */
 
 const NAMES = ['Ann', 'Ben', 'Cat'];
@@ -273,4 +276,127 @@ test('takes focus to the words that say the game is over when its last round is 
     await page.keyboard.press('Enter');
     await expect(page.getByText('This game of Flip 7 is over.')).toBeFocused();
     await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText('Round 2 saved.');
+});
+
+const toast = (page: Page) => page.locator('.dk-app-toast');
+const undo = (page: Page) => toast(page).getByRole('button', { name: 'Undo' });
+/** The toast itself, which carries `data-shown` while it shows. */
+const shownToast = (page: Page) => toast(page).locator('.dk-toast');
+
+/** Enters a round of Flip 7 for Ann, Ben and Cat, with a doubled hand, a bust and the bonus. */
+const enterRound = async (page: Page) => {
+    for (const card of ['3', '7', 'Times 2']) await key(page, card).click();
+    await next(page).click();
+    await key(page, 'Bust').click();
+    await next(page).click();
+    for (const card of ['1', '2', '3', '4', '5', '6', '7']) await key(page, card).click();
+    await expect(next(page)).toHaveText('Save the round');
+};
+
+test('says what each player scored as a round is saved, and Undo puts it back at the last player', async ({
+    page,
+}) => {
+    await open(page);
+    await enterRound(page);
+    await next(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
+    await expect(toast(page).getByRole('status')).toContainText(
+        'Round 1 saved. Ann 20, x2 doubled the numbers. Ben 0, bust. Cat 43, 15 for 7 numbers.'
+    );
+    await audit(page);
+    await undo(page).click();
+    // The round is back as it was being entered, at Cat, with her hand as it stood.
+    await expect(page.locator('.gtt-score-name')).toHaveText('Cat');
+    await expect(total(page)).toHaveAccessibleName('43');
+    await expect(key(page, '7')).toHaveAttribute('aria-pressed', 'true');
+    await expect(next(page)).toHaveText('Save the round');
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
+});
+
+test("takes back a player's entry within a round with the same toast, at their hand as it stood", async ({
+    page,
+}) => {
+    await open(page);
+    for (const card of ['5', '+4']) await key(page, card).click();
+    await next(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+    await expect(toast(page).getByRole('status')).toContainText("Ann's entry is in: 9.");
+    // Undo is reached by the keyboard, as any button is.
+    await expect(undo(page)).not.toHaveAttribute('tabindex', '-1');
+    await undo(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ann');
+    await expect(key(page, '5')).toHaveAttribute('aria-pressed', 'true');
+    await expect(key(page, '+4')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('keeps the summary until the next entry begins', async ({ page }) => {
+    await open(page);
+    await key(page, '5').click();
+    await next(page).click();
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await key(page, '8').click();
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
+    await expect(key(page, '8')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('draws the summary clear of the keys, the dock and the tab bar on the narrowest phone at twice the text size', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await open(page);
+    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    await enterRound(page);
+    await next(page).click();
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    // Each key, the dock and the tab bar, once scrolled to, is what a tap at its middle reaches,
+    // with no part of the summary over it.
+    const clear = async (name: string, others: Locator) => {
+        for (const other of await others.all()) {
+            await other.scrollIntoViewIfNeeded();
+            const reached = await other.evaluate((element) => {
+                const { x, y, width, height } = element.getBoundingClientRect();
+                const top = document.elementFromPoint(x + width / 2, y + height / 2);
+                return top !== null && (element === top || element.contains(top));
+            });
+            expect(reached, name).toBe(true);
+        }
+    };
+    await clear('a key', page.locator('.gtt-game .dk-button-grid button'));
+    await clear('the dock', page.getByRole('region', { name: 'Actions' }).getByRole('button'));
+    await clear(
+        'the tab bar',
+        page.getByRole('navigation', { name: 'Sections' }).getByRole('link')
+    );
+    await undo(page).scrollIntoViewIfNeeded();
+    await expect(undo(page)).toBeInViewport({ ratio: 1 });
+});
+
+test('takes the summary away as the next player moves on with no tap, so Undo takes back their entry', async ({
+    page,
+}) => {
+    await open(page);
+    for (const card of ['5', '+4']) await key(page, card).click();
+    await next(page).click();
+    await expect(toast(page).getByRole('status')).toContainText("Ann's entry is in: 9.");
+    // Ben moves on without a card, which is his entry, so the summary now speaks of his.
+    await next(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Cat');
+    await expect(toast(page).getByRole('status')).toContainText("Ben's entry is in: 0.");
+    await undo(page).click();
+    await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
+});
+
+test('takes the summary and its Undo away with the screen', async ({ page }) => {
+    await open(page);
+    await key(page, '5').click();
+    await next(page).click();
+    await expect(shownToast(page)).toHaveAttribute('data-shown');
+    await page
+        .getByRole('navigation', { name: 'Sections' })
+        .getByRole('link', { name: 'Players' })
+        .click();
+    await expect(page).toHaveURL(new RegExp(hrefOf('players')));
+    await expect(shownToast(page)).not.toHaveAttribute('data-shown');
 });

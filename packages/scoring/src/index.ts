@@ -1,4 +1,5 @@
 export {
+    FLIP_7_BONUS,
     FLIP_7_MODIFIERS,
     type Flip7Entry,
     type Flip7Modifier,

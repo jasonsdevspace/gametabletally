@@ -215,6 +215,23 @@ describe('the game screen as the turn moves on', () => {
         store.close();
     });
 
+    it('ignores a tap made while Undo puts a hand back, so it never lands in the player it restores', async () => {
+        const { open } = await draw();
+        press('3');
+        await said(headerLine(), "Ann's total is 3.");
+        press('Next: Ben');
+        await said(headerLine(), 'Ben is next.');
+        const undo = await screen.findByRole('button', { name: 'Undo' });
+        fireEvent.click(undo);
+        press('9');
+        await said(headerLine(), 'Ann is next.');
+        const store = await open();
+        expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
+            ann: { numbers: [3], modifiers: [], bust: false },
+        });
+        store.close();
+    });
+
     it('counts a reopened round once in the header, as it stands', async () => {
         const saved: SavedGame = {
             ...flip7({
