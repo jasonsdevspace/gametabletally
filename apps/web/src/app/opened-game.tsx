@@ -181,6 +181,68 @@ export const nameIn = (names: ReadonlyMap<string, string>, player: string): stri
 
 const today = () => new Date();
 
+/** The games in play as a screen has them once read, or why they could not be. */
+type Lent = Omit<OpenedGame, 'id'> | { readonly failed: string };
+
+/**
+ * The model of the games in play and the players' names, lent to a screen once it is running and
+ * read afresh on each arrival, so a change made in another tab is drawn, or why they could not be
+ * read. It is read again for each key given, and null while it is being read.
+ */
+const useLent = (
+    key: string | null,
+    open: () => Promise<Store>,
+    now: () => Date,
+    /** Whether what was read for an earlier key is kept in view while a later one is read. */
+    keep = false
+): { readonly key: string; readonly lent: Lent } | null => {
+    // What was read, and for which key, so a move to another game never draws the last one.
+    const [read, setRead] = useState<{ readonly key: string; readonly lent: Lent } | null>(null);
+    const lend = useContext(GamesContext);
+    useEffect(() => {
+        if (key === null) return undefined;
+        // Set once the screen is left, so what was lent after that is given back at once.
+        const shown: { left: boolean; release: (() => void) | null } = {
+            left: false,
+            release: null,
+        };
+        const left = () => shown.left;
+        const borrow = async () => {
+            const { store, play, release } = await lend(open, now);
+            shown.release = release;
+            if (left()) {
+                release();
+                return;
+            }
+            const [, players] = await Promise.all([play.load(), store.players()]);
+            // Read again past the wait, since the screen may have been left during it.
+            if (!left())
+                setRead({
+                    key,
+                    lent: {
+                        play,
+                        names: new Map(players.map((one) => [one.id, one.name])),
+                        present: new Set(
+                            players.filter((one) => !one.removed).map((one) => one.id)
+                        ),
+                    },
+                });
+        };
+        borrow().catch((error: unknown) => {
+            if (!left())
+                setRead({
+                    key,
+                    lent: { failed: refusalOf(error) ?? 'Your saved games could not be read.' },
+                });
+        });
+        return () => {
+            shown.left = true;
+            shown.release?.();
+        };
+    }, [key, open, now, lend]);
+    return read?.key === key || keep ? read : null;
+};
+
 /**
  * The game named by the address, read once the screen is running. A screen draws what it is given
  * once the game is read, and the same words as every other screen about a game while it is not.
@@ -193,52 +255,7 @@ export const WithOpenedGame = ({
     const running = useRunning();
     const { search } = usePlace();
     const id = running ? new URLSearchParams(search).get('id') : null;
-    // What was read, and for which address, so a move to another game never draws the last one.
-    const [opened, setOpened] = useState<
-        OpenedGame | { readonly id: string; readonly failed: string } | null
-    >(null);
-
-    const lend = useContext(GamesContext);
-
-    useEffect(() => {
-        if (id === null) return undefined;
-        // Set once the screen is left, so what was lent after that is given back at once.
-        const shown: { left: boolean; release: (() => void) | null } = {
-            left: false,
-            release: null,
-        };
-        const left = () => shown.left;
-        const read = async () => {
-            const { store, play, release } = await lend(open, now);
-            shown.release = release;
-            if (left()) {
-                release();
-                return;
-            }
-            // Read afresh on each arrival, so a change made in another tab is drawn.
-            const [, players] = await Promise.all([play.load(), store.players()]);
-            // Read again past the wait, since the screen may have been left during it.
-            if (!left())
-                setOpened({
-                    id,
-                    play,
-                    names: new Map(players.map((one) => [one.id, one.name])),
-                    present: new Set(players.filter((one) => !one.removed).map((one) => one.id)),
-                });
-        };
-        read().catch((error: unknown) => {
-            if (!left())
-                setOpened({
-                    id,
-                    failed: refusalOf(error) ?? 'Your saved games could not be read.',
-                });
-        });
-        return () => {
-            shown.left = true;
-            shown.release?.();
-        };
-    }, [id, open, now, lend]);
-
+    const read = useLent(id, open, now);
     if (!running) return null;
     if (id === null)
         return (
@@ -246,7 +263,40 @@ export const WithOpenedGame = ({
                 No game is named here. <a href={hrefOf('play')}>Start or continue a game</a>.
             </p>
         );
-    if (opened?.id !== id) return null;
-    if ('failed' in opened) return <p role="alert">{opened.failed}</p>;
-    return children(opened);
+    if (read === null) return null;
+    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    return children({ id, ...read.lent });
+};
+
+/**
+ * Every game in play, read once the screen is running, for a screen about all of them, as the
+ * start screen is. It draws nothing while they are read, and only the refusal where they could not
+ * be.
+ */
+export const WithGames = ({
+    open = openStore,
+    now = today,
+    children,
+}: OpenedGameProps & { readonly children: (games: Omit<OpenedGame, 'id'>) => ReactNode }) => {
+    const running = useRunning();
+    // Read again whenever the app comes back to the front, since a game may have moved on or ended
+    // in another tab, or a player been added there, with what was read kept in view meanwhile. A
+    // read that failed is tried again the same way, and a database another tab closed is opened
+    // afresh.
+    const [arrivals, setArrivals] = useState(0);
+    useEffect(() => {
+        const again = () => {
+            if (document.visibilityState === 'visible') setArrivals((count) => count + 1);
+        };
+        document.addEventListener('visibilitychange', again);
+        window.addEventListener('pageshow', again);
+        return () => {
+            document.removeEventListener('visibilitychange', again);
+            window.removeEventListener('pageshow', again);
+        };
+    }, []);
+    const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
+    if (read === null) return null;
+    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    return children(read.lent);
 };

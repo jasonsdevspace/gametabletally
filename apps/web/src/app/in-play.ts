@@ -1,11 +1,10 @@
 import { GAMES } from '@gametabletally/scoring';
 
-import { type GameInPlay, openPlay } from '../play/play.js';
-import { type Store, withStore } from '../store/store.js';
+import type { GameInPlay } from '../play/play.js';
 
 /**
- * The game the start screen offers to continue: the one in play that was changed last, with its
- * name, the round being entered and whose turn it is, in words.
+ * A game the start screen offers to continue or discard: its name, the round being entered and
+ * whose turn it is, in words.
  */
 export interface Continuing {
     readonly id: string;
@@ -15,6 +14,8 @@ export interface Continuing {
     readonly round: number;
     /** Whose turn it is, or what the round waits on, as a sentence. */
     readonly turn: string;
+    /** The saved round opened to change, from 0, which is let go rather than the game, or null. */
+    readonly changing: number | null;
 }
 
 /** A game's name, as the scoring package gives it, or its id for a game the package does not know. */
@@ -46,34 +47,26 @@ export const turnOf = (game: GameInPlay, names: ReadonlyMap<string, string>): st
 };
 
 /**
- * The game in play that was changed last, in the start screen's words, or null when every game
- * is over or there is none. The games come last changed first.
+ * Every game in play, in the start screen's words, last changed first: each game the rules have
+ * not ended, and each finished game with a round opened to change, which is in play until it is
+ * saved or let go.
  */
-export const continuingOf = (
+export const inPlayOf = (
     games: readonly GameInPlay[],
     names: ReadonlyMap<string, string>
-): Continuing | null => {
-    const game = games.find(({ result }) => result.state === 'in-play');
-    if (!game) return null;
-    return {
-        id: game.saved.id,
-        name: gameNameOf(game.saved.game),
-        round: (game.draft?.index ?? game.saved.rounds.length) + 1,
-        turn: turnOf(game, names),
-    };
-};
-
-/**
- * Reads the game to continue from the phone's database, and lets the database go. The model is
- * handed an ask to keep the games that does nothing, so opening the start screen never asks the
- * browser. Only saving a started game asks that.
- */
-export const readContinuing = (open: () => Promise<Store>): Promise<Continuing | null> =>
-    withStore(open, async (store) => {
-        const play = openPlay(store, undefined, () => Promise.resolve());
-        const [, players] = await Promise.all([play.load(), store.players()]);
-        return continuingOf(
-            play.snapshot().games,
-            new Map(players.map(({ id, name }) => [id, name]))
-        );
-    });
+): Continuing[] =>
+    games
+        .filter(
+            ({ result, draft, saved }) =>
+                result.state === 'in-play' || (draft !== null && draft.index < saved.rounds.length)
+        )
+        .map((game) => ({
+            id: game.saved.id,
+            name: gameNameOf(game.saved.game),
+            round: (game.draft?.index ?? game.saved.rounds.length) + 1,
+            turn: turnOf(game, names),
+            changing:
+                game.draft !== null && game.draft.index < game.saved.rounds.length
+                    ? game.draft.index
+                    : null,
+        }));

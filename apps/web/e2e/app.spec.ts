@@ -36,15 +36,11 @@ test('offers to continue the game in play, naming the game and whose turn it is'
     page,
 }) => {
     await withGameInPlay(page);
-    const card = page
-        .locator('div', {
-            has: page.getByRole('heading', { name: 'Game in play' }),
-        })
-        .last();
+    const card = page.getByRole('region', { name: 'Game in play' }).getByRole('listitem');
     await expect(card.getByText('Wizard', { exact: true })).toBeVisible();
-    await expect(card.getByText('Round 1')).toBeVisible();
+    await expect(card.getByText('Round 1', { exact: true })).toBeVisible();
     await expect(card.getByText("Ben's bid is next.")).toBeVisible();
-    await card.getByRole('link', { name: 'Continue the game' }).click();
+    await card.getByRole('link', { name: 'Continue the game of Wizard, round 1' }).click();
     await expect(page).toHaveURL(/\/game\/\?id=g-wizard$/);
 });
 
