@@ -1,7 +1,7 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
 import { attachTable } from '@jasonsdevspace/design-kit/controls';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, Play } from '../play/play.js';
@@ -9,7 +9,7 @@ import { type ChangedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { useStatus } from './status.js';
 import { useSummary } from './summary.js';
 
@@ -193,13 +193,15 @@ export const GameTables = ({
     // A frame whose headings hold buttons brings the one the keyboard reaches clear of the pinned
     // column, and a page arrived at from a round it changed puts focus back on that round's
     // heading.
+    const columns = columnsOf(game);
+    const drawn = columns.length > 0;
     useEffect(() => {
         const element = frame.current;
-        if (element === null) return undefined;
+        if (!drawn || element === null) return undefined;
         const detach = attachTable(element);
         if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
         return detach;
-    }, [arrivedFrom]);
+    }, [arrivedFrom, drawn]);
 
     /**
      * Opens a saved round on its entry screen, filled with what was entered, to change it, in this
@@ -235,7 +237,6 @@ export const GameTables = ({
               shared: false,
               missed: false,
           }));
-    const columns = columnsOf(game);
     // A round opens only on a screen its game has for entering one.
     const enterable = canEnter(saved.game);
     return (
@@ -378,8 +379,7 @@ const Scores = ({
     readonly id: string;
     readonly names: ReadonlyMap<string, string>;
 }) => {
-    const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
-    const game = snapshot.games.find(({ saved }) => saved.id === id);
+    const game = useGame(play, id);
     if (!game) return <p>This game is not on this phone.</p>;
     const { result, draft } = game;
     const back =

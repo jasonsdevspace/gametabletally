@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import { RecapScreen, winnerWords } from './RecapScreen.js';
+import { againOf, RecapScreen, winnerWords } from './RecapScreen.js';
 
 /* The recap of a game in the app's frame, over a database in memory, and the words it draws. */
 
@@ -32,12 +32,12 @@ const saved = (rounds: unknown[], draft: SavedGame['draft'] = null): SavedGame =
 });
 
 /** The recap at the game's address, over a database holding the game and its players. */
-const draw = async (game: SavedGame) => {
+const draw = async (game: SavedGame, removed: readonly string[] = []) => {
     window.history.replaceState(null, '', '/recap/?id=g-1');
     const factory = new IDBFactory();
     const store = await openStore(factory);
     for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
-        await store.savePlayer(one);
+        await store.savePlayer({ ...one, removed: removed.includes(one.id) });
     await store.saveGame(game);
     store.close();
     render(
@@ -52,6 +52,28 @@ describe('the winner in words', () => {
     it('names one winner with their total, and winners who share it as sharing it', () => {
         expect(winnerWords(['Ann'], 205)).toBe('Ann wins with 205.');
         expect(winnerWords(['Ann', 'Ben'], 210)).toBe('Ann and Ben share the win, level on 210.');
+        expect(winnerWords([], 0)).toBe('The game is over, and the rules name no winner.');
+    });
+});
+
+describe('a game played again', () => {
+    it('seats the players this phone still holds, in their seats, and keeps the options under the same rules', () => {
+        const game = { ...saved([]), options: { pace: 'quick' } };
+        expect(againOf(game, new Set(['ann', 'cat']), 'g-2')).toEqual({
+            id: 'g-2',
+            game: 'flip-7',
+            rules: 1,
+            options: { pace: 'quick' },
+            players: ['ann', 'cat'],
+        });
+    });
+
+    it("leaves the options to the rules' own where the rules are newer than the game's", () => {
+        const game = { ...saved([]), rules: 0, options: { pace: 'quick' } };
+        expect(againOf(game, new Set(['ann', 'ben', 'cat']), 'g-2')).toMatchObject({
+            rules: 1,
+            options: {},
+        });
     });
 });
 
@@ -96,6 +118,35 @@ describe('the recap', () => {
             rounds: [],
             draft: { index: 0, step: { part: 'entry', player: 'ann' } },
         });
+    });
+
+    it('opens a new game to seat others where too few of its players are still on this phone', async () => {
+        await draw(won, ['ben']);
+        await screen.findByText('Ann wins with 229.');
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Play again with the same players' })
+        );
+        await waitFor(() => {
+            expect(window.location.pathname + window.location.search).toBe('/new/?game=flip-7');
+        });
+    });
+
+    it('says a round is being changed, with no winner and no Play again, while one is open', async () => {
+        await draw({
+            ...won,
+            draft: {
+                index: 1,
+                round: { entries: { ann: hand([2]), ben: hand([4]), cat: hand([1]) }, out: [] },
+                step: { part: 'entry', player: 'ann' },
+            },
+        });
+        expect(
+            await screen.findByText(/Round 2 of this game of Flip 7 is being changed\./)
+        ).toBeTruthy();
+        expect(screen.getByRole('link', { name: 'Go back to round 2' }).getAttribute('href')).toBe(
+            '/game/?id=g-1&round=2&from=recap'
+        );
+        expect(screen.queryByRole('button', { name: /Play again/ })).toBeNull();
     });
 
     it('says a game is in play, with no winner, where a changed round has put it back', async () => {

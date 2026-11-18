@@ -6,7 +6,7 @@ import {
     type Problem,
 } from '@gametabletally/scoring';
 import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
@@ -14,7 +14,7 @@ import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../route
 import { isRecord } from '../store/format.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, WithOpenedGame } from './opened-game.js';
+import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
@@ -341,8 +341,10 @@ const Flip7Round = ({
     const changing = isChanging(game, draft);
     // The scores or the recap, whichever the round was opened from.
     const { search } = usePlace();
-    const backToScores = () => {
-        navigate(atRound(id, draft.index, changedFrom(search)), { replace: true });
+    const backToScores = (ended = false) => {
+        navigate(atRound(id, draft.index, ended ? 'recap' : changedFrom(search)), {
+            replace: true,
+        });
     };
 
     /** Lets the change go, and goes back to the scores once that is kept, or says why it is not. */
@@ -380,10 +382,11 @@ const Flip7Round = ({
         // changed round goes back to the scores.
         if (saved.saved) {
             summary.offer(roundSummary(kept.index, lines));
-            // A changed round goes back to the page it was opened from, and a round that ends the
-            // game opens its recap, where the table looks at the phone together.
-            if (changing) backToScores();
-            else if (saved.outcome === 'ended') navigate(hrefOf('recap', id));
+            // A round that ends the game opens its recap, where the table looks at the phone
+            // together, and a changed round that does not goes back to the page it was opened from.
+            const ended = saved.outcome === 'ended';
+            if (changing) backToScores(ended);
+            else if (ended) navigate(hrefOf('recap', id));
         } else if (saved.error !== null) say(saved.error);
         else
             say(
@@ -465,9 +468,8 @@ const Entry = ({
     readonly id: string;
     readonly names: ReadonlyMap<string, string>;
 }) => {
-    const snapshot = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot);
     const summary = useSummary(play);
-    const game = snapshot.games.find(({ saved }) => saved.id === id);
+    const game = useGame(play, id);
     // The address names a round being changed, so the bar and the page's title do. One arrived at
     // another way, such as Back to the game, is put right in place, as is one that names a round
     // no longer opened.
