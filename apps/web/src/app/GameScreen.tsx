@@ -15,6 +15,7 @@ import { openStore, refusalOf, type Store } from '../store/store.js';
 import { Dock, useToast } from './AppFrame.js';
 import { gameNameOf } from './in-play.js';
 import { useRunning } from './player-parts.js';
+import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { useStatus } from './status.js';
 
@@ -24,7 +25,9 @@ import { useStatus } from './status.js';
  * ends the round holding. Each tap is kept at once, so a page loaded again in the middle of a hand
  * comes back to it, and the header's total, which the rules work out from what was kept, shows the
  * round as it stands. The button for the next player names them, and after the last it saves the
- * round. Nothing here adds anything up.
+ * round. After each entry and each save the frame's toast says what each player scored, with any
+ * rule that changed a score in words, and offers one Undo, until the next entry begins. Nothing
+ * here adds anything up.
  */
 
 /** The number cards, from 0 to 12. */
@@ -246,24 +249,67 @@ const Flip7Round = ({
     const [busy, setBusy] = useState(false);
     const [line, say] = useStatus();
     const show = useToast();
+    // What takes the last summary's toast away, while it shows.
+    const summary = useRef<(() => void) | null>(null);
 
     // A refusal is said once as it appears, since focus is on the key that caused it.
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
 
+    /**
+     * Shows a summary in the frame's toast with one Undo, which puts the round back as it stood
+     * before the entry or the save it follows.
+     */
+    const offer = (words: string) => {
+        summary.current = show(words, {
+            label: 'Undo',
+            onAction: () => {
+                summary.current = null;
+                void play.undo().then((back) => {
+                    if (!back)
+                        say('This could not be put back, since the game changed in another tab.');
+                });
+            },
+        });
+    };
+
+    /** A player's line of the round, from what the rules made of the round as it stands. */
+    const playerLine = (
+        round: Readonly<Record<string, unknown>>,
+        scores: Readonly<Record<string, number>>,
+        one: string,
+        out: boolean
+    ): RoundLine =>
+        out
+            ? { name: nameOf(one), score: null }
+            : { name: nameOf(one), score: scores[one] ?? 0, note: flip7Note(handOf(round[one])) };
+
     const change = (next: Flip7Entry) => {
         // While a hand is entered or a round saved, the turn is moving on, and a tap would land
         // in whichever step the save reaches.
         if (busy) return;
+        // The next entry has begun, so the last summary and its Undo go.
+        if (summary.current !== null) {
+            summary.current();
+            summary.current = null;
+            play.dismissUndo();
+        }
         setState((now) => ({ ...now, hand: next }));
         void play.hold(id, next);
     };
 
     const saveRound = async () => {
+        // The round as the rules make it with the last hand kept, read before the save takes the
+        // draft away.
+        const kept = play.snapshot().games.find(({ saved }) => saved.id === id)?.draft ?? draft;
+        const scores = kept.preview.rounds[kept.index]?.scores ?? {};
+        const lines = game.saved.players.map((one) =>
+            playerLine(kept.round.entries, scores, one, kept.round.out.includes(one))
+        );
         const saved = await play.saveRound(id);
         // Said by the frame's toast, which stays on the page when the round ends the game.
-        if (saved.saved) show(`Round ${String(draft.index + 1)} saved.`);
+        if (saved.saved) offer(roundSummary(kept.index, lines));
         else if (saved.error !== null) say(saved.error);
         else
             say(
@@ -282,7 +328,13 @@ const Flip7Round = ({
             if (following === null) {
                 await play.hold(id, hand);
                 await saveRound();
-            } else await play.enter(id, hand);
+            } else {
+                await play.enter(id, hand);
+                // What the rules made of the hand as it was entered, read once it is kept.
+                const kept = play.snapshot().games.find(({ saved }) => saved.id === id)?.draft;
+                const scores = kept?.preview.rounds[draft.index]?.scores ?? {};
+                offer(entrySummary(playerLine({ [player]: hand }, scores, player, false)));
+            }
         } finally {
             setBusy(false);
         }
