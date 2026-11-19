@@ -75,7 +75,7 @@ export const Start = () => (
             />
         </section>
 
-        <section className="dk-page gtt-band" aria-labelledby="games">
+        <section className="dk-band gtt-band" aria-labelledby="games">
             <p className="dk-eyebrow">Your table, your game</p>
             <h2 id="games" className="gtt-display gtt-display-section">
                 The games it scores
@@ -94,7 +94,7 @@ export const Start = () => (
             </ul>
         </section>
 
-        <section className="dk-page gtt-band gtt-band-surface" aria-labelledby="why">
+        <section className="dk-band gtt-band gtt-band-surface" aria-labelledby="why">
             <h2 id="why" className="dk-visually-hidden">
                 Why it is made this way
             </h2>
@@ -108,7 +108,7 @@ export const Start = () => (
             </ul>
         </section>
 
-        <section className="dk-page gtt-band gtt-closing" aria-labelledby="another">
+        <section className="dk-band gtt-band gtt-closing" aria-labelledby="another">
             <div>
                 <p className="dk-eyebrow">Another round?</p>
                 <h2 id="another" className="gtt-display gtt-display-section">

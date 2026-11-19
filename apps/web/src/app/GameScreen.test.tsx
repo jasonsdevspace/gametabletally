@@ -283,9 +283,11 @@ describe('the game screen as the turn moves on', () => {
                 />
             </AppFrame>
         );
-        expect(await screen.findByRole('alert')).toHaveTextContent(
-            'Your saved games could not be read.'
-        );
+        await waitFor(() => {
+            expect(screen.getByRole('alert')).toHaveTextContent(
+                'Your saved games could not be read.'
+            );
+        });
     });
 });
 

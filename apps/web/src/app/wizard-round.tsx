@@ -7,6 +7,7 @@ import type { Play, StepValue } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
 import { isRecord } from '../store/format.js';
 import { listOf } from '../website/games.js';
+import { Failure } from './failure.js';
 import { nameIn } from './opened-game.js';
 import {
     canSkip,
@@ -639,7 +640,7 @@ export const WizardRound = ({
                 />
             )}
             <StatusLine ref={line} />
-            {game.error === null ? null : <p role="alert">{game.error}</p>}
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}

@@ -13,6 +13,7 @@ import { type Play, stepAfter } from '../play/play.js';
 import { changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord, type SavedStep } from '../store/format.js';
 import { Dock } from './AppFrame.js';
+import { Failure } from './failure.js';
 import { gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import {
@@ -328,7 +329,7 @@ const Flip7Round = ({
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
             <StatusLine ref={line} />
-            {game.error === null ? null : <p role="alert">{game.error}</p>}
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}

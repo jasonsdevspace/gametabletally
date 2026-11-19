@@ -3,6 +3,7 @@ import { StatusLine } from '@jasonsdevspace/design-kit/react';
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
 import { byAdded, openStore, refusalOf, type Store, withStore } from '../store/store.js';
+import { Failure } from './failure.js';
 import { AddByName, usePlayersRead } from './player-parts.js';
 import { gamesOf, nameRefusal, newPlayerOf } from './players.js';
 import { useStatus } from './status.js';
@@ -65,7 +66,7 @@ export const PlayersList = ({
     const listed = read?.players.filter(({ removed }) => !removed) ?? [];
     return (
         <>
-            {unread === '' ? null : <p role="alert">{unread}</p>}
+            <Failure words={unread} />
             {read === null ? null : listed.length === 0 ? (
                 <p>
                     No players yet. A player is saved the first time they sit down to a game, and

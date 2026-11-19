@@ -100,7 +100,7 @@ export const Install = () => {
                         : ''}
                 </p>
 
-                <div className="gtt-platforms">
+                <div className="dk-sections">
                     <section aria-labelledby="iphone">
                         <h2 id="iphone">On an iPhone or iPad</h2>
                         <Steps steps={IPHONE} />

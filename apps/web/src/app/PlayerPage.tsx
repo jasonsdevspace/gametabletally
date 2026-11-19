@@ -6,6 +6,7 @@ import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
+import { Failure } from './failure.js';
 import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
 import { gamesOf, nameRefusal, playersChanged } from './players.js';
 import { cleanName } from './seats.js';
@@ -114,7 +115,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
         current.current = player;
     }, [player]);
 
-    if (unread !== '') return <p role="alert">{unread}</p>;
+    if (unread !== '') return <Failure words={unread} />;
     if (read === null || !running) return null;
     if (!player)
         return (
@@ -219,7 +220,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>
-            {failed === '' ? null : <p role="alert">{failed}</p>}
+            <Failure words={failed} />
             <p className="gtt-fine">
                 {played === 0
                     ? 'Removing a player who has played no game deletes them.'

@@ -11,6 +11,7 @@ import { usePlace } from '../navigation.js';
 import { type GameInPlay, openPlay, type Play } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
+import { Failure } from './failure.js';
 import { useRunning } from './player-parts.js';
 
 /*
@@ -264,7 +265,7 @@ export const WithOpenedGame = ({
             </p>
         );
     if (read === null) return null;
-    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
     return children({ id, ...read.lent });
 };
 
@@ -297,6 +298,6 @@ export const WithGames = ({
     }, []);
     const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
     if (read === null) return null;
-    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
     return children(read.lent);
 };

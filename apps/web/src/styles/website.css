@@ -136,8 +136,8 @@
     }
 }
 
+/* A band is the kit's. The rule above it is the website's own look, as is the surface below. */
 .gtt-band {
-    padding-block: var(--dk-space-7);
     border-top: 1px solid var(--dk-line);
 }
 
@@ -247,24 +247,6 @@
  */
 .gtt-page {
     padding-block-end: var(--dk-space-8);
-}
-
-/* The two ways to install, side by side where they fit, a section's step below the actions. */
-.gtt-platforms {
-    margin-block-start: var(--dk-space-7);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: var(--dk-space-7);
-}
-
-/* Each way's heading at the title size, as a section's on the kit's page, with its steps below. */
-.gtt-platforms h2 {
-    margin: 0;
-    font-size: var(--dk-text-title);
-}
-
-.gtt-platforms ol {
-    margin-block: var(--dk-space-3) 0;
 }
 
 .gtt-facts {
