@@ -15,6 +15,7 @@
     "dependencies": {
         "@gametabletally/scoring": "0.0.0",
         "@jasonsdevspace/design-kit": "0.8.7",
+        "@plausible-analytics/tracker": "0.4.7",
         "react": "19.3.1",
         "react-dom": "19.3.1"
     }
