@@ -6,7 +6,16 @@ import { describe, expect, it } from 'vitest';
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import {
+    canSkip,
+    comesAfter,
+    floorWords,
+    GameScreen,
+    handOf,
+    lineOf,
+    outWords,
+    refusalWords,
+} from './GameScreen.js';
 import { heard } from './status.testing.js';
 
 /* The game in play in the app's frame, over a database in memory, and the words it draws. */
@@ -285,5 +294,138 @@ describe('the game screen as the turn moves on', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent(
             'Your saved games could not be read.'
         );
+    });
+});
+
+describe('the words for skipping a player', () => {
+    const round = (out: string[], entries: Record<string, unknown> = {}) => ({ entries, out });
+
+    it('lets a round spare a player only while it keeps two', () => {
+        expect(canSkip(['ann', 'ben', 'cat'], round([]))).toBe(true);
+        expect(canSkip(['ann', 'ben', 'cat'], round(['ann']))).toBe(false);
+        expect(canSkip(['ann', 'ben'], round([]))).toBe(false);
+    });
+
+    it('says who is out of a round, one or several, and why no one else can be', () => {
+        expect(outWords(['Ann'])).toBe('Ann is out of this round.');
+        expect(outWords(['Ann', 'Ben'])).toBe('Ann and Ben are out of this round.');
+        expect(floorWords([])).toBe(
+            'A round needs two players, so no one else can sit this one out.'
+        );
+        expect(floorWords(['Ann'])).toBe('Ann is out, and a round needs two players.');
+    });
+
+    it('says who a player put back comes after, from the player whose turn it is', () => {
+        const players = ['ann', 'ben', 'cat', 'dan'];
+        const atCat = { game: 'flip-7', players, round: round([], { ben: {} }) };
+        expect(comesAfter(atCat, 'cat', 'ann')).toEqual({ player: 'dan', now: false });
+        expect(comesAfter(atCat, 'cat', 'dan')).toEqual({ player: 'cat', now: true });
+        expect(comesAfter(atCat, 'cat', 'cat')).toBeNull();
+    });
+});
+
+describe('skipping a player for a round', () => {
+    const skipButton = () => document.getElementById('skip-player');
+
+    it('skips the player whose turn it is, says so, and keeps focus on the skip for the next', async () => {
+        const four = { ...flip7(AT_ANN), players: ['ann', 'ben', 'cat', 'dan'] };
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const one of [
+            player('ann', 'Ann'),
+            player('ben', 'Ben'),
+            player('cat', 'Cat'),
+            player('dan', 'Dan'),
+        ])
+            await store.savePlayer(one);
+        await store.saveGame(four);
+        store.close();
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen open={() => openStore(factory)} />
+            </AppFrame>
+        );
+        const skip = await screen.findByRole('button', { name: 'Skip Ann this round' });
+        skip.focus();
+        fireEvent.click(skip);
+        await said(
+            screenLine(),
+            "Ann is out of round 1, with no score for it. Ann's total stays at 0."
+        );
+        expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
+        expect(screen.getByText('Ann is out of this round.')).toBeVisible();
+        expect(skipButton()).toHaveTextContent('Skip Ben this round');
+        expect(skipButton()).toHaveFocus();
+        // Put back while Ben enters, Ann is asked after the others still to enter.
+        fireEvent.click(screen.getByRole('button', { name: 'Put Ann back' }));
+        await said(screenLine(), 'Ann is back in round 1, and is asked after Dan.');
+        expect(screen.queryByText('Ann is out of this round.')).toBeNull();
+        await waitFor(() => {
+            expect(skipButton()).toHaveFocus();
+        });
+    });
+
+    it('offers no skip that would leave one player, says why, and still puts a player back', async () => {
+        await draw();
+        press('Skip Ann this round');
+        await said(
+            screenLine(),
+            "Ann is out of round 1, with no score for it. Ann's total stays at 0."
+        );
+        expect(skipButton()).toBeNull();
+        expect(screen.getByText('Ann is out, and a round needs two players.')).toBeVisible();
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'Put Ann back' })).toHaveFocus();
+        });
+        press('Put Ann back');
+        await said(screenLine(), 'Ann is back in round 1, and is asked after Cat.');
+        expect(skipButton()).toHaveTextContent('Skip Ben this round');
+    });
+
+    it('says from the start of a game of two that no one can sit a round out', async () => {
+        await draw({ ...flip7(AT_ANN), players: ['ann', 'ben'] });
+        expect(skipButton()).toBeNull();
+        expect(
+            screen.getByText('A round needs two players, so no one else can sit this one out.')
+        ).toBeVisible();
+    });
+
+    it('takes the last summary away as a player is skipped, so its Undo cannot take back the skip', async () => {
+        await draw();
+        press('Next: Ben');
+        expect(await screen.findByRole('button', { name: 'Undo' })).toBeVisible();
+        press('Skip Ben this round');
+        await said(
+            screenLine(),
+            "Ben is out of round 1, with no score for it. Ben's total stays at 0."
+        );
+        expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    });
+
+    it('skips the last player still to enter and saves the round at once', async () => {
+        const { open } = await draw(
+            flip7({
+                index: 0,
+                round: {
+                    entries: { ann: handOf({ numbers: [3] }), ben: handOf({ numbers: [4] }) },
+                    out: [],
+                },
+                step: { part: 'entry', player: 'cat' },
+            })
+        );
+        press('Skip Cat and finish the round');
+        await waitFor(async () => {
+            const store = await open();
+            const saved = await store.game('g-1');
+            store.close();
+            expect(saved?.rounds).toEqual([
+                {
+                    entries: { ann: handOf({ numbers: [3] }), ben: handOf({ numbers: [4] }) },
+                    out: ['cat'],
+                },
+            ]);
+        });
+        expect(await screen.findByText(/Cat out of the round/)).toBeVisible();
     });
 });
