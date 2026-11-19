@@ -18,6 +18,7 @@ import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
+import { useRoving } from './roving.js';
 import { ScoreHeader, spokenOf } from './ScoreHeader.js';
 import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
@@ -104,7 +105,8 @@ export const lineOf = ({
  * The keys a Flip 7 hand is tapped in with: Bust first, since a table settles whether a player bust
  * before what they hold, then the numbers, what the rules refuse in them, and the modifiers. Bust
  * keeps its name, its pressed state saying whether the player bust, so the keys it turns off sit
- * under it and the button for the next player is the whole hand away.
+ * under it and the button for the next player is the whole hand away. The numbers and the modifiers
+ * are one stop each for the Tab key, with the arrow keys moving between their cards.
  */
 export const Flip7Keys = ({
     name,
@@ -120,78 +122,94 @@ export const Flip7Keys = ({
     /** Whether every key is off, as while the turn moves on. */
     readonly off?: boolean;
     readonly onChange: (hand: Flip7Entry) => void;
-}) => (
-    <section className="gtt-keys" aria-label={`${name}'s cards`}>
-        <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
-            <Button
-                pressed={hand.bust}
-                off={off}
-                aria-describedby={hand.bust ? 'bust-hint' : undefined}
-                onClick={() => {
-                    if (off) return;
-                    onChange(hand.bust ? EMPTY : { ...EMPTY, bust: true });
-                }}
+}) => {
+    const numbers = useRoving(name);
+    const modifiers = useRoving(name);
+    return (
+        <section className="gtt-keys" aria-label={`${name}'s cards`}>
+            <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
+                <Button
+                    pressed={hand.bust}
+                    off={off}
+                    aria-describedby={hand.bust ? 'bust-hint' : undefined}
+                    onClick={() => {
+                        if (off) return;
+                        onChange(hand.bust ? EMPTY : { ...EMPTY, bust: true });
+                    }}
+                >
+                    Bust
+                </Button>
+            </div>
+            {hand.bust ? (
+                <div className="dk-field-hint" id="bust-hint">
+                    {name} bust, so nothing counts this round. Press Bust again to take it back.
+                </div>
+            ) : null}
+            <div
+                className="dk-button-grid gtt-numbers"
+                role="group"
+                aria-label="Number cards"
+                aria-describedby={why === '' ? undefined : 'hand-why'}
+                onFocus={numbers.onFocus}
+                onClick={numbers.onClick}
+                onKeyDown={numbers.onKeyDown}
             >
-                Bust
-            </Button>
-        </div>
-        {hand.bust ? (
-            <div className="dk-field-hint" id="bust-hint">
-                {name} bust, so nothing counts this round. Press Bust again to take it back.
+                {NUMBERS.map((card, at) => (
+                    <Button
+                        key={card}
+                        tabIndex={numbers.tabIndexOf(at)}
+                        pressed={hand.numbers.includes(card)}
+                        off={hand.bust || off}
+                        onClick={() => {
+                            if (hand.bust || off) return;
+                            onChange({ ...hand, numbers: toggled(hand.numbers, card, NUMBERS) });
+                        }}
+                    >
+                        {card}
+                    </Button>
+                ))}
             </div>
-        ) : null}
-        <div
-            className="dk-button-grid gtt-numbers"
-            role="group"
-            aria-label="Number cards"
-            aria-describedby={why === '' ? undefined : 'hand-why'}
-        >
-            {NUMBERS.map((card) => (
-                <Button
-                    key={card}
-                    pressed={hand.numbers.includes(card)}
-                    off={hand.bust || off}
-                    onClick={() => {
-                        if (hand.bust || off) return;
-                        onChange({ ...hand, numbers: toggled(hand.numbers, card, NUMBERS) });
-                    }}
-                >
-                    {card}
-                </Button>
-            ))}
-        </div>
-        {why === '' ? null : (
-            <div className="dk-field-hint" id="hand-why">
-                {why}
+            {why === '' ? null : (
+                <div className="dk-field-hint" id="hand-why">
+                    {why}
+                </div>
+            )}
+            <div
+                className="dk-button-grid gtt-modifiers"
+                role="group"
+                aria-label="Modifier cards"
+                onFocus={modifiers.onFocus}
+                onClick={modifiers.onClick}
+                onKeyDown={modifiers.onKeyDown}
+            >
+                {FLIP_7_MODIFIERS.map((card, at) => (
+                    <Button
+                        key={card}
+                        tabIndex={modifiers.tabIndexOf(at)}
+                        pressed={hand.modifiers.includes(card)}
+                        off={hand.bust || off}
+                        onClick={() => {
+                            if (hand.bust || off) return;
+                            onChange({
+                                ...hand,
+                                modifiers: toggled(hand.modifiers, card, FLIP_7_MODIFIERS),
+                            });
+                        }}
+                    >
+                        {card === 'x2' ? (
+                            <>
+                                <span aria-hidden="true">×2</span>
+                                <span className="dk-visually-hidden">Times 2</span>
+                            </>
+                        ) : (
+                            card
+                        )}
+                    </Button>
+                ))}
             </div>
-        )}
-        <div className="dk-button-grid gtt-modifiers" role="group" aria-label="Modifier cards">
-            {FLIP_7_MODIFIERS.map((card) => (
-                <Button
-                    key={card}
-                    pressed={hand.modifiers.includes(card)}
-                    off={hand.bust || off}
-                    onClick={() => {
-                        if (hand.bust || off) return;
-                        onChange({
-                            ...hand,
-                            modifiers: toggled(hand.modifiers, card, FLIP_7_MODIFIERS),
-                        });
-                    }}
-                >
-                    {card === 'x2' ? (
-                        <>
-                            <span aria-hidden="true">×2</span>
-                            <span className="dk-visually-hidden">Times 2</span>
-                        </>
-                    ) : (
-                        card
-                    )}
-                </Button>
-            ))}
-        </div>
-    </section>
-);
+        </section>
+    );
+};
 
 /**
  * A player's total over the scored rounds before the one being entered, so a reopened round is

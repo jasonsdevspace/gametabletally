@@ -429,3 +429,38 @@ describe('skipping a player for a round', () => {
         expect(await screen.findByText(/Cat out of the round/)).toBeVisible();
     });
 });
+
+describe('the card grids, one stop each', () => {
+    const grid = (name: string) => screen.getByRole('group', { name });
+    const stops = (name: string) => grid(name).querySelectorAll('[tabindex="0"]').length;
+
+    it('gives each grid one stop, and leaves an arrow held with a modifier key to the browser', async () => {
+        await draw();
+        expect(stops('Number cards')).toBe(1);
+        expect(stops('Modifier cards')).toBe(1);
+        const zero = screen.getByRole('button', { name: '0' });
+        zero.focus();
+        // fireEvent says whether the event went on unprevented.
+        expect(fireEvent.keyDown(zero, { key: 'ArrowLeft', altKey: true })).toBe(true);
+        expect(fireEvent.keyDown(zero, { key: 'ArrowRight', metaKey: true })).toBe(true);
+        expect(fireEvent.keyDown(zero, { key: 'ArrowRight' })).toBe(false);
+        expect(screen.getByRole('button', { name: '1' })).toHaveFocus();
+    });
+
+    it("moves a grid's stop to a card that is tapped, as browsers that do not focus a tapped button need", async () => {
+        await draw();
+        fireEvent.click(screen.getByRole('button', { name: '5' }));
+        expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('tabindex', '0');
+        expect(screen.getByRole('button', { name: '0' })).toHaveAttribute('tabindex', '-1');
+    });
+
+    it("starts each player's grids at their first card", async () => {
+        await draw();
+        fireEvent.click(screen.getByRole('button', { name: '9' }));
+        expect(screen.getByRole('button', { name: '9' })).toHaveAttribute('tabindex', '0');
+        press('Next: Ben');
+        await said(headerLine(), 'Ben is next.');
+        expect(screen.getByRole('button', { name: '0' })).toHaveAttribute('tabindex', '0');
+        expect(stops('Number cards')).toBe(1);
+    });
+});
