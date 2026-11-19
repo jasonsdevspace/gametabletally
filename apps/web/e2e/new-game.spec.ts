@@ -68,11 +68,12 @@ for (const game of GAMES)
         await audit(page);
         await start.click();
         await expect(page).toHaveURL(/\/game\/\?id=[\w-]+$/);
-        // The start screen now offers the new game to continue, at the first seat's turn.
+        // The start screen now offers the new game to continue, at the first seat's turn, or at
+        // the bids of a game whose round takes every player's bid on one screen.
         await page.goto(hrefOf('play'));
         await expect(page.getByRole('heading', { name: 'Game in play' })).toBeVisible();
         await expect(page.getByText(game.name, { exact: true }).first()).toBeVisible();
-        await expect(page.getByText(/^Ann's (score|bid) is next\.$/)).toBeVisible();
+        await expect(page.getByText(/^(Ann's score|The bids) (is|are) next\.$/)).toBeVisible();
     });
 
 test('says how many the game takes beside the start button, tied to it', async ({ page }) => {

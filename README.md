@@ -5,12 +5,12 @@ a few taps, and the app applies the game's scoring rules, keeps the running tota
 ahead. After the first visit it works with no connection, and games and players are saved on the
 phone.
 
-It is for card games people already own, and it is being built in the open. A game of Flip 7 or
-Skyjo can be kept from its first round to its recap, with a player skipped for a round, a game left
-to finish later, and a saved round changed afterward. A Skyjo total is typed on a number pad or
-added up from the cards, and the app doubles the score of a player who ended a round without the
-lowest score alone. Games of Wizard can be started, but have no screen for entering rounds yet. The
-scoring package already scores all three.
+It is for card games people already own, and it is being built in the open. A game of Flip 7,
+Skyjo or Wizard can be kept from its first round to its recap, with a player skipped for a round, a
+game left to finish later, and a saved round changed afterward. A Skyjo total is typed on a number
+pad or added up from the cards, and the app doubles the score of a player who ended a round without
+the lowest score alone. A round of Wizard takes every bid on one screen, shows them through the
+hand with who deals, and takes every player's tricks after it, saved once they add up.
 
 It is live at [gametabletally.com](https://gametabletally.com), and installs from there to a
 phone's home screen.

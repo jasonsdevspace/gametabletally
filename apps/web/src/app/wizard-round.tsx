@@ -114,11 +114,11 @@ const RoundTitle = ({
     <div className="gtt-wizard-title">
         <p className="dk-eyebrow">
             {index + 1} {index === 0 ? 'card' : 'cards'} each
+            {dealer === null ? null : `, ${dealer} deals`}
         </p>
         <p className="gtt-wizard-round">
             Round {index + 1} of {rounds}
         </p>
-        {dealer === null ? null : <p>{dealer} deals.</p>}
     </div>
 );
 
@@ -130,7 +130,7 @@ const Count = ({
     id,
     name,
     what,
-    hint,
+    detail,
     value,
     max,
     off,
@@ -139,7 +139,8 @@ const Count = ({
     readonly id: string;
     readonly name: string;
     readonly what: 'bid' | 'tricks';
-    readonly hint: string;
+    /** What sits after the name in the label, such as the player's bid beside their tricks. */
+    readonly detail: string;
     readonly value: number;
     readonly max: number;
     readonly off: boolean;
@@ -153,17 +154,24 @@ const Count = ({
             id={id}
             inline
             tall
-            label={name}
+            label={
+                detail === '' ? (
+                    name
+                ) : (
+                    <>
+                        {name} <span className="gtt-count-detail">{detail}</span>
+                    </>
+                )
+            }
             subject={`${name}'s ${what}`}
-            hint={hint}
             min={0}
             max={max}
             value={value}
-            readOnly={off}
             rangeError={`A count is from 0 to ${String(max)}.`}
             onChange={(event) => {
                 const next = event.currentTarget.valueAsNumber;
-                if (Number.isInteger(next) && next >= 0 && next <= max) onChange(next);
+                // A press while the round is saving is let go, as every key's is.
+                if (!off && Number.isInteger(next) && next >= 0 && next <= max) onChange(next);
             }}
         />
     );
@@ -181,6 +189,7 @@ const OutRows = ({
     off,
     onSkip,
     onBack,
+    extra,
 }: {
     readonly playing: readonly string[];
     readonly out: readonly string[];
@@ -189,47 +198,70 @@ const OutRows = ({
     readonly off: boolean;
     readonly onSkip: (player: string) => void;
     readonly onBack: (player: string) => void;
-}) => (
-    <>
-        {skippable ? (
-            <p className="dk-actions gtt-fine">
-                <span>Skip for this round:</span>
-                {playing.map((one) => (
-                    <Button
-                        key={one}
-                        text
-                        id={`skip-${one}`}
-                        off={off}
-                        onClick={() => {
-                            onSkip(one);
-                        }}
-                    >
-                        <span className="dk-visually-hidden">Skip </span>
-                        {nameIn(names, one)}
-                    </Button>
-                ))}
-            </p>
-        ) : null}
-        {out.length === 0 ? null : (
-            <p className="dk-actions gtt-fine">
-                <span>{outWords(out.map((one) => nameIn(names, one)))}</span>
-                {out.map((one) => (
-                    <Button
-                        key={one}
-                        text
-                        id={`put-back-${one}`}
-                        off={off}
-                        onClick={() => {
-                            onBack(one);
-                        }}
-                    >
-                        Put {nameIn(names, one)} back
-                    </Button>
-                ))}
-            </p>
-        )}
-    </>
-);
+    /** What shares the first row, such as the way back to the bids. */
+    readonly extra?: ReactNode;
+}) => {
+    // The way to skip each player opens from one button, so the keys keep their place on a phone.
+    const [open, setOpen] = useState(false);
+    return (
+        <>
+            {skippable || extra !== undefined ? (
+                <p className="dk-actions gtt-fine">
+                    {extra}
+                    {skippable ? (
+                        <>
+                            <Button
+                                text
+                                id="skip-player"
+                                aria-expanded={open}
+                                aria-controls="skip-players"
+                                onClick={() => {
+                                    setOpen((now) => !now);
+                                }}
+                            >
+                                Skip a player this round
+                            </Button>
+                            <span id="skip-players" className="dk-actions" hidden={!open}>
+                                {playing.map((one) => (
+                                    <Button
+                                        key={one}
+                                        text
+                                        id={`skip-${one}`}
+                                        off={off}
+                                        onClick={() => {
+                                            setOpen(false);
+                                            onSkip(one);
+                                        }}
+                                    >
+                                        Skip {nameIn(names, one)}
+                                    </Button>
+                                ))}
+                            </span>
+                        </>
+                    ) : null}
+                </p>
+            ) : null}
+            {out.length === 0 ? null : (
+                <p className="dk-actions gtt-fine">
+                    <span>{outWords(out.map((one) => nameIn(names, one)))}</span>
+                    {out.map((one) => (
+                        <Button
+                            key={one}
+                            text
+                            id={`put-back-${one}`}
+                            off={off}
+                            onClick={() => {
+                                onBack(one);
+                            }}
+                        >
+                            Put {nameIn(names, one)} back
+                        </Button>
+                    ))}
+                </p>
+            )}
+        </>
+    );
+};
 
 /** Which screen a round of Wizard is at. */
 type Phase = 'bids' | 'hand' | 'tricks';
@@ -285,33 +317,30 @@ const HandView = ({
     names,
     dealer,
     valueOf,
-    children,
 }: {
     readonly playing: readonly string[];
     readonly names: ReadonlyMap<string, string>;
     readonly dealer: string | null;
     readonly valueOf: (player: string) => number;
-    readonly children: ReactNode;
 }) => (
     <section className="gtt-keys" aria-labelledby="hand-title">
-        <h2 id="hand-title">The bids, while the hand is played</h2>
-        <ul className="dk-rows gtt-bids" role="list">
+        <h2 id="hand-title" className="dk-eyebrow">
+            The bids, while the hand is played
+        </h2>
+        <ul className="gtt-bids" role="list">
             {playing.map((one) => (
                 <li key={one}>
-                    <div className="dk-row">
-                        <span className="dk-row-text">
-                            <span className="dk-row-title">{nameIn(names, one)}</span>
-                            {one === dealer ? <span className="dk-row-detail">deals</span> : null}
-                        </span>
-                        <span className="gtt-bid">
-                            <span className="dk-visually-hidden">, bid </span>
-                            {valueOf(one)}
-                        </span>
-                    </div>
+                    <span className="gtt-bid-name">
+                        {nameIn(names, one)}
+                        {one === dealer ? <span className="gtt-count-detail"> deals</span> : null}
+                    </span>
+                    <span className="gtt-bid">
+                        <span className="dk-visually-hidden">, bid </span>
+                        {valueOf(one)}
+                    </span>
                 </li>
             ))}
         </ul>
-        {children}
     </section>
 );
 
@@ -325,7 +354,6 @@ const CountsView = ({
     off,
     counts,
     left,
-    children,
 }: {
     readonly game: GameWithDraft;
     readonly playing: readonly string[];
@@ -336,34 +364,17 @@ const CountsView = ({
     readonly counts: ReturnType<typeof useCounts>;
     /** The tricks still to give, in words. */
     readonly left: string;
-    readonly children: ReactNode;
 }) => {
     const { draft } = game;
     const dealt = draft.index + 1;
     const given = playing.reduce((sum, one) => sum + counts.valueOf(one), 0);
-    const hintOf = (one: string) =>
-        what === 'bid'
-            ? `${String(totalBefore(game, one, draft.index))} in all${one === dealer ? ', deals' : ''}`
-            : `bid ${String(countsOf(draft.round.entries[one]).bid ?? 0)}`;
+    // The bid beside each player's tricks, and who deals beside the bids.
+    const detailOf = (one: string) => {
+        if (what === 'tricks') return `bid ${String(countsOf(draft.round.entries[one]).bid ?? 0)}`;
+        return one === dealer ? 'deals' : '';
+    };
     return (
         <section className="gtt-keys" aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}>
-            <div className="gtt-counts">
-                {playing.map((one) => (
-                    <Count
-                        key={`${what}|${one}`}
-                        id={`${what}-${one}`}
-                        name={nameIn(names, one)}
-                        what={what}
-                        hint={hintOf(one)}
-                        value={counts.valueOf(one)}
-                        max={dealt}
-                        off={off}
-                        onChange={(value) => {
-                            counts.set(one, value);
-                        }}
-                    />
-                ))}
-            </div>
             {what === 'tricks' ? (
                 <p className="dk-field-hint" id="tricks-left">
                     {left}
@@ -373,7 +384,23 @@ const CountsView = ({
                     The bids come to {given} for {dealt} {dealt === 1 ? 'card' : 'cards'} each.
                 </p>
             )}
-            {children}
+            <div className="gtt-counts">
+                {playing.map((one) => (
+                    <Count
+                        key={`${what}|${one}`}
+                        id={`${what}-${one}`}
+                        name={nameIn(names, one)}
+                        what={what}
+                        detail={detailOf(one)}
+                        value={counts.valueOf(one)}
+                        max={dealt}
+                        off={off}
+                        onChange={(value) => {
+                            counts.set(one, value);
+                        }}
+                    />
+                ))}
+            </div>
         </section>
     );
 };
@@ -471,29 +498,27 @@ export const WizardRound = ({
     };
 
     const below = (
-        <>
-            <OutRows
-                playing={playing}
-                out={draft.round.out}
-                names={names}
-                skippable={canSkip(players, draft.round)}
-                off={busy}
-                onSkip={(one) => void skip(one)}
-                onBack={(one) => void back(one)}
-            />
-            {phase === 'bids' || changing ? null : (
-                <p className="dk-actions">
+        <OutRows
+            playing={playing}
+            out={draft.round.out}
+            names={names}
+            skippable={canSkip(players, draft.round)}
+            off={busy}
+            onSkip={(one) => void skip(one)}
+            onBack={(one) => void back(one)}
+            extra={
+                phase === 'bids' || changing ? undefined : (
                     <Button text off={busy} onClick={changeBids}>
                         Change the bids
                     </Button>
-                </p>
-            )}
-        </>
+                )
+            }
+        />
     );
-    const parts = { playing, names, dealer, children: below };
+    const parts = { playing, names, dealer };
 
     return (
-        <div className="gtt-game">
+        <div className="gtt-game gtt-wizard">
             <div className="gtt-game-top">
                 {changing ? null : actions}
                 <RoundTitle
@@ -501,6 +526,7 @@ export const WizardRound = ({
                     rounds={roundsFor(players.length)}
                     dealer={dealer === null ? null : nameOf(dealer)}
                 />
+                {below}
             </div>
             {phase === 'hand' ? (
                 <HandView {...parts} valueOf={counts.valueOf} />
