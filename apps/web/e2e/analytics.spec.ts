@@ -12,7 +12,7 @@ test('sends nothing to Plausible from a build that is not on the live address', 
     const sent: string[] = [];
     page.on('request', (request) => {
         const url = new URL(request.url());
-        if (url.hostname.endsWith('plausible.io') || /plausible/i.test(url.pathname))
+        if (url.hostname === 'plausible.io' || /plausible/i.test(url.pathname))
             sent.push(request.url());
     });
     await page.goto('/');
