@@ -128,7 +128,12 @@ export interface Play {
      * taken out.
      */
     readonly setOut: (id: string, out: readonly string[]) => Promise<void>;
-    readonly saveRound: (id: string) => Promise<SavedRound>;
+    /**
+     * Saves the round being entered. Players named as out are taken out of it first, in the same
+     * change, as when the last player still to enter is skipped, so the round never stands with no
+     * step, and undo puts it back as it was before.
+     */
+    readonly saveRound: (id: string, out?: readonly string[]) => Promise<SavedRound>;
     /**
      * Makes a draft of a saved round. The round stays as it was until the draft is saved. It is
      * refused while the round being entered holds anything of its own.
@@ -320,6 +325,13 @@ export const openPlay = (
         return game.draft;
     };
 
+    /** The game with players named as out of the round being entered, which then has no step. */
+    const withPlayersOut = (game: SavedGame, out: readonly string[]): SavedGame => {
+        const draft = draftOf(game);
+        const round = withOut(toDraftRound(draft.round), game.players, out);
+        return { ...game, draft: { ...draft, round, step: null } };
+    };
+
     /** Saves a game as it stands, and resolves to why the store refused it, or null. */
     const save = async (game: SavedGame): Promise<string | null> => {
         try {
@@ -445,18 +457,34 @@ export const openPlay = (
             inOrder(async () => {
                 const game = gameOf(id);
                 const draft = draftOf(game);
-                const round = withOut(toDraftRound(draft.round), game.players, out);
+                const before = toDraftRound(draft.round);
+                const round = withOut(before, game.players, out);
                 const steps = stepsOf(game.game, game.players, round);
                 const still = steps.some((step) => sameStep(step, draft.step));
-                const step = still ? draft.step : nextStep(steps, round, 0);
+                // A saved round opened again has every step entered, so a player put back is asked
+                // at once, and a player taken out passes the turn to the next seat still in it.
+                const reopened = draft.index < game.rounds.length;
+                const empty = steps.find((step) => read(round, step) === undefined) ?? null;
+                const seats = stepsOf(game.game, game.players, before);
+                const at = seats.findIndex((step) => sameStep(step, draft.step));
+                const onward =
+                    seats.slice(at + 1).find((step) => steps.some((one) => sameStep(one, step))) ??
+                    steps.at(-1) ??
+                    null;
+                const step = reopened
+                    ? (empty ?? (still ? draft.step : onward))
+                    : still
+                      ? draft.step
+                      : nextStep(steps, round, 0);
                 await keep(
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'out', before: game }
                 );
             }),
-        saveRound: (id) =>
+        saveRound: (id, out) =>
             inOrder(async (): Promise<SavedRound> => {
-                const game = gameOf(id);
+                const kept = gameOf(id);
+                const game = out === undefined ? kept : withPlayersOut(kept, out);
                 const draft = viewOf(game).draft;
                 if (draft === null) throw new Error('The game has no round being entered.');
                 if (!draft.ready)
@@ -480,7 +508,7 @@ export const openPlay = (
                     { ...next, draft: followingDraft(next) },
                     {
                         kind: 'round',
-                        before: reopened ? { ...game, draft: followingDraft(game) } : game,
+                        before: reopened ? { ...kept, draft: followingDraft(kept) } : kept,
                     }
                 );
                 if (why !== null) return { saved: false, problems: [], error: why };

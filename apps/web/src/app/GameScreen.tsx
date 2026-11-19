@@ -10,13 +10,15 @@ import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
+import { type DraftRound, playingIn, read, stepsOf, withOut } from '../play/steps.js';
 import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord } from '../store/format.js';
+import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
-import { ScoreHeader } from './ScoreHeader.js';
+import { ScoreHeader, spokenOf } from './ScoreHeader.js';
 import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
 
@@ -27,8 +29,9 @@ import { type Summary, useDiscard, useSummary } from './summary.js';
  * comes back to it, and the header's total, which the rules work out from what was kept, shows the
  * round as it stands. The button for the next player names them, and after the last it saves the
  * round. After each entry and each save the frame's toast says what each player scored, with any
- * rule that changed a score in words, and offers one Undo, until the next entry begins. Nothing
- * here adds anything up.
+ * rule that changed a score in words, and offers one Undo, until the next entry begins. A player
+ * can be skipped for the round from under the header, the whole hand away from that button, and
+ * put back until the round is saved. Nothing here adds anything up.
  */
 
 /** The number cards, from 0 to 12. */
@@ -225,6 +228,97 @@ const flip7Line = (
 const isChanging = (game: GameInPlay, draft: NonNullable<GameInPlay['draft']>): boolean =>
     draft.index < game.saved.rounds.length;
 
+/** Whether a round can spare one more player, since it needs two in it, as the rules hold. */
+export const canSkip = (players: readonly string[], round: DraftRound): boolean =>
+    playingIn(players, round).length > 2;
+
+/** Who is out of a round, in a sentence. */
+export const outWords = (names: readonly string[]): string =>
+    `${listOf(names, 'and')} ${names.length === 1 ? 'is' : 'are'} out of this round.`;
+
+/**
+ * Who a player put back into a round comes after, as the turn runs on from the player whose turn
+ * it is, and whether that is the player entering now, or null where the turn reaches them first.
+ */
+export const comesAfter = (
+    {
+        game,
+        players,
+        round,
+    }: { readonly game: string; readonly players: readonly string[]; readonly round: DraftRound },
+    current: string,
+    back: string
+): { readonly player: string; readonly now: boolean } | null => {
+    const steps = stepsOf(game, players, round);
+    const at = steps.findIndex((step) => step.player === current);
+    if (at < 0) return null;
+    const order = [...steps.slice(at), ...steps.slice(0, at)].filter(
+        (step, place) => place === 0 || read(round, step) === undefined
+    );
+    const where = order.findIndex((step) => step.player === back);
+    const before = order[where - 1]?.player ?? null;
+    return where < 1 || before === null ? null : { player: before, now: where === 1 };
+};
+
+/**
+ * The way to skip the player whose turn it is, under the header and so the whole hand away from
+ * the button for the next player, then who is out of the round with a way to put each back, or,
+ * where a skip would leave one player in the round, why no one else can sit it out.
+ */
+const SkipRows = ({
+    name,
+    out,
+    skippable,
+    last,
+    off,
+    onSkip,
+    onBack,
+}: {
+    readonly name: string;
+    readonly out: readonly { readonly player: string; readonly name: string }[];
+    readonly skippable: boolean;
+    /** Whether the player is the last still to enter, so a skip saves the round. */
+    readonly last: boolean;
+    readonly off: boolean;
+    readonly onSkip: () => void;
+    readonly onBack: (player: string) => void;
+}) => (
+    <>
+        {skippable ? (
+            <p className="dk-actions">
+                <Button text id="skip-player" off={off} onClick={onSkip}>
+                    {last ? `Skip ${name} and finish the round` : `Skip ${name} this round`}
+                </Button>
+            </p>
+        ) : (
+            <p className="dk-actions gtt-fine">
+                <span>A round needs two players, so no one else can sit this one out.</span>
+                <Link className="dk-button dk-button-text" href={hrefOf('play')}>
+                    Leave for now
+                </Link>
+            </p>
+        )}
+        {out.length === 0 ? null : (
+            <p className="dk-actions gtt-fine">
+                <span>{outWords(out.map((one) => one.name))}</span>
+                {out.map((one) => (
+                    <Button
+                        key={one.player}
+                        text
+                        id={`put-back-${one.player}`}
+                        off={off}
+                        onClick={() => {
+                            onBack(one.player);
+                        }}
+                    >
+                        Put {one.name} back
+                    </Button>
+                ))}
+            </p>
+        )}
+    </>
+);
+
 /**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
  * way to the scores, or, for a saved round opened again, the way to let the change go.
@@ -367,7 +461,7 @@ const Flip7Round = ({
         if (keptOf(play, id)?.error === null) backToScores();
     };
 
-    const saveRound = async () => {
+    const saveRound = async (out?: readonly string[]) => {
         // The round as the rules make it with the last hand kept, read before the save takes the
         // draft away.
         const kept = keptOf(play, id)?.draft ?? draft;
@@ -377,10 +471,10 @@ const Flip7Round = ({
                 nameOf(one),
                 handOf(kept.round.entries[one]),
                 scores[one],
-                kept.round.out.includes(one)
+                (out ?? kept.round.out).includes(one)
             )
         );
-        const saved = await play.saveRound(id);
+        const saved = await play.saveRound(id, out);
         // Said by the frame's toast, which stays on the page when the round ends the game and as a
         // changed round goes back to the scores.
         if (saved.saved) {
@@ -397,6 +491,77 @@ const Flip7Round = ({
                     ? refusalWords(saved.problems[0])
                     : 'The round could not be saved.'
             );
+    };
+
+    // Where focus goes once a skip or a put back is drawn, by the id of the button it lands on.
+    // Each is an object of its own, so the same button asked for twice is focused twice.
+    const [focus, setFocus] = useState<{ readonly id: string } | null>(null);
+    useEffect(() => {
+        if (focus !== null) document.getElementById(focus.id)?.focus();
+    }, [focus]);
+    const out = draft.round.out;
+    const skippable = canSkip(game.saved.players, draft.round);
+
+    /**
+     * Skips the player whose turn it is for the round, or, for the last still to enter, skips them
+     * and saves the round at once. The summary goes first, so its Undo cannot take back the skip.
+     */
+    const skip = async () => {
+        if (busy || summary.undoing() || keptOf(play, id)?.draft?.step?.player !== player) return;
+        summary.clear();
+        setBusy(true);
+        try {
+            const without = [...out, player];
+            if (following === null) {
+                await saveRound(without);
+                return;
+            }
+            await play.setOut(id, without);
+            if (keptOf(play, id)?.error !== null) return;
+            say(
+                `${name} is out of round ${String(draft.index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`
+            );
+            // Focus stays on the skip, which names the next player, unless no one else can be
+            // skipped, when it goes to the way to put this player back.
+            if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
+                setFocus({ id: `put-back-${player}` });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
+    const back = async (who: string) => {
+        if (busy || summary.undoing()) return;
+        summary.clear();
+        setBusy(true);
+        try {
+            const rest = out.filter((one) => one !== who);
+            await play.setOut(id, rest);
+            if (keptOf(play, id)?.error !== null) return;
+            const after = changing
+                ? null
+                : comesAfter(
+                      {
+                          game: game.saved.game,
+                          players: game.saved.players,
+                          round: withOut(draft.round, game.saved.players, rest),
+                      },
+                      player,
+                      who
+                  );
+            const where =
+                after === null
+                    ? ''
+                    : after.now
+                      ? `, and is next after ${nameOf(after.player)}`
+                      : `, and is asked after ${nameOf(after.player)}`;
+            say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
+            const stillOut = rest[0];
+            setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+        } finally {
+            setBusy(false);
+        }
     };
 
     const next = async () => {
@@ -439,6 +604,15 @@ const Flip7Round = ({
                     name={name}
                     total={before + taken}
                     line={lineOf({ before, round: taken, first: draft.index === 0, hand })}
+                />
+                <SkipRows
+                    name={name}
+                    out={out.map((one) => ({ player: one, name: nameOf(one) }))}
+                    skippable={skippable}
+                    last={following === null}
+                    off={busy}
+                    onSkip={() => void skip()}
+                    onBack={(who) => void back(who)}
                 />
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />

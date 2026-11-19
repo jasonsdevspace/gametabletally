@@ -607,6 +607,39 @@ describe('what each change keeps and refuses', () => {
         expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
     });
 
+    it('saves a round with the last player still to enter taken out in the same change, which undo puts back', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([4]));
+        await play.enter('g-1', hand([5]));
+        await play.hold('g-1', hand([9]));
+        expect(await play.saveRound('g-1', ['cat'])).toMatchObject({ saved: true });
+        expect(shown(play, 'g-1').saved.rounds).toEqual([
+            { entries: { ann: hand([4]), ben: hand([5]) }, out: ['cat'] },
+        ]);
+        expect(shown(play, 'g-1').result.missed).toEqual(['cat']);
+        expect(await play.undo()).toBe(true);
+        expect(shown(play, 'g-1').saved.rounds).toEqual([]);
+        expect(shown(play, 'g-1').draft).toMatchObject({
+            round: { entries: { ann: hand([4]), ben: hand([5]), cat: hand([9]) }, out: [] },
+            step: { part: 'entry', player: 'cat' },
+        });
+    });
+
+    it('in a saved round opened again, passes the turn to the next seat from a player taken out, and asks a player put back at once', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([3]), hand([4]), hand([5])]);
+        await play.reopen('g-1', 0);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
+        await play.setOut('g-1', ['ann']);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
+        await play.enter('g-1', hand([4]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.setOut('g-1', []);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
+    });
+
     it('refuses to save a round that is not whole, and keeps it as the draft', async () => {
         const { play } = await setUp();
         await play.start(newGame('flip-7'));
