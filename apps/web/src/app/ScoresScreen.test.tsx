@@ -206,10 +206,13 @@ describe('the scores screen', () => {
 
     it('gives a saved round of a game with no entry screen yet no button to open it', async () => {
         await draw(
-            saved('skyjo', [
+            saved('wizard', [
                 {
-                    entries: { ann: { total: -12 }, ben: { total: 40 }, cat: { total: 30 } },
-                    ender: 'ann',
+                    entries: {
+                        ann: { bid: 1, tricks: 1 },
+                        ben: { bid: 0, tricks: 0 },
+                        cat: { bid: 0, tricks: 0 },
+                    },
                 },
             ])
         );

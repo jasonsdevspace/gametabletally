@@ -6,16 +6,8 @@ import { describe, expect, it } from 'vitest';
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import {
-    canSkip,
-    comesAfter,
-    floorWords,
-    GameScreen,
-    handOf,
-    lineOf,
-    outWords,
-    refusalWords,
-} from './GameScreen.js';
+import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import { canSkip, comesAfter, floorWords, outWords } from './round.js';
 import { heard } from './status.testing.js';
 
 /* The game in play in the app's frame, over a database in memory, and the words it draws. */

@@ -9,17 +9,26 @@ import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
-import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
-import { type DraftRound, playingIn, read, stepsOf, withOut } from '../play/steps.js';
-import { atRound, changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
+import { type Play, stepAfter } from '../play/play.js';
+import { changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord } from '../store/format.js';
-import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
-import { entrySummary, flip7Note, type RoundLine, roundSummary } from './round-summary.js';
+import {
+    canSkip,
+    type GameWithDraft,
+    isChanging,
+    nextLabel,
+    RoundDock,
+    SkipRows,
+    totalBefore,
+    useRound,
+} from './round.js';
+import { flip7Note, type RoundLine } from './round-summary.js';
 import { useRoving } from './roving.js';
-import { ScoreHeader, spokenOf } from './ScoreHeader.js';
+import { ScoreHeader } from './ScoreHeader.js';
+import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
 import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
 
@@ -211,23 +220,6 @@ export const Flip7Keys = ({
     );
 };
 
-/**
- * A player's total over the scored rounds before the one being entered, so a reopened round is
- * never counted twice, once as saved and again as it stands.
- */
-const totalBefore = (game: GameInPlay, player: string, index: number): number =>
-    game.result.rounds
-        .slice(0, index)
-        .reduce(
-            (total, round) =>
-                round.state === 'scored' ? total + (round.scores[player] ?? 0) : total,
-            0
-        );
-
-/** A game as the model holds it now, read once a change is kept. */
-const keptOf = (play: Play, id: string): GameInPlay | undefined =>
-    play.snapshot().games.find(({ saved }) => saved.id === id);
-
 /** A player's line of a round of Flip 7, from their hand and the score the rules gave it. */
 const flip7Line = (
     name: string,
@@ -238,166 +230,6 @@ const flip7Line = (
     out
         ? { name, out }
         : { name, ...(score === undefined ? {} : { score }), note: flip7Note(hand) };
-
-/**
- * Whether a round's draft is a saved round opened again to change it, which the model walks seat
- * by seat, as it counts the saved rounds.
- */
-const isChanging = (game: GameInPlay, draft: NonNullable<GameInPlay['draft']>): boolean =>
-    draft.index < game.saved.rounds.length;
-
-/** Whether a round can spare one more player, since it needs two in it, as the rules hold. */
-export const canSkip = (players: readonly string[], round: DraftRound): boolean =>
-    playingIn(players, round).length > 2;
-
-/** Who is out of a round, in a sentence. */
-export const outWords = (names: readonly string[]): string =>
-    `${listOf(names, 'and')} ${names.length === 1 ? 'is' : 'are'} out of this round.`;
-
-/** Why no one else can sit a round out, after who already is, in a sentence. */
-export const floorWords = (names: readonly string[]): string =>
-    names.length === 0
-        ? 'A round needs two players, so no one else can sit this one out.'
-        : `${listOf(names, 'and')} ${names.length === 1 ? 'is' : 'are'} out, and a round needs two players.`;
-
-/**
- * Who a player put back into a round comes after, as the turn runs on from the player whose turn
- * it is, and whether that is the player entering now, or null where the turn reaches them first.
- */
-export const comesAfter = (
-    {
-        game,
-        players,
-        round,
-    }: { readonly game: string; readonly players: readonly string[]; readonly round: DraftRound },
-    current: string,
-    back: string
-): { readonly player: string; readonly now: boolean } | null => {
-    const steps = stepsOf(game, players, round);
-    const at = steps.findIndex((step) => step.player === current);
-    if (at < 0) return null;
-    const order = [...steps.slice(at), ...steps.slice(0, at)].filter(
-        (step, place) => place === 0 || read(round, step) === undefined
-    );
-    const where = order.findIndex((step) => step.player === back);
-    const before = order[where - 1];
-    // At 0 the player is the one entering, and at -1 they are not in the round.
-    return where < 1 || before === undefined || before.player === null
-        ? null
-        : { player: before.player, now: where === 1 };
-};
-
-/**
- * The way to skip the player whose turn it is, under the header and so the whole hand away from
- * the button for the next player, then who is out of the round with a way to put each back, or,
- * where a skip would leave one player in the round, why no one else can sit it out.
- */
-const SkipRows = ({
-    name,
-    out,
-    skippable,
-    last,
-    off,
-    onSkip,
-    onBack,
-}: {
-    readonly name: string;
-    readonly out: readonly { readonly player: string; readonly name: string }[];
-    readonly skippable: boolean;
-    /** Whether the player is the last still to enter, so a skip saves the round. */
-    readonly last: boolean;
-    readonly off: boolean;
-    readonly onSkip: () => void;
-    readonly onBack: (player: string) => void;
-}) => {
-    const backs = out.map((one) => (
-        <Button
-            key={one.player}
-            text
-            id={`put-back-${one.player}`}
-            off={off}
-            onClick={() => {
-                onBack(one.player);
-            }}
-        >
-            Put {one.name} back
-        </Button>
-    ));
-    const names = out.map((one) => one.name);
-    // Where no one else can be skipped, who is out and why share one line, so the keys keep their
-    // place above the dock on a phone.
-    if (!skippable)
-        return (
-            <p className="dk-actions gtt-fine">
-                <span>{floorWords(names)}</span>
-                {backs}
-            </p>
-        );
-    return (
-        <>
-            <p className="dk-actions">
-                <Button text id="skip-player" off={off} onClick={onSkip}>
-                    {last ? `Skip ${name} and finish the round` : `Skip ${name} this round`}
-                </Button>
-            </p>
-            {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
-                    <span>{outWords(names)}</span>
-                    {backs}
-                </p>
-            )}
-        </>
-    );
-};
-
-/**
- * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
- * way to the scores, or, for a saved round opened again, the way to let the change go.
- */
-const RoundDock = ({
-    id,
-    index,
-    changing,
-    off,
-    refused,
-    label,
-    onNext,
-    onCancel,
-}: {
-    readonly id: string;
-    readonly index: number;
-    readonly changing: boolean;
-    readonly off: boolean;
-    /** Whether the rules refuse the hand, which the keys say why beside them. */
-    readonly refused: boolean;
-    readonly label: string;
-    readonly onNext: () => void;
-    readonly onCancel: () => void;
-}) => (
-    <Dock>
-        <div className="gtt-dock-row">
-            {changing ? (
-                <Button tall off={off} onClick={onCancel}>
-                    Cancel
-                    <span className="dk-visually-hidden"> the change to round {index + 1}</span>
-                </Button>
-            ) : (
-                <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
-                    Scores
-                </Link>
-            )}
-            <Button
-                accent
-                tall
-                off={refused || off}
-                aria-describedby={refused ? 'hand-why' : undefined}
-                onClick={onNext}
-            >
-                {label}
-            </Button>
-        </div>
-    </Dock>
-);
 
 /**
  * A round of Flip 7 being entered. It stays on the page from player to player, so the button for
@@ -416,7 +248,7 @@ const Flip7Round = ({
     readonly summary: Summary;
     /** The ways out of the game, above its header, where the round is not one being changed. */
     readonly actions: ReactNode;
-    readonly game: GameInPlay & { readonly draft: NonNullable<GameInPlay['draft']> };
+    readonly game: GameWithDraft;
     readonly player: string;
     readonly names: ReadonlyMap<string, string>;
 }) => {
@@ -446,194 +278,33 @@ const Flip7Round = ({
     else if (problem === undefined && state.taken !== round) shown = { ...state, taken: round };
     if (shown !== state) setState(shown);
     const { hand, taken } = shown;
-    const following = stepAfter(game, hand)?.player ?? null;
-    const [busy, setBusy] = useState(false);
-    const [line, say] = useStatus();
+    const following = stepAfter(game, hand);
+    const actionsOf = useRound({
+        play,
+        game,
+        names,
+        summary,
+        lineOf: (one, kept, score, out) =>
+            flip7Line(nameOf(one), handOf(kept.entries[one]), score, out),
+    });
+    const { busy, changing, line, say } = actionsOf;
     // A refusal is said once as it appears, since focus is on the key that caused it.
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
 
     const change = (next: Flip7Entry) => {
-        // While a hand is entered or a round saved, the turn is moving on, and a tap would land
-        // in whichever step the save reaches.
-        if (busy || summary.undoing()) return;
+        if (actionsOf.held()) return;
         // The next entry has begun, so the last summary and its Undo go.
         summary.clear();
         setState((now) => ({ ...now, hand: next }));
         void play.hold(id, next);
     };
 
-    // A saved round opened again from the scores, which its address and so the bar name, and
-    // which goes back to its heading there once it is saved or let go.
-    const changing = isChanging(game, draft);
-    // The scores or the recap, whichever the round was opened from.
-    const { search } = usePlace();
-    const backToScores = (ended = false) => {
-        navigate(atRound(id, draft.index, ended ? 'recap' : changedFrom(search)), {
-            replace: true,
-        });
-    };
-
-    /** Lets the change go, and goes back to the scores once that is kept, or says why it is not. */
-    const cancel = async () => {
-        if (busy || summary.undoing()) return;
-        summary.clear();
-        setBusy(true);
-        try {
-            await play.dropDraft(id);
-        } catch (error: unknown) {
-            say(error instanceof Error ? error.message : 'The change could not be let go.');
-            return;
-        } finally {
-            setBusy(false);
-        }
-        // A save the store refused is said by the screen's alert, and the change stays.
-        if (keptOf(play, id)?.error === null) backToScores();
-    };
-
-    const saveRound = async (out?: readonly string[]) => {
-        // The round as the rules make it with the last hand kept, read before the save takes the
-        // draft away.
-        const kept = keptOf(play, id)?.draft ?? draft;
-        const scores = kept.preview.rounds[kept.index]?.scores ?? {};
-        const lines = game.saved.players.map((one) =>
-            flip7Line(
-                nameOf(one),
-                handOf(kept.round.entries[one]),
-                scores[one],
-                (out ?? kept.round.out).includes(one)
-            )
-        );
-        const saved = await play.saveRound(id, out);
-        // Said by the frame's toast, which stays on the page when the round ends the game and as a
-        // changed round goes back to the scores.
-        if (saved.saved) {
-            summary.offer(roundSummary(kept.index, lines));
-            // A round that ends the game opens its recap, where the table looks at the phone
-            // together, and a changed round that does not goes back to the page it was opened from.
-            const ended = saved.outcome === 'ended';
-            if (changing) backToScores(ended);
-            else if (ended) navigate(hrefOf('recap', id));
-        } else if (saved.error !== null) say(saved.error);
-        else
-            say(
-                saved.problems[0]
-                    ? refusalWords(saved.problems[0])
-                    : 'The round could not be saved.'
-            );
-    };
-
-    // Where focus goes once a skip or a put back is drawn, by the id of the button it lands on.
-    // Each is an object of its own, so the same button asked for twice is focused twice.
-    const [focus, setFocus] = useState<{ readonly id: string } | null>(null);
-    useEffect(() => {
-        if (focus !== null) document.getElementById(focus.id)?.focus();
-    }, [focus]);
     const out = draft.round.out;
-    const skippable = canSkip(game.saved.players, draft.round);
     // Skipping the last player still to enter saves the round. A saved round opened again is
     // saved only from its own button, so a skip there takes the player out and nothing more.
     const finishes = following === null && !changing;
-
-    /**
-     * Skips the player whose turn it is for the round, or, for the last still to enter in a round
-     * not opened again to change, skips them and saves the round at once. The summary goes first,
-     * so its Undo cannot take back the skip.
-     */
-    const skip = async () => {
-        if (busy || summary.undoing() || keptOf(play, id)?.draft?.step?.player !== player) return;
-        summary.clear();
-        setBusy(true);
-        try {
-            const without = [...out, player];
-            if (finishes) {
-                await saveRound(without);
-                return;
-            }
-            await play.setOut(id, without);
-            if (keptOf(play, id)?.error !== null) return;
-            say(
-                `${name} is out of round ${String(draft.index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`
-            );
-            // Focus stays on the skip, which names the next player, unless no one else can be
-            // skipped, when it goes to the way to put this player back.
-            if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
-                setFocus({ id: `put-back-${player}` });
-        } catch (error: unknown) {
-            say(error instanceof Error ? error.message : 'The player could not be skipped.');
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
-    const back = async (who: string) => {
-        if (busy || summary.undoing()) return;
-        summary.clear();
-        setBusy(true);
-        try {
-            const rest = out.filter((one) => one !== who);
-            await play.setOut(id, rest);
-            if (keptOf(play, id)?.error !== null) return;
-            const after = changing
-                ? null
-                : comesAfter(
-                      {
-                          game: game.saved.game,
-                          players: game.saved.players,
-                          round: withOut(draft.round, game.saved.players, rest),
-                      },
-                      player,
-                      who
-                  );
-            const where =
-                after === null
-                    ? ''
-                    : after.now
-                      ? `, and is next after ${nameOf(after.player)}`
-                      : `, and is asked after ${nameOf(after.player)}`;
-            say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
-            const stillOut = rest[0];
-            setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
-        } catch (error: unknown) {
-            say(error instanceof Error ? error.message : 'The player could not be put back.');
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    const next = async () => {
-        if (why !== '' || busy || summary.undoing()) return;
-        // Moving on begins the next entry, so the last summary and its Undo go before it does.
-        summary.clear();
-        setBusy(true);
-        try {
-            // After the last player the hand is kept where it is and the round saved at once, so
-            // the round never stands with no step, which would take this view off the page.
-            if (following === null) {
-                await play.hold(id, hand);
-                await saveRound();
-            } else {
-                await play.enter(id, hand);
-                // What the rules made of the hand as it was entered, read once it is kept. An
-                // entry the store refused is said by the screen's alert, so no summary says it is in.
-                const kept = keptOf(play, id);
-                if (kept?.error === null)
-                    summary.offer(
-                        entrySummary(
-                            flip7Line(
-                                name,
-                                hand,
-                                kept.draft?.preview.rounds[draft.index]?.scores[player]
-                            )
-                        )
-                    );
-            }
-        } finally {
-            setBusy(false);
-        }
-    };
 
     return (
         <div className="gtt-game">
@@ -647,11 +318,11 @@ const Flip7Round = ({
                 <SkipRows
                     name={name}
                     out={out.map((one) => ({ player: one, name: nameOf(one) }))}
-                    skippable={skippable}
+                    skippable={canSkip(game.saved.players, draft.round)}
                     last={finishes}
                     off={busy}
-                    onSkip={() => void skip()}
-                    onBack={(who) => void back(who)}
+                    onSkip={() => void actionsOf.skip(player, before, finishes, refusalWords)}
+                    onBack={(who) => void actionsOf.back(player, who)}
                 />
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
@@ -663,15 +334,11 @@ const Flip7Round = ({
                 changing={changing}
                 off={busy}
                 refused={why !== ''}
-                label={
-                    following !== null
-                        ? `Next: ${nameOf(following)}`
-                        : changing
-                          ? `Save round ${String(draft.index + 1)}`
-                          : 'Save the round'
-                }
-                onNext={() => void next()}
-                onCancel={() => void cancel()}
+                label={nextLabel(following, names, draft.index, changing)}
+                onNext={() => {
+                    if (why === '') void actionsOf.next(hand, refusalWords);
+                }}
+                onCancel={() => void actionsOf.cancel()}
             />
         </div>
     );
@@ -741,14 +408,6 @@ const Entry = ({
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
-    // The scores, from the dock, wherever the screen has no round to enter.
-    const scores = (
-        <Dock>
-            <Link className="dk-button dk-button-accent dk-button-tall" href={hrefOf('scores', id)}>
-                Scores
-            </Link>
-        </Dock>
-    );
     // A finished game's screen says so, and its recap is in the dock.
     if (draft === null)
         return (
@@ -764,8 +423,54 @@ const Entry = ({
                 </Dock>
             </>
         );
-    const actions = <GameActions play={play} id={id} gameName={gameName} />;
-    const player = draft.step?.player ?? null;
+    return (
+        <RoundFor
+            play={play}
+            game={{ ...game, draft }}
+            names={names}
+            summary={summary}
+            actions={<GameActions play={play} id={id} gameName={gameName} />}
+        />
+    );
+};
+
+/**
+ * Whether the round has just come back to a player's entry from who ended it, read from the part
+ * of the round each draw is at, so the player come back to can be told so.
+ */
+const useCameBack = (part: string | null): boolean => {
+    const [was, setWas] = useState(part);
+    const [back, setBack] = useState(false);
+    if (was !== part) {
+        setBack(was === 'ender');
+        setWas(part);
+    }
+    return back;
+};
+
+/**
+ * The step a round is at, drawn by its game's own screen: a player's entry, or who ended a round of
+ * Skyjo, which is a step of the round's own, or a word that the game cannot be entered here.
+ */
+const RoundFor = ({
+    play,
+    game,
+    names,
+    summary,
+    actions,
+}: {
+    readonly play: Play;
+    readonly game: GameWithDraft;
+    readonly names: ReadonlyMap<string, string>;
+    readonly summary: Summary;
+    readonly actions: ReactNode;
+}) => {
+    const { draft } = game;
+    const step = draft.step;
+    const parts = { play, game, names, summary, actions };
+    const arrived = useCameBack(step?.part ?? null);
+    if (game.saved.game === 'skyjo' && step?.part === 'ender') return <SkyjoEnder {...parts} />;
+    const player = step?.player ?? null;
     if (player === null)
         return (
             <>
@@ -785,21 +490,23 @@ const Entry = ({
                     />
                 </div>
                 <p>
-                    Only Flip 7 has a screen for entering rounds, so a game of {gameName} can be
-                    started here but not scored.
+                    Only Flip 7 and Skyjo have a screen for entering rounds, so a game of{' '}
+                    {gameNameOf(game.saved.game)} can be started here but not scored.
                 </p>
-                {scores}
+                <Dock>
+                    <Link
+                        className="dk-button dk-button-accent dk-button-tall"
+                        href={hrefOf('scores', game.saved.id)}
+                    >
+                        Scores
+                    </Link>
+                </Dock>
             </div>
         );
-    return (
-        <Flip7Round
-            play={play}
-            game={{ ...game, draft }}
-            player={player}
-            names={names}
-            summary={summary}
-            actions={actions}
-        />
+    return game.saved.game === 'skyjo' ? (
+        <SkyjoRound {...parts} player={player} arrived={arrived} />
+    ) : (
+        <Flip7Round {...parts} player={player} />
     );
 };
 

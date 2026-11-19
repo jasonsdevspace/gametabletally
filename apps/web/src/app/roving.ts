@@ -81,11 +81,12 @@ const indexIn = (grid: HTMLElement, target: EventTarget): number =>
  * A grid's one stop: the tabindex of each cell, and the handlers the grid takes, which move focus
  * with the arrow keys and follow it wherever it lands, by a tap as well, since some browsers do not
  * focus a button that is tapped. The stop goes back to the first cell when `fresh` changes, as for
- * the next player's hand.
+ * the next player's hand. A grid whose cells can be taken out gives how many it holds, so its stop
+ * moves to the last cell where the cell it was on is gone, and the grid always keeps one.
  */
-export const useRoving = (fresh: string) => {
+export const useRoving = (fresh: string, count = Number.POSITIVE_INFINITY) => {
     const [stop, setStop] = useState({ fresh, at: 0 });
-    let at = stop.at;
+    let at = Math.max(0, Math.min(stop.at, count - 1));
     if (stop.fresh !== fresh) {
         at = 0;
         setStop({ fresh, at });

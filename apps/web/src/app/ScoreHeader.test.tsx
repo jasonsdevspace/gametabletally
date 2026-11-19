@@ -125,4 +125,19 @@ describe('the words of the score header', () => {
         );
         expect(changeOf({ name: 'Ann', total: 3 }, { name: 'Ann', total: 3 })).toBeNull();
     });
+
+    it("says a round typed in with the total, so a press that leaves the total is heard, and a turn's first step", () => {
+        const at = (round: number | null, total = 60) => ({ name: 'Ann', total, round });
+        expect(changeOf(at(null), at(0))).toBe('Ann, 0 this round, 60 in all.');
+        expect(changeOf(at(1, 61), at(-12, 48))).toBe('Ann, minus 12 this round, 48 in all.');
+        expect(changeOf(at(5, 65), at(null))).toBe('Ann, nothing this round, 60 in all.');
+        expect(changeOf(at(5, 65), at(5, 65))).toBeNull();
+        expect(
+            changeOf(
+                { name: 'Ann', total: 3 },
+                { name: 'Ben', total: 9 },
+                "Type Ben's total on the pad."
+            )
+        ).toBe("Ben is next. Type Ben's total on the pad.");
+    });
 });
