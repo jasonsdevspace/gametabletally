@@ -461,21 +461,25 @@ export const openPlay = (
                 const round = withOut(before, game.players, out);
                 const steps = stepsOf(game.game, game.players, round);
                 const still = steps.some((step) => sameStep(step, draft.step));
-                // A saved round opened again has every step entered, so a player put back is asked
-                // at once, and a player taken out passes the turn to the next seat still in it.
+                // The turn moves as entering moves it: from a player taken out, to the next seat
+                // still in the round, and in a round being entered, the next still to enter, from
+                // the start again after the last. A saved round opened again has every step
+                // entered, so a player put back in it is asked at once.
                 const reopened = draft.index < game.rounds.length;
-                const empty = steps.find((step) => read(round, step) === undefined) ?? null;
                 const seats = stepsOf(game.game, game.players, before);
                 const at = seats.findIndex((step) => sameStep(step, draft.step));
-                const onward =
-                    seats.slice(at + 1).find((step) => steps.some((one) => sameStep(one, step))) ??
-                    steps.at(-1) ??
-                    null;
+                const inRound = (step: SavedStep) => steps.some((one) => sameStep(one, step));
+                const empty = steps.find((step) => read(round, step) === undefined) ?? null;
                 const step = reopened
-                    ? (empty ?? (still ? draft.step : onward))
+                    ? (empty ??
+                      (still
+                          ? draft.step
+                          : (seats.slice(at + 1).find(inRound) ?? steps.at(-1) ?? null)))
                     : still
                       ? draft.step
-                      : nextStep(steps, round, 0);
+                      : ([...seats.slice(at + 1), ...seats.slice(0, at + 1)].find(
+                            (one) => inRound(one) && read(round, one) === undefined
+                        ) ?? null);
                 await keep(
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'out', before: game }

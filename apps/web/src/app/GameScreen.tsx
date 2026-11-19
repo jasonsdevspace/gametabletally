@@ -262,8 +262,11 @@ export const comesAfter = (
         (step, place) => place === 0 || read(round, step) === undefined
     );
     const where = order.findIndex((step) => step.player === back);
-    const before = order[where - 1]?.player ?? null;
-    return where < 1 || before === null ? null : { player: before, now: where === 1 };
+    const before = order[where - 1];
+    // At 0 the player is the one entering, and at -1 they are not in the round.
+    return where < 1 || before === undefined || before.player === null
+        ? null
+        : { player: before.player, now: where === 1 };
 };
 
 /**
@@ -310,9 +313,6 @@ const SkipRows = ({
             <p className="dk-actions gtt-fine">
                 <span>{floorWords(names)}</span>
                 {backs}
-                <Link className="dk-button dk-button-text" href={hrefOf('play')}>
-                    Leave for now
-                </Link>
             </p>
         );
     return (
@@ -514,10 +514,14 @@ const Flip7Round = ({
     }, [focus]);
     const out = draft.round.out;
     const skippable = canSkip(game.saved.players, draft.round);
+    // Skipping the last player still to enter saves the round. A saved round opened again is
+    // saved only from its own button, so a skip there takes the player out and nothing more.
+    const finishes = following === null && !changing;
 
     /**
-     * Skips the player whose turn it is for the round, or, for the last still to enter, skips them
-     * and saves the round at once. The summary goes first, so its Undo cannot take back the skip.
+     * Skips the player whose turn it is for the round, or, for the last still to enter in a round
+     * not opened again to change, skips them and saves the round at once. The summary goes first,
+     * so its Undo cannot take back the skip.
      */
     const skip = async () => {
         if (busy || summary.undoing() || keptOf(play, id)?.draft?.step?.player !== player) return;
@@ -525,7 +529,7 @@ const Flip7Round = ({
         setBusy(true);
         try {
             const without = [...out, player];
-            if (following === null) {
+            if (finishes) {
                 await saveRound(without);
                 return;
             }
@@ -538,6 +542,8 @@ const Flip7Round = ({
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
                 setFocus({ id: `put-back-${player}` });
+        } catch (error: unknown) {
+            say(error instanceof Error ? error.message : 'The player could not be skipped.');
         } finally {
             setBusy(false);
         }
@@ -572,6 +578,8 @@ const Flip7Round = ({
             say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
             const stillOut = rest[0];
             setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+        } catch (error: unknown) {
+            say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
             setBusy(false);
         }
@@ -622,7 +630,7 @@ const Flip7Round = ({
                     name={name}
                     out={out.map((one) => ({ player: one, name: nameOf(one) }))}
                     skippable={skippable}
-                    last={following === null}
+                    last={finishes}
                     off={busy}
                     onSkip={() => void skip()}
                     onBack={(who) => void back(who)}

@@ -640,6 +640,30 @@ describe('what each change keeps and refuses', () => {
         expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
     });
 
+    it('passes the turn from a player taken out to the next seat still to enter, not the first', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7', 'g-1', ['ann', 'ben', 'cat', 'dan']));
+        await play.setOut('g-1', ['ann']);
+        await play.enter('g-1', hand([4]));
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.setOut('g-1', []);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'dan' });
+    });
+
+    it('in a saved round opened again, keeps the turn on the seat before when the last seat is taken out', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('flip-7'));
+        await flipRound(play, 'g-1', [hand([3]), hand([4]), hand([5])]);
+        await play.reopen('g-1', 0);
+        await play.goTo('g-1', { part: 'entry', player: 'cat' });
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ben' });
+        expect(shown(play, 'g-1').saved.rounds).toHaveLength(1);
+        expect(shown(play, 'g-1').draft?.index).toBe(0);
+    });
+
     it('refuses to save a round that is not whole, and keeps it as the draft', async () => {
         const { play } = await setUp();
         await play.start(newGame('flip-7'));
