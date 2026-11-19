@@ -293,3 +293,65 @@
         transform: translateY(var(--dk-space-2));
     }
 }
+
+/*
+ * A round of Wizard holds a stepper for each of up to six players above the dock, so its paragraphs
+ * take the grid's gaps alone and none of their own margins.
+ */
+.gtt-wizard :where(p, h2) {
+    margin: 0;
+}
+
+/* A round of Wizard's heading: the cards each holds, which round of how many, and who deals. */
+.gtt-wizard-title {
+    display: grid;
+    gap: var(--dk-space-1);
+}
+
+.gtt-wizard-round {
+    font-size: var(--dk-text-title);
+    font-weight: 700;
+}
+
+/* Every player's bid or tricks, one stepper to a row, at the foot of the screen. */
+.gtt-counts {
+    display: grid;
+    gap: var(--dk-space-2);
+}
+
+/* What sits after a player's name beside their stepper, such as their bid beside their tricks. */
+.gtt-count-detail {
+    color: var(--dk-muted);
+    font-size: var(--dk-text-small);
+    font-weight: 400;
+}
+
+/*
+ * The bids shown through the hand, two to a row so six fit above the dock, each a name over its
+ * bid, large enough to read from across the table.
+ */
+.gtt-bids {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--dk-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gtt-bids > li {
+    display: grid;
+    padding: var(--dk-space-2) var(--dk-space-3);
+    border: 1px solid var(--dk-line);
+    border-radius: var(--dk-radius);
+}
+
+.gtt-bid-name {
+    overflow-wrap: anywhere;
+}
+
+.gtt-bid {
+    font-size: var(--dk-text-numeral);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}

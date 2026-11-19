@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { GAMES, score, type ScoreInput, scoreJson } from './index.js';
+import { GAMES, score, type ScoreInput, scoreJson, wizardRounds } from './index.js';
 
 /** A hand that did not bust. */
 const hand = (numbers: readonly unknown[], modifiers: readonly string[] = []) => ({
@@ -64,6 +64,12 @@ describe('the games the package knows', () => {
                 maxPlayers: 6,
             },
         ]);
+    });
+});
+
+describe('how long a game of Wizard lasts', () => {
+    it('lasts the deck dealt out between the players, from twenty rounds for three to ten for six', () => {
+        expect([3, 4, 5, 6].map(wizardRounds)).toEqual([20, 15, 12, 10]);
     });
 });
 

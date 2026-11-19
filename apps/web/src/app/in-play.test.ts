@@ -104,7 +104,7 @@ describe('the game the start screen offers to continue', () => {
         expect(turnOf({ ...game, draft: null }, NAMES)).toBe('The next round has not started.');
     });
 
-    it("says a Wizard round's bid is next, then its tricks", async () => {
+    it("says a Wizard round's bids are next, then its tricks", async () => {
         const { play } = await setUp();
         await play.start({
             id: 'g-1',
@@ -113,9 +113,9 @@ describe('the game the start screen offers to continue', () => {
             options: {},
             players: ['ann', 'ben', 'cat'],
         });
-        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ann's bid is next.");
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe('The bids are next.');
         for (const bid of [1, 0, 0]) await play.enter('g-1', bid);
-        expect(turnOf(only(play.snapshot().games), NAMES)).toBe("Ann's tricks are next.");
+        expect(turnOf(only(play.snapshot().games), NAMES)).toBe('The tricks are next.');
     });
 
     it('says a Skyjo round waits on who ended it, once every card count is in', async () => {
@@ -155,7 +155,7 @@ describe('the game the start screen offers to continue', () => {
         await play.saveRound('g-new');
         expect(inPlayOf(play.snapshot().games, NAMES)).toEqual([
             { id: 'g-new', name: 'Flip 7', round: 2, turn: "Ann's score is next.", changing: null },
-            { id: 'g-old', name: 'Wizard', round: 1, turn: "Ann's bid is next.", changing: null },
+            { id: 'g-old', name: 'Wizard', round: 1, turn: 'The bids are next.', changing: null },
         ]);
         // A saved round opened to change is named, so it is let go rather than the game.
         await play.reopen('g-new', 0);

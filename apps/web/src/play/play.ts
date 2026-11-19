@@ -50,6 +50,16 @@ export interface DraftInPlay extends SavedDraft {
     readonly ready: boolean;
 }
 
+/** A value for a step of a round, as several are entered in one change. */
+export interface StepValue {
+    readonly step: SavedStep;
+    readonly value: unknown;
+}
+
+/** A round with the values given written in, in order. */
+const writeAll = (round: DraftRound, values: readonly StepValue[]): DraftRound =>
+    values.reduce((written, { step, value }) => write(written, step, value), round);
+
 /** A game as a screen shows it. */
 export interface GameInPlay {
     /** The game as it is saved, or as it will be once a failed save goes through. */
@@ -116,6 +126,17 @@ export interface Play {
      */
     readonly enter: (id: string, value: unknown) => Promise<void>;
     /**
+     * Enters several steps' values in one change, as a game that takes every player's bid on one
+     * screen does, and moves to the next step still empty after the last of them, or, in a saved
+     * round opened again, to the step after it.
+     */
+    readonly enterAll: (id: string, values: readonly StepValue[]) => Promise<void>;
+    /**
+     * Keeps several steps' values without moving on, as every player's bid is set on one screen,
+     * so a page loaded again comes back to them. Like a hold, it offers no undo of its own.
+     */
+    readonly holdAll: (id: string, values: readonly StepValue[]) => Promise<void>;
+    /**
      * Keeps a value for the step the round is at without moving on, as a hand is tapped in a card
      * at a time, so a page loaded again in the middle of a hand comes back to it. It is taken back
      * by tapping again, so it offers no undo of its own, and leaves the last one in place.
@@ -129,11 +150,16 @@ export interface Play {
      */
     readonly setOut: (id: string, out: readonly string[]) => Promise<void>;
     /**
-     * Saves the round being entered. Players named as out are taken out of it first, in the same
-     * change, as when the last player still to enter is skipped, so the round never stands with no
+     * Saves the round being entered. Players named as out are taken out of it first, and the
+     * values given written in, in the same change, as when the last player still to enter is
+     * skipped or every player's tricks are entered on one screen, so the round never stands with no
      * step, and undo puts it back as it was before.
      */
-    readonly saveRound: (id: string, out?: readonly string[]) => Promise<SavedRound>;
+    readonly saveRound: (
+        id: string,
+        out?: readonly string[],
+        values?: readonly StepValue[]
+    ) => Promise<SavedRound>;
     /**
      * Makes a draft of a saved round. The round stays as it was until the draft is saved. It is
      * refused while the round being entered holds anything of its own.
@@ -358,6 +384,12 @@ export const openPlay = (
         return { ...game, draft: { ...draft, round, step: null } };
     };
 
+    /** The game with values written into the round being entered. */
+    const withValues = (game: SavedGame, values: readonly StepValue[]): SavedGame => {
+        const draft = draftOf(game);
+        return { ...game, draft: { ...draft, round: writeAll(toDraftRound(draft.round), values) } };
+    };
+
     /** Saves a game as it stands, and resolves to why the store refused it, or null. */
     const save = async (game: SavedGame): Promise<string | null> => {
         try {
@@ -462,6 +494,26 @@ export const openPlay = (
                     { kind: 'entry', before: game }
                 );
             }),
+        enterAll: (id, values) =>
+            inOrder(async () => {
+                const game = gameOf(id);
+                const draft = draftOf(game);
+                const last = values.at(-1)?.step ?? null;
+                if (last === null) return;
+                const round = writeAll(toDraftRound(draft.round), values);
+                const steps = stepsOf(game.game, game.players, round);
+                const at = steps.findIndex((step) => sameStep(step, last));
+                const step = nextStep(steps, round, at + 1, draft.index < game.rounds.length);
+                await keep(
+                    { ...game, draft: { ...draft, round, step } },
+                    { kind: 'entry', before: game }
+                );
+            }),
+        holdAll: (id, values) =>
+            inOrder(async () => {
+                const game = gameOf(id);
+                await keep(withValues(game, values), 'carry');
+            }),
         hold: (id, value) =>
             inOrder(async () => {
                 const game = gameOf(id);
@@ -517,10 +569,11 @@ export const openPlay = (
                     { kind: 'out', before: game }
                 );
             }),
-        saveRound: (id, out) =>
+        saveRound: (id, out, values) =>
             inOrder(async (): Promise<SavedRound> => {
                 const kept = gameOf(id);
-                const game = out === undefined ? kept : withPlayersOut(kept, out);
+                const given = values === undefined ? kept : withValues(kept, values);
+                const game = out === undefined ? given : withPlayersOut(given, out);
                 const draft = viewOf(game).draft;
                 if (draft === null) throw new Error('The game has no round being entered.');
                 if (!draft.ready)

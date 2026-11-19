@@ -32,14 +32,14 @@ const withGameInPlay = async (page: Page) => {
 
 const tabs = (page: Page) => page.getByRole('navigation', { name: 'Sections' });
 
-test('offers to continue the game in play, naming the game and whose turn it is', async ({
+test('offers to continue the game in play, naming the game and what it waits on', async ({
     page,
 }) => {
     await withGameInPlay(page);
     const card = page.getByRole('region', { name: 'Game in play' }).getByRole('listitem');
     await expect(card.getByText('Wizard', { exact: true })).toBeVisible();
     await expect(card.getByText('Round 1', { exact: true })).toBeVisible();
-    await expect(card.getByText("Ben's bid is next.")).toBeVisible();
+    await expect(card.getByText('The bids are next.')).toBeVisible();
     await card.getByRole('link', { name: 'Continue the game of Wizard, round 1' }).click();
     await expect(page).toHaveURL(/\/game\/\?id=g-wizard$/);
 });

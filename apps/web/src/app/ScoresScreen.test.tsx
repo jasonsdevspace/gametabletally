@@ -204,22 +204,6 @@ describe('the scores screen', () => {
         expect(screen.getByText('Ben won with 227.')).toBeTruthy();
     });
 
-    it('gives a saved round of a game with no entry screen yet no button to open it', async () => {
-        await draw(
-            saved('wizard', [
-                {
-                    entries: {
-                        ann: { bid: 1, tricks: 1 },
-                        ben: { bid: 0, tricks: 0 },
-                        cat: { bid: 0, tricks: 0 },
-                    },
-                },
-            ])
-        );
-        expect(screen.queryByRole('button', { name: /Round 1/ })).toBeNull();
-        expect(screen.getByRole('columnheader', { name: 'Round 1' })).toBeTruthy();
-    });
-
     it('marks a round still being entered as not yet counted, with what stands so far', async () => {
         await draw(
             saved('flip-7', [{ entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) } }], {

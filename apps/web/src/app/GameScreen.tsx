@@ -11,9 +11,9 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type Play, stepAfter } from '../play/play.js';
 import { changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
-import { isRecord } from '../store/format.js';
+import { isRecord, type SavedStep } from '../store/format.js';
 import { Dock } from './AppFrame.js';
-import { canEnter, gameNameOf } from './in-play.js';
+import { gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import {
     canSkip,
@@ -31,6 +31,7 @@ import { ScoreHeader } from './ScoreHeader.js';
 import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
 import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
+import { WizardRound } from './wizard-round.js';
 
 /*
  * The game in play: the score header on top, and below it, in reach of a thumb, the keys a round
@@ -449,6 +450,22 @@ const useCameBack = (part: string | null): boolean => {
 };
 
 /**
+ * Which screen draws the step a round is at: a round of Wizard, entered a moment at a time for
+ * every player on one screen, who ended a round of Skyjo, which is a step of the round's own, a
+ * player's entry in Skyjo or Flip 7, or none, for a round whose every entry is in or a game this
+ * phone has no screen for.
+ */
+const screenOf = (
+    game: string,
+    step: SavedStep | null
+): 'wizard' | 'ender' | 'skyjo' | 'flip-7' | null => {
+    if (step === null) return null;
+    if (game === 'wizard') return 'wizard';
+    if (game === 'skyjo') return step.part === 'ender' ? 'ender' : 'skyjo';
+    return game === 'flip-7' ? 'flip-7' : null;
+};
+
+/**
  * The step a round is at, drawn by its game's own screen: a player's entry, or who ended a round of
  * Skyjo, which is a step of the round's own, or a word that the game cannot be entered here.
  */
@@ -469,44 +486,31 @@ const RoundFor = ({
     const step = draft.step;
     const parts = { play, game, names, summary, actions };
     const arrived = useCameBack(step?.part ?? null);
-    if (game.saved.game === 'skyjo' && step?.part === 'ender') return <SkyjoEnder {...parts} />;
     const player = step?.player ?? null;
-    if (player === null)
-        return (
-            <>
-                {isChanging(game, draft) ? null : actions}
-                <p>Every score of the round is in.</p>
-            </>
-        );
-    if (!canEnter(game.saved.game))
-        return (
-            <div className="gtt-game">
-                <div className="gtt-game-top">
-                    {isChanging(game, draft) ? null : actions}
-                    <ScoreHeader
-                        name={nameIn(names, player)}
-                        total={game.result.totals[player] ?? 0}
-                        line=""
-                    />
-                </div>
-                <p>
-                    Only Flip 7 and Skyjo have a screen for entering rounds, so a game of{' '}
-                    {gameNameOf(game.saved.game)} can be started here but not scored.
-                </p>
-                <Dock>
-                    <Link
-                        className="dk-button dk-button-accent dk-button-tall"
-                        href={hrefOf('scores', game.saved.id)}
-                    >
-                        Scores
-                    </Link>
-                </Dock>
-            </div>
-        );
-    return game.saved.game === 'skyjo' ? (
-        <SkyjoRound {...parts} player={player} arrived={arrived} />
-    ) : (
-        <Flip7Round {...parts} player={player} />
+    const kind = game.saved.game;
+    const screen = screenOf(kind, step);
+    if (screen === 'wizard') return <WizardRound {...parts} />;
+    if (screen === 'ender') return <SkyjoEnder {...parts} />;
+    if (screen === 'skyjo' && player !== null)
+        return <SkyjoRound {...parts} player={player} arrived={arrived} />;
+    if (screen === 'flip-7' && player !== null) return <Flip7Round {...parts} player={player} />;
+    return (
+        <div className="gtt-game">
+            <div className="gtt-game-top">{isChanging(game, draft) ? null : actions}</div>
+            <p>
+                {player === null
+                    ? 'Every score of the round is in.'
+                    : `A game of ${gameNameOf(kind)} cannot be entered on this phone, though its scores can be read.`}
+            </p>
+            <Dock>
+                <Link
+                    className="dk-button dk-button-accent dk-button-tall"
+                    href={hrefOf('scores', game.saved.id)}
+                >
+                    Scores
+                </Link>
+            </Dock>
+        </div>
     );
 };
 

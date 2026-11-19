@@ -52,6 +52,12 @@ const PER_TRICK = 10;
 /** The cards in the deck, which the last round deals out between the players. */
 const DECK = 60;
 
+/**
+ * How many rounds a game of Wizard lasts for a number of players: the deck dealt out between them
+ * in the last round.
+ */
+export const wizardRounds = (players: number): number => DECK / players;
+
 /** What a bid comes to once its tricks are known. */
 const scoreBid = (bid: number, tricks: number): number =>
     bid === tricks ? MET + PER_TRICK * tricks : -PER_TRICK * Math.abs(bid - tricks);
@@ -159,7 +165,7 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
  */
 const winners = ({ totals, missed, rounds }: Standing): readonly number[] | null => {
     // The game takes three to six players, and each of those counts divides the deck exactly.
-    if (rounds < DECK / totals.length) return null;
+    if (rounds < wizardRounds(totals.length)) return null;
     // Players level on the highest total share the win.
     return bestAmong(totals, contenders(missed), 'highest');
 };

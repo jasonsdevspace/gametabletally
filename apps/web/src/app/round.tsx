@@ -3,7 +3,7 @@ import { Button } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
-import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
+import { type GameInPlay, type Play, stepAfter, type StepValue } from '../play/play.js';
 import { type DraftRound, playingIn, read, stepsOf, toDraftRound, withOut } from '../play/steps.js';
 import { atRound, changedFrom, hrefOf } from '../routes.js';
 import type { SavedStep } from '../store/format.js';
@@ -89,6 +89,10 @@ export const comesAfter = (
         ? null
         : { player: before.player, now: where === 1 };
 };
+
+/** What a skip says: the player out of the round, with no score for it, and their total kept. */
+export const skipWords = (name: string, index: number, before: number): string =>
+    `${name} is out of round ${String(index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`;
 
 /**
  * The way to skip the player whose turn it is, under the header and so the whole hand away from
@@ -291,10 +295,10 @@ export const useRound = ({
     const saveRound = async (
         refusal: (problem: Problem) => string,
         out?: readonly string[],
-        { quiet = false } = {}
+        { quiet = false, values }: { quiet?: boolean; values?: readonly StepValue[] } = {}
     ) => {
         const index = (keptOf(play, id)?.draft ?? draft).index;
-        const saved = await play.saveRound(id, out);
+        const saved = await play.saveRound(id, out, values);
         // Said by the frame's toast, which stays on the page when the round ends the game and as a
         // changed round goes back to the scores. Each line is read from the round as it was saved
         // and scored, so a player taken out in the same change counts as out of it.
@@ -387,9 +391,7 @@ export const useRound = ({
             }
             await play.setOut(id, without);
             if (keptOf(play, id)?.error !== null) return;
-            say(
-                `${name} is out of round ${String(draft.index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`
-            );
+            say(skipWords(name, draft.index, before));
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
@@ -402,7 +404,7 @@ export const useRound = ({
     };
 
     /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
-    const back = async (player: string, who: string) => {
+    const back = async (player: string, who: string, { focus: move = true } = {}) => {
         if (held()) return;
         summary.clear();
         setBusy(true);
@@ -429,7 +431,8 @@ export const useRound = ({
                       : `, and is asked after ${nameOf(after.player)}`;
             say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
             const stillOut = rest[0];
-            setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+            if (move)
+                setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
@@ -437,19 +440,29 @@ export const useRound = ({
         }
     };
 
-    /** Moves the round to a step of its own, to correct an entry, or says why it did not. */
-    const goTo = async (step: SavedStep) => {
-        if (held()) return;
+    /**
+     * Makes a change to the round while nothing else is, with the last summary taken away first,
+     * and resolves to whether it was kept, saying why where it was not.
+     */
+    const run = async (work: () => Promise<unknown>, failed: string): Promise<boolean> => {
+        if (held()) return false;
         summary.clear();
         setBusy(true);
         try {
-            await play.goTo(id, step);
+            await work();
+            // A save the store refused is said by the screen's alert.
+            return keptOf(play, id)?.error === null;
         } catch (error: unknown) {
-            say(error instanceof Error ? error.message : 'The round could not go back to it.');
+            say(error instanceof Error ? error.message : failed);
+            return false;
         } finally {
             setBusy(false);
         }
     };
+
+    /** Moves the round to a step of its own, to correct an entry, or says why it did not. */
+    const goTo = (step: SavedStep) =>
+        run(() => play.goTo(id, step), 'The round could not go back to it.');
 
     return {
         id,
@@ -465,5 +478,10 @@ export const useRound = ({
         skip,
         back,
         goTo,
+        run,
+        /** Moves focus to the element with the id given, once the change that draws it is drawn. */
+        focusOn: (to: string) => {
+            setFocus({ id: to });
+        },
     };
 };

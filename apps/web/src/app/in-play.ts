@@ -1,6 +1,7 @@
 import { GAMES } from '@gametabletally/scoring';
 
 import type { GameInPlay } from '../play/play.js';
+import { knowsGame } from '../play/steps.js';
 
 /**
  * A game the start screen offers to continue or discard: its name, the round being entered and
@@ -22,15 +23,13 @@ export interface Continuing {
 export const gameNameOf = (game: string): string =>
     GAMES.find(({ id }) => id === game)?.name ?? game;
 
-/** Whether the app has a screen for entering a round of the game, as it has for Flip 7 and Skyjo. */
-export const canEnter = (game: string): boolean => game === 'flip-7' || game === 'skyjo';
-
-/** What a player enters at each part of a round, as the sentence names it. */
-const ENTERED = { entry: 'score is', bid: 'bid is', tricks: 'tricks are' } as const;
+/** Whether the app has a screen for entering a round of the game, which every game it knows has. */
+export const canEnter = (game: string): boolean => knowsGame(game);
 
 /**
- * What the round being entered waits on, in a sentence: whose score, bid or tricks are next, who
- * ended a Skyjo round, or a round whose every score is in, which the rules take or refuse.
+ * What the round being entered waits on, in a sentence: whose score is next, the bids or the
+ * tricks of a Wizard round, which are entered for every player on one screen, who ended a Skyjo
+ * round, or a round whose every score is in, which the rules take or refuse.
  */
 export const turnOf = (game: GameInPlay, names: ReadonlyMap<string, string>): string => {
     const { draft } = game;
@@ -41,9 +40,10 @@ export const turnOf = (game: GameInPlay, names: ReadonlyMap<string, string>): st
             ? 'Every score is in. The round is ready to save.'
             : 'Every score is in. Check the round before saving it.';
     if (step.player === null || step.part === 'ender') return 'Next, say who ended the round.';
-    const what = ENTERED[step.part];
+    if (step.part === 'bid') return 'The bids are next.';
+    if (step.part === 'tricks') return 'The tricks are next.';
     const name = names.get(step.player);
-    return `${name === undefined ? "Another player's" : `${name}'s`} ${what} next.`;
+    return `${name === undefined ? "Another player's" : `${name}'s`} score is next.`;
 };
 
 /**
