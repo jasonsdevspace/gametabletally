@@ -90,7 +90,9 @@ describe('the start screen', () => {
 
     it("says why the games could not be read, in the store's own words", async () => {
         render(<PlayStart open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
-        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        await waitFor(() => {
+            expect(screen.getByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        });
     });
 
     it('reads the games in play again when the app comes back to the front', async () => {
@@ -149,7 +151,9 @@ describe('the start screen', () => {
                 }}
             />
         );
-        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        await waitFor(() => {
+            expect(screen.getByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        });
         act(() => {
             window.dispatchEvent(new Event('pageshow'));
         });

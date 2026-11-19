@@ -1,6 +1,6 @@
 import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
-import { Button, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
+import { Button, Callout, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
@@ -639,7 +639,9 @@ export const WizardRound = ({
                 />
             )}
             <StatusLine ref={line} />
-            {game.error === null ? null : <p role="alert">{game.error}</p>}
+            <Callout tone="danger" live="alert">
+                {game.error ?? ''}
+            </Callout>
             <RoundDock
                 id={id}
                 index={draft.index}

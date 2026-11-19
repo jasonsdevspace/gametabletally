@@ -1,3 +1,4 @@
+import { Callout } from '@jasonsdevspace/design-kit/react';
 import {
     createContext,
     type ReactNode,
@@ -264,7 +265,12 @@ export const WithOpenedGame = ({
             </p>
         );
     if (read === null) return null;
-    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    if ('failed' in read.lent)
+        return (
+            <Callout tone="danger" live="alert">
+                {read.lent.failed}
+            </Callout>
+        );
     return children({ id, ...read.lent });
 };
 
@@ -297,6 +303,11 @@ export const WithGames = ({
     }, []);
     const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
     if (read === null) return null;
-    if ('failed' in read.lent) return <p role="alert">{read.lent.failed}</p>;
+    if ('failed' in read.lent)
+        return (
+            <Callout tone="danger" live="alert">
+                {read.lent.failed}
+            </Callout>
+        );
     return children(read.lent);
 };

@@ -385,12 +385,17 @@ describe('the new game screen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
         fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
         const dock = screen.getByRole('region', { name: 'Actions' });
-        expect(await within(dock).findByRole('alert')).toHaveTextContent(/./);
+        // The alert is on the page from the start, empty, so it is read once its words arrive.
+        await waitFor(() => {
+            expect(within(dock).getByRole('alert')).toHaveTextContent(/\w/);
+        });
     });
 
     it("says why the saved players could not be read, in the store's own words", async () => {
         window.history.replaceState(null, '', '/new/?game=skyjo');
         render(<NewGame open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
-        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        await waitFor(() => {
+            expect(screen.getByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        });
     });
 });

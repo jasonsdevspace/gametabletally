@@ -1,4 +1,4 @@
-import { Button, InputField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, Callout, InputField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -114,7 +114,12 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
         current.current = player;
     }, [player]);
 
-    if (unread !== '') return <p role="alert">{unread}</p>;
+    if (unread !== '')
+        return (
+            <Callout tone="danger" live="alert">
+                {unread}
+            </Callout>
+        );
     if (read === null || !running) return null;
     if (!player)
         return (
@@ -219,7 +224,9 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>
-            {failed === '' ? null : <p role="alert">{failed}</p>}
+            <Callout tone="danger" live="alert">
+                {failed}
+            </Callout>
             <p className="gtt-fine">
                 {played === 0
                     ? 'Removing a player who has played no game deletes them.'

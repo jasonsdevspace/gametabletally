@@ -146,7 +146,9 @@ describe('the players screen', () => {
 
     it("says why the players could not be read, in the store's own words", async () => {
         render(<PlayersList open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
-        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        await waitFor(() => {
+            expect(screen.getByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+        });
     });
 
     it('lists a removed player brought back by name in their place, by the day they were added', async () => {

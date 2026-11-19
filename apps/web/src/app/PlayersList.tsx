@@ -1,4 +1,4 @@
-import { StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Callout, StatusLine } from '@jasonsdevspace/design-kit/react';
 
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
@@ -65,7 +65,9 @@ export const PlayersList = ({
     const listed = read?.players.filter(({ removed }) => !removed) ?? [];
     return (
         <>
-            {unread === '' ? null : <p role="alert">{unread}</p>}
+            <Callout tone="danger" live="alert">
+                {unread}
+            </Callout>
             {read === null ? null : listed.length === 0 ? (
                 <p>
                     No players yet. A player is saved the first time they sit down to a game, and

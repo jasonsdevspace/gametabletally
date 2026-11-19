@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, Callout, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -284,7 +284,9 @@ export const NewGame = ({
 
     return (
         <div className="gtt-new" ref={screen}>
-            {unread === '' ? null : <p role="alert">{unread}</p>}
+            <Callout tone="danger" live="alert">
+                {unread}
+            </Callout>
             <ChoiceField
                 label="Game"
                 name="game"
@@ -340,7 +342,9 @@ export const NewGame = ({
             <StatusLine ref={line} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
-                {refused === '' ? null : <p role="alert">{refused}</p>}
+                <Callout tone="danger" live="alert">
+                    {refused}
+                </Callout>
                 {why === null ? null : (
                     <p className="dk-field-hint" id="start-why">
                         {why}

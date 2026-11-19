@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, Callout, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
@@ -550,7 +550,9 @@ export const SkyjoRound = ({
                 onMode={choose}
             />
             <StatusLine ref={line} />
-            {game.error === null ? null : <p role="alert">{game.error}</p>}
+            <Callout tone="danger" live="alert">
+                {game.error ?? ''}
+            </Callout>
             <RoundDock
                 id={id}
                 index={draft.index}
@@ -706,7 +708,9 @@ export const SkyjoEnder = ({
                 </p>
             )}
             <StatusLine ref={line} />
-            {game.error === null ? null : <p role="alert">{game.error}</p>}
+            <Callout tone="danger" live="alert">
+                {game.error ?? ''}
+            </Callout>
             <RoundDock
                 id={id}
                 index={draft.index}
