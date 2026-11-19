@@ -385,9 +385,10 @@ describe('the new game screen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
         fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
         const dock = screen.getByRole('region', { name: 'Actions' });
-        // The alert is on the page from the start, empty, so it is read once its words arrive.
         await waitFor(() => {
-            expect(within(dock).getByRole('alert')).toHaveTextContent(/\w/);
+            expect(within(dock).getByRole('alert')).toHaveTextContent(
+                'Error: The phone is out of room.'
+            );
         });
     });
 

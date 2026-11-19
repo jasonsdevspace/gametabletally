@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, Callout, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -9,6 +9,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
 import { Dock, useToast } from './AppFrame.js';
+import { Failure } from './failure.js';
 import { Icon } from './icon.js';
 import { AddByName, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
@@ -284,9 +285,7 @@ export const NewGame = ({
 
     return (
         <div className="gtt-new" ref={screen}>
-            <Callout tone="danger" live="alert">
-                {unread}
-            </Callout>
+            <Failure words={unread} />
             <ChoiceField
                 label="Game"
                 name="game"
@@ -342,9 +341,7 @@ export const NewGame = ({
             <StatusLine ref={line} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
-                <Callout tone="danger" live="alert">
-                    {refused}
-                </Callout>
+                <Failure words={refused} />
                 {why === null ? null : (
                     <p className="dk-field-hint" id="start-why">
                         {why}

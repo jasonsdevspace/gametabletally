@@ -147,7 +147,8 @@ describe('the players screen', () => {
     it("says why the players could not be read, in the store's own words", async () => {
         render(<PlayersList open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
         await waitFor(() => {
-            expect(screen.getByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+            // Said as an error first, so the tone is not told by color alone.
+            expect(screen.getByRole('alert')).toHaveTextContent(`Error: ${BLOCKED_DATABASE}`);
         });
     });
 

@@ -1,11 +1,12 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, Callout, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
 import { isRecord, type SavedStep } from '../store/format.js';
 import { listOf } from '../website/games.js';
+import { Failure } from './failure.js';
 import { nameIn } from './opened-game.js';
 import {
     canSkip,
@@ -550,9 +551,7 @@ export const SkyjoRound = ({
                 onMode={choose}
             />
             <StatusLine ref={line} />
-            <Callout tone="danger" live="alert">
-                {game.error ?? ''}
-            </Callout>
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
@@ -708,9 +707,7 @@ export const SkyjoEnder = ({
                 </p>
             )}
             <StatusLine ref={line} />
-            <Callout tone="danger" live="alert">
-                {game.error ?? ''}
-            </Callout>
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}

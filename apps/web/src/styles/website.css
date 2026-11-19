@@ -136,7 +136,7 @@
     }
 }
 
-/* A band is the kit's. The rule above it and the surface ground are the website's own look. */
+/* A band is the kit's. The rule above it is the website's own look, as is the surface below. */
 .gtt-band {
     border-top: 1px solid var(--dk-line);
 }

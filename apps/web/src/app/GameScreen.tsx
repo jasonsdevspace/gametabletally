@@ -5,7 +5,7 @@ import {
     type Flip7Modifier,
     type Problem,
 } from '@gametabletally/scoring';
-import { Button, Callout, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -13,6 +13,7 @@ import { type Play, stepAfter } from '../play/play.js';
 import { changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord, type SavedStep } from '../store/format.js';
 import { Dock } from './AppFrame.js';
+import { Failure } from './failure.js';
 import { gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import {
@@ -328,9 +329,7 @@ const Flip7Round = ({
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
             <StatusLine ref={line} />
-            <Callout tone="danger" live="alert">
-                {game.error ?? ''}
-            </Callout>
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}

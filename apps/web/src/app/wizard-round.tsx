@@ -1,12 +1,13 @@
 import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
-import { Button, Callout, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
+import { Button, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
 import { isRecord } from '../store/format.js';
 import { listOf } from '../website/games.js';
+import { Failure } from './failure.js';
 import { nameIn } from './opened-game.js';
 import {
     canSkip,
@@ -639,9 +640,7 @@ export const WizardRound = ({
                 />
             )}
             <StatusLine ref={line} />
-            <Callout tone="danger" live="alert">
-                {game.error ?? ''}
-            </Callout>
+            <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
