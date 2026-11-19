@@ -766,7 +766,10 @@ const Entry = ({
                         line=""
                     />
                 </div>
-                <p>Entering a round of {gameName} comes to the app after Flip 7.</p>
+                <p>
+                    Only Flip 7 has a screen for entering rounds, so a game of {gameName} can be
+                    started here but not scored.
+                </p>
                 {scores}
             </div>
         );

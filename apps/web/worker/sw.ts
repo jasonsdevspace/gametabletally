@@ -9,8 +9,8 @@ import { answerFor, readPrecache } from './answer.js';
  * installs, and answers every navigation from that cache, or with the app's own not-found page,
  * and never from the network. A page fetched fresh from a newer build would upgrade the phone's
  * database, and the next page from the cache would be the older build, refused by the database it
- * had just been using. A new worker installs and waits, and takes over only when the visitor
- * agrees, which the piece that offers a new version draws.
+ * had just been using. A new worker installs and waits, and takes over once every page of the
+ * app the phone has open is closed.
  */
 
 declare const self: ServiceWorkerGlobalScope;
