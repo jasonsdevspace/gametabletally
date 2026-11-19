@@ -498,6 +498,54 @@ describe('players out of a round', () => {
     });
 });
 
+describe('several values entered in one change', () => {
+    const bids = (values: readonly number[]) =>
+        PLAYERS.map((player, at) => ({
+            step: { part: 'bid', player } as const,
+            value: values[at],
+        }));
+    const tricks = (values: readonly number[]) =>
+        PLAYERS.map((player, at) => ({
+            step: { part: 'tricks', player } as const,
+            value: values[at],
+        }));
+
+    it('enters every bid at once, moves to the first tricks, and undoes them together', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.enterAll('g-1', bids([1, 0, 0]));
+        const draft = shown(play, 'g-1').draft;
+        expect(draft?.round.entries).toEqual({ ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } });
+        expect(draft?.step).toEqual({ part: 'tricks', player: 'ann' });
+        expect(await play.undo()).toBe(true);
+        expect(shown(play, 'g-1').draft?.round.entries).toEqual({});
+    });
+
+    it('saves a round with every trick written in the same change, and undo takes back both', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.enterAll('g-1', bids([1, 0, 0]));
+        expect(await play.saveRound('g-1', undefined, tricks([1, 0, 0]))).toEqual({
+            saved: true,
+            outcome: null,
+        });
+        expect(shown(play, 'g-1').result.totals).toEqual({ ann: 30, ben: 20, cat: 20 });
+        await play.undo();
+        const draft = shown(play, 'g-1').draft;
+        expect(shown(play, 'g-1').saved.rounds).toEqual([]);
+        expect(draft?.round.entries).toEqual({ ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } });
+    });
+
+    it('refuses to save tricks that do not add up to the cards dealt, and keeps the round', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.enterAll('g-1', bids([1, 0, 0]));
+        const saved = await play.saveRound('g-1', undefined, tricks([1, 1, 0]));
+        expect(saved).toMatchObject({ saved: false, problems: [{ code: 'trick-total' }] });
+        expect(shown(play, 'g-1').saved.rounds).toEqual([]);
+    });
+});
+
 describe('leaving a game', () => {
     it('keeps it as it is to carry on, and a discarded game is gone until the discard is undone', async () => {
         const { factory, play } = await setUp();

@@ -293,3 +293,27 @@
         transform: translateY(var(--dk-space-2));
     }
 }
+
+/* A round of Wizard's heading: the cards each holds, which round of how many, and who deals. */
+.gtt-wizard-title {
+    display: grid;
+    gap: var(--dk-space-1);
+}
+
+.gtt-wizard-round {
+    font-size: var(--dk-text-title);
+    font-weight: 700;
+}
+
+/* Every player's bid or tricks, one stepper to a row, at the foot of the screen. */
+.gtt-counts {
+    display: grid;
+    gap: var(--dk-space-2);
+}
+
+/* A bid shown through the hand, large enough to read from across the table. */
+.gtt-bid {
+    font-size: var(--dk-text-numeral);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
