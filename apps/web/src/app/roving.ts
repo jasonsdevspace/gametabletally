@@ -1,10 +1,11 @@
-import { type FocusEvent, type KeyboardEvent, useState } from 'react';
+import { type FocusEvent, type KeyboardEvent, type MouseEvent, useState } from 'react';
 
 /*
  * One stop for the Tab key in a grid of buttons, with the arrow keys moving between its cells, as
  * the design kit leaves to the page. Left and right move one cell, up and down move to the nearest
  * cell in the row above or below as the grid is drawn, so it holds whatever the number of columns,
  * and Home and End reach the ends. A cell that is off keeps its place, as it does in the tab order.
+ * An arrow held with Alt, Control or Command is left to the browser, as its own shortcut.
  */
 
 /** Where a cell is drawn: its left, top, width and height. */
@@ -32,10 +33,15 @@ const across = (at: number, boxes: readonly Box[], down: boolean): number => {
             down ? box.top >= here.top + here.height / 2 : box.top + box.height / 2 <= here.top
         );
     if (rows.length === 0) return at;
-    const nearest = down
-        ? Math.min(...rows.map(({ box }) => box.top))
-        : Math.max(...rows.map(({ box }) => box.top));
-    const row = rows.filter(({ box }) => box.top === nearest);
+    const first = rows.reduce((near, one) =>
+        down ? (one.box.top < near.box.top ? one : near) : one.box.top > near.box.top ? one : near
+    ).box;
+    // A cell is in that row when its middle falls within the row's height, so a cell drawn a
+    // fraction of a pixel lower is not left out of it.
+    const row = rows.filter(({ box }) => {
+        const middle = box.top + box.height / 2;
+        return middle >= first.top && middle <= first.top + first.height;
+    });
     const best = row.reduce((closest, one) =>
         Math.abs(one.box.left + one.box.width / 2 - middle) <
         Math.abs(closest.box.left + closest.box.width / 2 - middle)
@@ -67,21 +73,36 @@ export const cellAfter = (
 const cellsOf = (grid: HTMLElement): HTMLElement[] =>
     Array.from(grid.querySelectorAll<HTMLElement>(':scope > button'));
 
+/** The index of the cell an event landed in, or -1 where it landed in none. */
+const indexIn = (grid: HTMLElement, target: EventTarget): number =>
+    cellsOf(grid).findIndex((cell) => target instanceof Node && cell.contains(target));
+
 /**
  * A grid's one stop: the tabindex of each cell, and the handlers the grid takes, which move focus
- * with the arrow keys and follow it wherever it lands, as by a tap.
+ * with the arrow keys and follow it wherever it lands, by a tap as well, since some browsers do not
+ * focus a button that is tapped. The stop goes back to the first cell when `fresh` changes, as for
+ * the next player's hand.
  */
-export const useRoving = (count: number) => {
-    const [active, setActive] = useState(0);
-    const at = Math.min(active, Math.max(0, count - 1));
+export const useRoving = (fresh: string) => {
+    const [stop, setStop] = useState({ fresh, at: 0 });
+    let at = stop.at;
+    if (stop.fresh !== fresh) {
+        at = 0;
+        setStop({ fresh, at });
+    }
+    const follow = (index: number) => {
+        if (index >= 0) setStop({ fresh, at: index });
+    };
     return {
         tabIndexOf: (index: number) => (index === at ? 0 : -1),
         onFocus: (event: FocusEvent<HTMLElement>) => {
-            const index = cellsOf(event.currentTarget).findIndex((cell) => cell === event.target);
-            if (index >= 0) setActive(index);
+            follow(indexIn(event.currentTarget, event.target));
+        },
+        onClick: (event: MouseEvent<HTMLElement>) => {
+            follow(indexIn(event.currentTarget, event.target));
         },
         onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-            if (!isMoveKey(event.key)) return;
+            if (event.altKey || event.ctrlKey || event.metaKey || !isMoveKey(event.key)) return;
             const cells = cellsOf(event.currentTarget);
             const from = cells.findIndex((cell) => cell === event.target);
             if (from < 0) return;
@@ -91,9 +112,8 @@ export const useRoving = (count: number) => {
                 return { left, top, width, height };
             });
             const rightToLeft = getComputedStyle(event.currentTarget).direction === 'rtl';
-            const to = cellAfter(event.key, from, boxes, rightToLeft);
-            setActive(to);
-            cells[to]?.focus();
+            // Focus moving to the cell makes it the stop, through the grid's focus handler.
+            cells[cellAfter(event.key, from, boxes, rightToLeft)]?.focus();
         },
     };
 };

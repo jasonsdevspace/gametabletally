@@ -43,6 +43,14 @@ describe('a grid of buttons with one stop', () => {
         expect(cellAfter('ArrowRight', 2, modifiers)).toBe(3);
     });
 
+    it('counts a cell drawn a fraction of a pixel lower as part of its row', () => {
+        const uneven = grid(6, 3).map((box, at) =>
+            at === 4 ? { ...box, top: box.top + 0.4 } : box
+        );
+        expect(cellAfter('ArrowDown', 1, uneven)).toBe(4);
+        expect(cellAfter('ArrowDown', 0, uneven)).toBe(3);
+    });
+
     it('swaps left and right for a page read from right to left', () => {
         expect(cellAfter('ArrowLeft', 1, numbers, true)).toBe(2);
         expect(cellAfter('ArrowRight', 1, numbers, true)).toBe(0);

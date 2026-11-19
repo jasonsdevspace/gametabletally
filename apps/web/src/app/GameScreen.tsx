@@ -123,8 +123,8 @@ export const Flip7Keys = ({
     readonly off?: boolean;
     readonly onChange: (hand: Flip7Entry) => void;
 }) => {
-    const numbers = useRoving(NUMBERS.length);
-    const modifiers = useRoving(FLIP_7_MODIFIERS.length);
+    const numbers = useRoving(name);
+    const modifiers = useRoving(name);
     return (
         <section className="gtt-keys" aria-label={`${name}'s cards`}>
             <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
@@ -151,6 +151,7 @@ export const Flip7Keys = ({
                 aria-label="Number cards"
                 aria-describedby={why === '' ? undefined : 'hand-why'}
                 onFocus={numbers.onFocus}
+                onClick={numbers.onClick}
                 onKeyDown={numbers.onKeyDown}
             >
                 {NUMBERS.map((card, at) => (
@@ -178,6 +179,7 @@ export const Flip7Keys = ({
                 role="group"
                 aria-label="Modifier cards"
                 onFocus={modifiers.onFocus}
+                onClick={modifiers.onClick}
                 onKeyDown={modifiers.onKeyDown}
             >
                 {FLIP_7_MODIFIERS.map((card, at) => (

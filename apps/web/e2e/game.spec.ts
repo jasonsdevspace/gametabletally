@@ -453,9 +453,28 @@ test('makes the numbers and the modifiers one stop each, with the arrow keys mov
     await expect(card('+4')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Scores' })).toBeFocused();
-    // Back into the numbers, focus lands on the card last reached there.
+    // Back through the modifiers and into the numbers, focus lands on the card last reached in each.
     await page.keyboard.press('Shift+Tab');
+    await expect(card('+4')).toBeFocused();
     await page.keyboard.press('Shift+Tab');
     await expect(card('1')).toBeFocused();
     await audit(page);
+});
+
+test('keeps the cards that Bust turns off in the grid, one stop as before, and pressing one does nothing', async ({
+    page,
+}) => {
+    await open(page);
+    const card = (name: string) => page.getByRole('button', { name, exact: true });
+    await card('Bust').click();
+    await card('Bust').focus();
+    await page.keyboard.press('Tab');
+    await expect(card('0')).toBeFocused();
+    await expect(card('0')).toHaveAttribute('aria-disabled', 'true');
+    await page.keyboard.press('ArrowRight');
+    await expect(card('1')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(card('1')).toHaveAttribute('aria-pressed', 'false');
+    await page.keyboard.press('Tab');
+    await expect(card('+2')).toBeFocused();
 });
