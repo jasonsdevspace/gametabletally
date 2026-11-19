@@ -1,6 +1,7 @@
 import { GAMES } from '@gametabletally/scoring';
 
 import type { GameInPlay } from '../play/play.js';
+import { knowsGame } from '../play/steps.js';
 
 /**
  * A game the start screen offers to continue or discard: its name, the round being entered and
@@ -22,11 +23,8 @@ export interface Continuing {
 export const gameNameOf = (game: string): string =>
     GAMES.find(({ id }) => id === game)?.name ?? game;
 
-/** The games the app has a screen for entering a round of, which is every game it knows. */
-const ENTERED = ['flip-7', 'skyjo', 'wizard'];
-
-/** Whether the app has a screen for entering a round of the game. */
-export const canEnter = (game: string): boolean => ENTERED.includes(game);
+/** Whether the app has a screen for entering a round of the game, which every game it knows has. */
+export const canEnter = (game: string): boolean => knowsGame(game);
 
 /**
  * What the round being entered waits on, in a sentence: whose score is next, the bids or the

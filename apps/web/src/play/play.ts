@@ -132,6 +132,11 @@ export interface Play {
      */
     readonly enterAll: (id: string, values: readonly StepValue[]) => Promise<void>;
     /**
+     * Keeps several steps' values without moving on, as every player's bid is set on one screen,
+     * so a page loaded again comes back to them. Like a hold, it offers no undo of its own.
+     */
+    readonly holdAll: (id: string, values: readonly StepValue[]) => Promise<void>;
+    /**
      * Keeps a value for the step the round is at without moving on, as a hand is tapped in a card
      * at a time, so a page loaded again in the middle of a hand comes back to it. It is taken back
      * by tapping again, so it offers no undo of its own, and leaves the last one in place.
@@ -503,6 +508,11 @@ export const openPlay = (
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'entry', before: game }
                 );
+            }),
+        holdAll: (id, values) =>
+            inOrder(async () => {
+                const game = gameOf(id);
+                await keep(withValues(game, values), 'carry');
             }),
         hold: (id, value) =>
             inOrder(async () => {

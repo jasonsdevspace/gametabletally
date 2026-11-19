@@ -90,6 +90,10 @@ export const comesAfter = (
         : { player: before.player, now: where === 1 };
 };
 
+/** What a skip says: the player out of the round, with no score for it, and their total kept. */
+export const skipWords = (name: string, index: number, before: number): string =>
+    `${name} is out of round ${String(index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`;
+
 /**
  * The way to skip the player whose turn it is, under the header and so the whole hand away from
  * the button for the next player, then who is out of the round with a way to put each back, or,
@@ -387,9 +391,7 @@ export const useRound = ({
             }
             await play.setOut(id, without);
             if (keptOf(play, id)?.error !== null) return;
-            say(
-                `${name} is out of round ${String(draft.index + 1)}, with no score for it. ${name}'s total stays at ${spokenOf(before)}.`
-            );
+            say(skipWords(name, draft.index, before));
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
@@ -402,7 +404,7 @@ export const useRound = ({
     };
 
     /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
-    const back = async (player: string, who: string) => {
+    const back = async (player: string, who: string, { focus: move = true } = {}) => {
         if (held()) return;
         summary.clear();
         setBusy(true);
@@ -429,7 +431,8 @@ export const useRound = ({
                       : `, and is asked after ${nameOf(after.player)}`;
             say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
             const stillOut = rest[0];
-            setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+            if (move)
+                setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
@@ -476,5 +479,9 @@ export const useRound = ({
         back,
         goTo,
         run,
+        /** Moves focus to the element with the id given, once the change that draws it is drawn. */
+        focusOn: (to: string) => {
+            setFocus({ id: to });
+        },
     };
 };

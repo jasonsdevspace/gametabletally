@@ -57,7 +57,7 @@ test('plays a game of Wizard with six players through, from its start to its rec
 
     // The tricks start at the bids, so the bid made costs no taps.
     await expect(page.locator('#tricks-ann')).toHaveValue('1');
-    await expect(page.getByText('Every trick is given, 1 of 1.')).toBeVisible();
+    await expect(page.getByText('Every trick is in, 1 of 1.')).toBeVisible();
     await audit(page);
     await dock(page).getByRole('button', { name: 'Save the round' }).click();
     await expect(page.locator('.dk-app-toast').getByRole('status')).toContainText(
@@ -75,7 +75,7 @@ test('plays a game of Wizard with six players through, from its start to its rec
         const save = dock(page).getByRole('button', { name: 'Save the round' });
         await expect(save).toHaveAttribute('aria-disabled', 'true');
         await expect(save).toHaveAccessibleDescription(
-            `${String(round)} tricks left to give, of ${String(round)}.`
+            `${String(round)} tricks still to enter, of ${String(round)} in the hand.`
         );
         await page.locator('#tricks-ann').fill(String(round));
         await save.click();

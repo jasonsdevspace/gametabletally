@@ -1,4 +1,4 @@
-import type { Problem } from '@gametabletally/scoring';
+import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
 import { Button, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -11,8 +11,10 @@ import { nameIn } from './opened-game.js';
 import {
     canSkip,
     type GameWithDraft,
+    keptOf,
     outWords,
     RoundDock,
+    skipWords,
     totalBefore,
     useRound,
 } from './round.js';
@@ -27,12 +29,6 @@ import type { Summary } from './summary.js';
  * made costs no taps, with the tricks still to give counted against the cards dealt, and the round
  * saved once they add up. A player skipped for the round has no bid and no tricks.
  */
-
-/** The cards in the deck, which the last round deals out between the players. */
-const DECK = 60;
-
-/** How many rounds a game of Wizard lasts for a number of players: the deck dealt out at the end. */
-export const roundsFor = (players: number): number => DECK / players;
 
 /**
  * Who deals a round: the first seat in the first round and one seat on in each round after,
@@ -82,14 +78,13 @@ const wizardLines =
         };
     };
 
-/** The tricks still to give against the cards dealt, in a sentence. */
+/** The tricks still to enter against the tricks in the hand, in a sentence. */
 export const tricksLeftWords = (given: number, dealt: number): string => {
-    if (given === dealt) return `Every trick is given, ${String(dealt)} of ${String(dealt)}.`;
+    if (given === dealt) return `Every trick is in, ${String(dealt)} of ${String(dealt)}.`;
     const left = dealt - given;
     if (left > 0)
-        return `${String(left)} ${left === 1 ? 'trick' : 'tricks'} left to give, of ${String(dealt)}.`;
-    const over = -left;
-    return `The tricks come to ${String(given)}, ${String(over)} more than the ${String(dealt)} dealt. Take ${over === 1 ? 'one' : String(over)} off.`;
+        return `${String(left)} ${left === 1 ? 'trick' : 'tricks'} still to enter, of ${String(dealt)} in the hand.`;
+    return `The tricks come to ${String(given)}, ${String(-left)} more than the ${String(dealt)} in the hand. Take ${String(-left)} off.`;
 };
 
 /**
@@ -116,35 +111,37 @@ const RoundTitle = ({
             {index + 1} {index === 0 ? 'card' : 'cards'} each
             {dealer === null ? null : `, ${dealer} deals`}
         </p>
-        <p className="gtt-wizard-round">
+        <h2 className="gtt-wizard-round">
             Round {index + 1} of {rounds}
-        </p>
+        </h2>
     </div>
 );
 
 /**
- * One player's count, a bid or tricks, on the kit's stepper, its label to the left, its buttons
- * named for the player and what is counted, and stopping at nothing and at the cards dealt.
+ * One player's count, a bid or tricks, on the kit's stepper, its label to the left with the player's
+ * name first, its buttons named for the player and what is counted, and stopping at nothing and at
+ * the cards dealt. What is typed in its field is kept as it is typed, so a count can be typed over
+ * and the kit can say a count outside its limits is refused.
  */
 const Count = ({
     id,
     name,
     what,
     detail,
-    value,
+    text,
     max,
     off,
-    onChange,
+    onText,
 }: {
     readonly id: string;
     readonly name: string;
     readonly what: 'bid' | 'tricks';
     /** What sits after the name in the label, such as the player's bid beside their tricks. */
     readonly detail: string;
-    readonly value: number;
+    readonly text: string;
     readonly max: number;
     readonly off: boolean;
-    readonly onChange: (value: number) => void;
+    readonly onText: (text: string) => void;
 }) => {
     const field = useRef<HTMLInputElement>(null);
     useEffect(() => (field.current === null ? undefined : attachStepper(field.current)), []);
@@ -155,23 +152,28 @@ const Count = ({
             inline
             tall
             label={
-                detail === '' ? (
-                    name
-                ) : (
-                    <>
-                        {name} <span className="gtt-count-detail">{detail}</span>
-                    </>
-                )
+                <>
+                    {name}
+                    {detail === '' ? null : (
+                        <>
+                            {' '}
+                            <span className="gtt-count-detail">{detail}</span>
+                        </>
+                    )}
+                    <span className="dk-visually-hidden">
+                        , {what === 'bid' ? 'bid' : 'tricks taken'}
+                    </span>
+                </>
             }
             subject={`${name}'s ${what}`}
             min={0}
             max={max}
-            value={value}
-            rangeError={`A count is from 0 to ${String(max)}.`}
+            value={text}
+            aria-describedby="counts-limits"
+            rangeError={`${name}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(max)}.`}
             onChange={(event) => {
-                const next = event.currentTarget.valueAsNumber;
                 // A press while the round is saving is let go, as every key's is.
-                if (!off && Number.isInteger(next) && next >= 0 && next <= max) onChange(next);
+                if (!off) onText(event.currentTarget.value);
             }}
         />
     );
@@ -179,7 +181,8 @@ const Count = ({
 
 /**
  * Who is out of the round, with a way to put each back, and a way to skip each player still in it,
- * while the round keeps two.
+ * while the round keeps two. The list of players to skip closes once a skip is kept, and otherwise
+ * gives focus back to the button that opened it.
  */
 const OutRows = ({
     playing,
@@ -196,13 +199,17 @@ const OutRows = ({
     readonly names: ReadonlyMap<string, string>;
     readonly skippable: boolean;
     readonly off: boolean;
-    readonly onSkip: (player: string) => void;
+    readonly onSkip: (player: string) => Promise<boolean>;
     readonly onBack: (player: string) => void;
     /** What shares the first row, such as the way back to the bids. */
     readonly extra?: ReactNode;
 }) => {
     // The way to skip each player opens from one button, so the keys keep their place on a phone.
     const [open, setOpen] = useState(false);
+    const skip = async (one: string) => {
+        if (await onSkip(one)) setOpen(false);
+        else document.getElementById('skip-player')?.focus();
+    };
     return (
         <>
             {skippable || extra !== undefined ? (
@@ -228,10 +235,7 @@ const OutRows = ({
                                         text
                                         id={`skip-${one}`}
                                         off={off}
-                                        onClick={() => {
-                                            setOpen(false);
-                                            onSkip(one);
-                                        }}
+                                        onClick={() => void skip(one)}
                                     >
                                         Skip {nameIn(names, one)}
                                     </Button>
@@ -280,28 +284,41 @@ const phaseOf = (game: GameWithDraft, playing: readonly string[], over: boolean)
     return over || anyTricks ? 'tricks' : 'hand';
 };
 
+/** A count as typed, read as a whole number from nothing to the most, or null where it is not one. */
+export const countIn = (text: string, most: number): number | null => {
+    if (!/^\d+$/.test(text)) return null;
+    const count = Number(text);
+    return count <= most ? count : null;
+};
+
 /**
- * What each player bid or took, as set on the steppers, started again from what is kept as the
- * round reaches each moment: a bid, or nothing, and tricks, or the bid, so a made bid costs no taps.
+ * What each player bid or took, as typed or set on the steppers, started again from what is kept
+ * as the round reaches each moment: a bid, or nothing, and tricks, or the bid, so a made bid costs
+ * no taps. A player skipped or put back leaves every other player's count as it was set.
  */
 const useCounts = (game: GameWithDraft, playing: readonly string[], phase: Phase) => {
     const { draft } = game;
-    const kept = () =>
-        Object.fromEntries(
-            playing.map((one) => {
-                const { bid, tricks } = countsOf(draft.round.entries[one]);
-                return [one, phase === 'bids' ? (bid ?? 0) : (tricks ?? bid ?? 0)];
-            })
-        );
-    const moment = `${String(draft.index)}|${phase}|${playing.join(',')}`;
-    const [counts, setCounts] = useState(() => ({ moment, of: kept() }));
-    const shown = counts.moment === moment ? counts : { moment, of: kept() };
-    if (shown !== counts) setCounts(shown);
-    const valueOf = (one: string) => shown.of[one] ?? 0;
-    const set = (one: string, value: number) => {
-        setCounts((now) => ({ ...now, of: { ...now.of, [one]: value } }));
+    const dealt = draft.index + 1;
+    const keptOfPlayer = (one: string): string => {
+        const { bid, tricks } = countsOf(draft.round.entries[one]);
+        return String(phase === 'bids' ? (bid ?? 0) : (tricks ?? bid ?? 0));
     };
-    return { valueOf, set };
+    const moment = `${String(draft.index)}|${phase}`;
+    const [counts, setCounts] = useState<{
+        readonly moment: string;
+        readonly texts: Readonly<Record<string, string>>;
+    }>(() => ({ moment, texts: {} }));
+    const shown = counts.moment === moment ? counts : { moment, texts: {} };
+    if (shown !== counts) setCounts(shown);
+    const textOf = (one: string) => shown.texts[one] ?? keptOfPlayer(one);
+    const countOf = (one: string) => countIn(textOf(one), dealt);
+    /** The texts with one player's changed, for every player in the round. */
+    const withText = (one: string, text: string) =>
+        Object.fromEntries(playing.map((each) => [each, each === one ? text : textOf(each)]));
+    const set = (one: string, text: string) => {
+        setCounts((now) => ({ ...now, texts: { ...now.texts, [one]: text } }));
+    };
+    return { textOf, countOf, withText, set };
 };
 
 /** The label of the button that moves a round of Wizard on, at each of its moments. */
@@ -316,27 +333,32 @@ const HandView = ({
     playing,
     names,
     dealer,
-    valueOf,
+    countOf,
 }: {
     readonly playing: readonly string[];
     readonly names: ReadonlyMap<string, string>;
     readonly dealer: string | null;
-    readonly valueOf: (player: string) => number;
+    readonly countOf: (player: string) => number | null;
 }) => (
     <section className="gtt-keys" aria-labelledby="hand-title">
-        <h2 id="hand-title" className="dk-eyebrow">
+        <h3 id="hand-title" className="dk-eyebrow">
             The bids, while the hand is played
-        </h2>
+        </h3>
         <ul className="gtt-bids" role="list">
             {playing.map((one) => (
                 <li key={one}>
                     <span className="gtt-bid-name">
                         {nameIn(names, one)}
-                        {one === dealer ? <span className="gtt-count-detail"> deals</span> : null}
+                        {one === dealer ? (
+                            <>
+                                {' '}
+                                <span className="gtt-count-detail">deals</span>
+                            </>
+                        ) : null}
                     </span>
                     <span className="gtt-bid">
                         <span className="dk-visually-hidden">, bid </span>
-                        {valueOf(one)}
+                        {countOf(one) ?? 0}
                     </span>
                 </li>
             ))}
@@ -344,7 +366,10 @@ const HandView = ({
     </section>
 );
 
-/** Every player's bid, or their tricks, on a stepper each, with what they add up to. */
+/**
+ * Every player's bid, or their tricks, on a stepper each, under a line that says what they add
+ * up to, and why the round cannot move on where a count typed is not one.
+ */
 const CountsView = ({
     game,
     playing,
@@ -354,6 +379,8 @@ const CountsView = ({
     off,
     counts,
     left,
+    wrong,
+    onText,
 }: {
     readonly game: GameWithDraft;
     readonly playing: readonly string[];
@@ -362,12 +389,15 @@ const CountsView = ({
     readonly what: 'bid' | 'tricks';
     readonly off: boolean;
     readonly counts: ReturnType<typeof useCounts>;
-    /** The tricks still to give, in words. */
+    /** The tricks still to enter, in words. */
     readonly left: string;
+    /** Why a count typed is refused, in words, or an empty string. */
+    readonly wrong: string;
+    readonly onText: (player: string, text: string) => void;
 }) => {
     const { draft } = game;
     const dealt = draft.index + 1;
-    const given = playing.reduce((sum, one) => sum + counts.valueOf(one), 0);
+    const given = playing.reduce((sum, one) => sum + (counts.countOf(one) ?? 0), 0);
     // The bid beside each player's tricks, and who deals beside the bids.
     const detailOf = (one: string) => {
         if (what === 'tricks') return `bid ${String(countsOf(draft.round.entries[one]).bid ?? 0)}`;
@@ -376,12 +406,20 @@ const CountsView = ({
     return (
         <section className="gtt-keys" aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}>
             {what === 'tricks' ? (
-                <p className="dk-field-hint" id="tricks-left">
+                <p className="dk-field-hint" id="tricks-left" tabIndex={-1}>
                     {left}
                 </p>
             ) : (
-                <p className="dk-field-hint">
+                <p className="dk-field-hint" id="counts-line" tabIndex={-1}>
                     The bids come to {given} for {dealt} {dealt === 1 ? 'card' : 'cards'} each.
+                </p>
+            )}
+            <span className="dk-visually-hidden" id="counts-limits">
+                Each from 0 to {dealt}.
+            </span>
+            {wrong === '' ? null : (
+                <p className="dk-field-hint" id="counts-why">
+                    {wrong}
                 </p>
             )}
             <div className="gtt-counts">
@@ -392,11 +430,11 @@ const CountsView = ({
                         name={nameIn(names, one)}
                         what={what}
                         detail={detailOf(one)}
-                        value={counts.valueOf(one)}
+                        text={counts.textOf(one)}
                         max={dealt}
                         off={off}
-                        onChange={(value) => {
-                            counts.set(one, value);
+                        onText={(text) => {
+                            onText(one, text);
                         }}
                     />
                 ))}
@@ -405,9 +443,13 @@ const CountsView = ({
     );
 };
 
+/** How long a run of presses rests before the tricks still to enter are said, in milliseconds. */
+const SETTLE = 700;
+
 /**
  * A round of Wizard being entered, at whichever of its moments it is: the bids, the hand, or the
- * tricks. Each moment keeps the round's title, its way to skip a player, and its dock.
+ * tricks. Each moment keeps the round's title, its way to skip a player, and its dock. Every count
+ * is kept as it is set, so a page loaded again and an Undo of the saved round come back to them.
  */
 export const WizardRound = ({
     play,
@@ -428,73 +470,126 @@ export const WizardRound = ({
     const nameOf = (one: string) => nameIn(names, one);
     const playing = playingIn(players, draft.round);
     const dealt = draft.index + 1;
+    const round = draft.index + 1;
     const dealer = dealerOf(players, draft.round, draft.index);
     const actionsOf = useRound({ play, game, names, summary, lineOf: wizardLines(names) });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, line, say, focusOn } = actionsOf;
     // The table says the hand is over by asking for the tricks, which is kept for this round only.
     const [over, setOver] = useState<number | null>(null);
     const phase = phaseOf(game, playing, changing || over === draft.index);
     const counts = useCounts(game, playing, phase);
-    const given = playing.reduce((sum, one) => sum + counts.valueOf(one), 0);
-
-    // The tricks still to give are said as they change, once the tricks are being entered.
+    const what = phase === 'bids' ? 'bid' : 'tricks';
+    const given = playing.reduce((sum, one) => sum + (counts.countOf(one) ?? 0), 0);
     const left = tricksLeftWords(given, dealt);
+    const refusedBy = playing.find((one) => counts.countOf(one) === null);
+    const wrong =
+        refusedBy === undefined || phase === 'hand'
+            ? ''
+            : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
+
+    // The tricks still to enter are said once a run of presses rests, so each press's own value is
+    // heard first, and not where a skip, a put back or the move to the tricks already said them.
     const lastSaid = useRef(left);
     useEffect(() => {
-        if (lastSaid.current === left) return;
-        lastSaid.current = left;
-        if (phase === 'tricks') say(left);
+        if (phase !== 'tricks' || lastSaid.current === left) return undefined;
+        const timer = window.setTimeout(() => {
+            lastSaid.current = left;
+            say(left);
+        }, SETTLE);
+        return () => {
+            window.clearTimeout(timer);
+        };
     }, [left, phase, say]);
+    const sayInstead = (words: string, after: string) => {
+        lastSaid.current = after;
+        say(words);
+    };
 
-    // Where focus goes once a skip or a put back is drawn, by the id it lands on.
-    const [focus, setFocus] = useState<{ readonly id: string } | null>(null);
-    useEffect(() => {
-        if (focus !== null) document.getElementById(focus.id)?.focus();
-    }, [focus]);
+    const valuesOf = (texts: Readonly<Record<string, string>>): StepValue[] | null => {
+        const values = playing.map((one) => ({
+            step: { part: what, player: one } as const,
+            value: countIn(texts[one] ?? '', dealt),
+        }));
+        return values.every(({ value }) => value !== null) ? values : null;
+    };
 
-    const valuesOf = (what: 'bid' | 'tricks'): StepValue[] =>
-        playing.map((one) => ({ step: { part: what, player: one }, value: counts.valueOf(one) }));
+    /** Sets a player's count as typed, and keeps every count once each is one. */
+    const change = (one: string, text: string) => {
+        if (actionsOf.held()) return;
+        summary.clear();
+        counts.set(one, text);
+        const values = valuesOf(counts.withText(one, text));
+        if (values !== null) void play.holdAll(id, values);
+    };
 
     const saveBids = async () => {
+        const values = valuesOf(counts.withText('', ''));
+        if (values === null) return;
         const done = await actionsOf.run(
-            () => play.enterAll(id, valuesOf('bid')),
+            () => play.enterAll(id, values),
             'The bids could not be saved.'
         );
         if (!done) return;
-        const bids = playing.map((one) => `${nameOf(one)} ${String(counts.valueOf(one))}`);
-        summary.offer(
-            `The bids for round ${String(draft.index + 1)} are in: ${listOf(bids, 'and')}.`
-        );
+        const bids = playing.map((one) => `${nameOf(one)} ${String(counts.countOf(one) ?? 0)}`);
+        summary.offer(`The bids for round ${String(round)} are in: ${listOf(bids, 'and')}.`);
     };
 
     const saveTricks = async () => {
-        if (given !== dealt || actionsOf.held()) return;
-        summary.clear();
-        await actionsOf.saveRound(wizardRefusalWords, undefined, { values: valuesOf('tricks') });
+        const values = valuesOf(counts.withText('', ''));
+        if (values === null || given !== dealt) return;
+        await actionsOf.run(
+            () => actionsOf.saveRound(wizardRefusalWords, undefined, { values }),
+            'The round could not be saved.'
+        );
     };
 
-    const skip = async (one: string) => {
+    const enterTricks = () => {
+        summary.clear();
+        setOver(draft.index);
+        sayInstead(`Enter the tricks for round ${String(round)}. ${left}`, left);
+        focusOn('tricks-left');
+    };
+
+    const skip = async (one: string): Promise<boolean> => {
         const done = await actionsOf.run(
             () => play.setOut(id, [...draft.round.out, one]),
             'The player could not be skipped.'
         );
-        if (!done) return;
-        const name = nameOf(one);
-        say(
-            `${name} is out of round ${String(draft.index + 1)}, with no score for it. ${name}'s total stays at ${String(totalBefore(game, one, draft.index))}.`
+        if (!done) return false;
+        const after = dealerOf(
+            players,
+            { ...draft.round, out: [...draft.round.out, one] },
+            draft.index
         );
-        setFocus({ id: `put-back-${one}` });
+        const deals = after !== null && after !== dealer ? ` ${nameOf(after)} deals instead.` : '';
+        sayInstead(
+            `${skipWords(nameOf(one), draft.index, totalBefore(game, one, draft.index))}${deals}`,
+            left
+        );
+        focusOn(`put-back-${one}`);
+        return true;
     };
 
+    // A player put back has no bid, so the round goes back to the bids, which are kept as set.
     const back = async (one: string) => {
-        await actionsOf.back('', one);
-        // A player put back has no bid, so the round goes back to the bids, at theirs.
-        setFocus({ id: `bid-${one}` });
+        await actionsOf.back('', one, { focus: false });
+        const step = keptOf(play, id)?.draft?.step;
+        if (step?.part === 'tricks') await actionsOf.goTo({ part: 'bid', player: one });
+        setOver(null);
+        sayInstead(
+            `${nameOf(one)} is back in round ${String(round)}. Set ${nameOf(one)}'s bid.`,
+            left
+        );
+        focusOn('counts-line');
     };
 
-    const changeBids = () => {
+    const changeBids = async () => {
         const first = playing[0];
-        if (first !== undefined) void actionsOf.goTo({ part: 'bid', player: first });
+        if (first === undefined) return;
+        setOver(null);
+        if (!(await actionsOf.goTo({ part: 'bid', player: first }))) return;
+        sayInstead(`Change the bids for round ${String(round)}.`, left);
+        focusOn('counts-line');
     };
 
     const below = (
@@ -504,11 +599,11 @@ export const WizardRound = ({
             names={names}
             skippable={canSkip(players, draft.round)}
             off={busy}
-            onSkip={(one) => void skip(one)}
+            onSkip={skip}
             onBack={(one) => void back(one)}
             extra={
                 phase === 'bids' || changing ? undefined : (
-                    <Button text off={busy} onClick={changeBids}>
+                    <Button text off={busy} onClick={() => void changeBids()}>
                         Change the bids
                     </Button>
                 )
@@ -516,6 +611,7 @@ export const WizardRound = ({
         />
     );
     const parts = { playing, names, dealer };
+    const refused = wrong !== '' || (phase === 'tricks' && given !== dealt);
 
     return (
         <div className="gtt-game gtt-wizard">
@@ -523,21 +619,23 @@ export const WizardRound = ({
                 {changing ? null : actions}
                 <RoundTitle
                     index={draft.index}
-                    rounds={roundsFor(players.length)}
+                    rounds={wizardRounds(players.length)}
                     dealer={dealer === null ? null : nameOf(dealer)}
                 />
                 {below}
             </div>
             {phase === 'hand' ? (
-                <HandView {...parts} valueOf={counts.valueOf} />
+                <HandView {...parts} countOf={counts.countOf} />
             ) : (
                 <CountsView
                     {...parts}
                     game={game}
-                    what={phase === 'bids' ? 'bid' : 'tricks'}
+                    what={what}
                     off={busy}
                     counts={counts}
                     left={left}
+                    wrong={wrong}
+                    onText={change}
                 />
             )}
             <StatusLine ref={line} />
@@ -547,15 +645,13 @@ export const WizardRound = ({
                 index={draft.index}
                 changing={changing}
                 off={busy}
-                refused={phase === 'tricks' && given !== dealt}
-                why="tricks-left"
+                refused={refused}
+                why={wrong === '' ? 'tricks-left' : 'counts-why'}
                 label={labelOf(phase, changing, draft.index)}
                 onNext={() => {
                     if (phase === 'bids') void saveBids();
-                    else if (phase === 'hand') {
-                        summary.clear();
-                        setOver(draft.index);
-                    } else void saveTricks();
+                    else if (phase === 'hand') enterTricks();
+                    else void saveTricks();
                 }}
                 onCancel={() => void actionsOf.cancel()}
             />

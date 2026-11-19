@@ -18,4 +18,4 @@ export type {
     ScoreInput,
     ScoreResult,
 } from './types.js';
-export type { WizardEntry, WizardRound } from './wizard.js';
+export { type WizardEntry, type WizardRound, wizardRounds } from './wizard.js';

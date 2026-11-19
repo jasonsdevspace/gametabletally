@@ -7,7 +7,7 @@ import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
 import { heard } from './status.testing.js';
-import { bidNote, countsOf, dealerOf, roundsFor, tricksLeftWords } from './wizard-round.js';
+import { bidNote, countIn, countsOf, dealerOf, tricksLeftWords } from './wizard-round.js';
 
 /* A round of Wizard in the app's frame, over a database in memory, and the words it draws. */
 
@@ -82,9 +82,13 @@ const setCount = (id: string, value: number) => {
 };
 
 describe('the words and numbers of a Wizard round', () => {
-    it('lasts as many rounds as the deck deals out between the players', () => {
-        expect(roundsFor(3)).toBe(20);
-        expect(roundsFor(6)).toBe(10);
+    it('reads a count typed as a whole number from nothing to the most, and nothing else', () => {
+        expect(countIn('2', 3)).toBe(2);
+        expect(countIn('0', 3)).toBe(0);
+        expect(countIn('4', 3)).toBeNull();
+        expect(countIn('', 3)).toBeNull();
+        expect(countIn('-1', 3)).toBeNull();
+        expect(countIn('1.5', 3)).toBeNull();
     });
 
     it('moves the dealer one seat each round, passing over a player out of it', () => {
@@ -101,14 +105,14 @@ describe('the words and numbers of a Wizard round', () => {
     });
 
     it('counts the tricks still to give, and says how many too many', () => {
-        expect(tricksLeftWords(1, 3)).toBe('2 tricks left to give, of 3.');
-        expect(tricksLeftWords(2, 3)).toBe('1 trick left to give, of 3.');
-        expect(tricksLeftWords(3, 3)).toBe('Every trick is given, 3 of 3.');
+        expect(tricksLeftWords(1, 3)).toBe('2 tricks still to enter, of 3 in the hand.');
+        expect(tricksLeftWords(2, 3)).toBe('1 trick still to enter, of 3 in the hand.');
+        expect(tricksLeftWords(3, 3)).toBe('Every trick is in, 3 of 3.');
         expect(tricksLeftWords(5, 3)).toBe(
-            'The tricks come to 5, 2 more than the 3 dealt. Take 2 off.'
+            'The tricks come to 5, 2 more than the 3 in the hand. Take 2 off.'
         );
         expect(tricksLeftWords(4, 3)).toBe(
-            'The tricks come to 4, 1 more than the 3 dealt. Take one off.'
+            'The tricks come to 4, 1 more than the 3 in the hand. Take 1 off.'
         );
     });
 
@@ -163,16 +167,16 @@ describe('a round of Wizard', () => {
         fireEvent.click(dockButton('Enter the tricks'));
         expect(count('tricks-ann')?.value).toBe('1');
         expect(count('tricks-ben')?.value).toBe('1');
-        expect(screen.getByText('Every trick is given, 2 of 2.')).toBeTruthy();
+        expect(screen.getByText('Every trick is in, 2 of 2.')).toBeTruthy();
         setCount('tricks-ben', 2);
         await heard(
             screenLine() ?? document.body,
-            'The tricks come to 3, 1 more than the 2 dealt. Take one off.'
+            'The tricks come to 3, 1 more than the 2 in the hand. Take 1 off.'
         );
         const save = dockButton('Save the round');
         expect(save).toHaveAttribute('aria-disabled', 'true');
         expect(save).toHaveAccessibleDescription(
-            'The tricks come to 3, 1 more than the 2 dealt. Take one off.'
+            'The tricks come to 3, 1 more than the 2 in the hand. Take 1 off.'
         );
         setCount('tricks-ann', 0);
         fireEvent.click(dockButton('Save the round'));
@@ -191,7 +195,12 @@ describe('a round of Wizard', () => {
             expect(count('bid-ben')).toBeNull();
         });
         expect(screen.getByText('Ben is out of this round.')).toBeTruthy();
-        fireEvent.click(screen.getByRole('button', { name: 'Put Ben back' }));
+        // The way to put Ben back is live once the skip is done.
+        const putBack = screen.getByRole('button', { name: 'Put Ben back' });
+        await waitFor(() => {
+            expect(putBack).not.toHaveAttribute('aria-disabled', 'true');
+        });
+        fireEvent.click(putBack);
         await waitFor(() => {
             expect(count('bid-ben')).not.toBeNull();
         });
@@ -208,5 +217,140 @@ describe('a round of Wizard', () => {
         await waitFor(() => {
             expect(dockButton('Save round 1')).not.toHaveAttribute('aria-disabled', 'true');
         });
+    });
+
+    it('keeps every other count as set when a player is skipped', async () => {
+        await draw(
+            wizard(at({ part: 'bid', player: 'ann' }, {}, 1), [
+                saved({ ann: [0, 0], ben: [1, 1], cat: [0, 0] }),
+            ])
+        );
+        setCount('bid-ann', 2);
+        fireEvent.click(screen.getByRole('button', { name: 'Skip a player this round' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Skip Ben' }));
+        await waitFor(() => {
+            expect(count('bid-ben')).toBeNull();
+        });
+        expect(count('bid-ann')?.value).toBe('2');
+    });
+
+    it('keeps the bids as they are set, so the page comes back to them', async () => {
+        const { open } = await draw(
+            wizard(at({ part: 'bid', player: 'ann' }, {}, 1), [
+                saved({ ann: [0, 0], ben: [1, 1], cat: [0, 0] }),
+            ])
+        );
+        setCount('bid-cat', 2);
+        await waitFor(async () => {
+            const store = await open();
+            const game = await store.game('g-1');
+            store.close();
+            expect(game?.draft?.round['entries']).toMatchObject({ cat: { bid: 2 } });
+            expect(game?.draft?.step).toEqual({ part: 'bid', player: 'ann' });
+        });
+    });
+
+    it('keeps what is typed, says why a count out of its limits holds the round, and saves once it is put right', async () => {
+        await draw(wizard(at({ part: 'bid', player: 'ann' })));
+        setCount('bid-ann', 7);
+        expect(count('bid-ann')?.value).toBe('7');
+        const save = dockButton('Save the bids');
+        expect(save).toHaveAttribute('aria-disabled', 'true');
+        expect(save).toHaveAccessibleDescription("Ann's bid can be from 0 to 1.");
+        setCount('bid-ann', 1);
+        expect(save).not.toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('names each count for its player and what it counts, and describes its limits', async () => {
+        await draw(wizard(at({ part: 'bid', player: 'ann' })));
+        expect(
+            screen.getByRole('spinbutton', { name: 'Ann deals, bid' })
+        ).toHaveAccessibleDescription('Each from 0 to 1.');
+        expect(screen.getByRole('spinbutton', { name: 'Ben, bid' })).toBeTruthy();
+    });
+
+    it('asks a player put back once the bids are saved for their bid, keeping the others', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, cat: { bid: 0 } },
+                        out: ['ben'],
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Put Ben back' }));
+        await waitFor(() => {
+            expect(count('bid-ben')).not.toBeNull();
+        });
+        expect(count('bid-ann')?.value).toBe('1');
+        await heard(screenLine() ?? document.body, "Ben is back in round 2. Set Ben's bid.");
+        expect(document.activeElement?.id).toBe('counts-line');
+    });
+
+    it('goes back to the bids from the tricks with focus on them, and from the bids to the hand', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        expect(await screen.findByText('Every trick is in, 2 of 2.')).toBeTruthy();
+        await heard(
+            screenLine() ?? document.body,
+            'Enter the tricks for round 2. Every trick is in, 2 of 2.'
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Change the bids' }));
+        await waitFor(() => {
+            expect(document.activeElement?.id).toBe('counts-line');
+        });
+        fireEvent.click(dockButton('Save the bids'));
+        expect(
+            await screen.findByRole('heading', { name: 'The bids, while the hand is played' })
+        ).toBeTruthy();
+    });
+
+    it('saves a round once however quickly its button is pressed twice', async () => {
+        const { open } = await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: {
+                            ann: { bid: 1, tricks: 1 },
+                            ben: { bid: 0, tricks: 0 },
+                            cat: { bid: 0, tricks: 0 },
+                        },
+                    }
+                )
+            )
+        );
+        const save = dockButton('Save the round');
+        fireEvent.click(save);
+        fireEvent.click(save);
+        await waitFor(() => {
+            expect(toast()?.textContent).toContain('Round 1 saved.');
+        });
+        const store = await open();
+        const game = await store.game('g-1');
+        store.close();
+        expect(game?.rounds).toHaveLength(1);
+        expect(game?.draft?.round['entries']).toEqual({});
+        // The second press saved nothing, so nothing is refused over the round's summary.
+        await new Promise((resolve) => {
+            setTimeout(resolve, 300);
+        });
+        expect(screenLine()?.textContent).toBe('');
     });
 });

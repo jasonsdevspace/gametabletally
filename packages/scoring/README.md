@@ -208,7 +208,8 @@ counts.
 
 A bid met exactly scores twenty and ten for each trick taken, and a bid missed loses ten for each
 trick over or under. The game is for three to six players and lasts sixty rounds divided by how many
-play: twenty for three, fifteen for four, twelve for five and ten for six. It is over after the last
+play: twenty for three, fifteen for four, twelve for five and ten for six, which `wizardRounds` gives
+for a number of players. It is over after the last
 round, and the highest total of the players who have missed no round wins, or of everyone when every
 player has missed one. Players level on it share the win.
 

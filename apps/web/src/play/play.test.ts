@@ -536,6 +536,16 @@ describe('several values entered in one change', () => {
         expect(draft?.round.entries).toEqual({ ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } });
     });
 
+    it('keeps every bid as it is set without moving on, and leaves the last Undo in place', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.holdAll('g-1', bids([1, 0, 0]));
+        const draft = shown(play, 'g-1').draft;
+        expect(draft?.round.entries).toEqual({ ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } });
+        expect(draft?.step).toEqual({ part: 'bid', player: 'ann' });
+        expect(play.snapshot().undo).toBeNull();
+    });
+
     it('refuses to save tricks that do not add up to the cards dealt, and keeps the round', async () => {
         const { play } = await setUp();
         await play.start(newGame('wizard'));
