@@ -426,3 +426,36 @@ test("takes a summary offered on an earlier visit away as the round's next entry
     await key(page, '8').click();
     await expect(shownToast(page)).not.toHaveAttribute('data-shown');
 });
+
+test('makes the numbers and the modifiers one stop each, with the arrow keys moving between their cards', async ({
+    page,
+}) => {
+    await open(page);
+    const card = (name: string) => page.getByRole('button', { name, exact: true });
+    await card('Bust').focus();
+    await page.keyboard.press('Tab');
+    await expect(card('0')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(card('1')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(card('6')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(card('12')).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(card('0')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await expect(card('1')).toHaveAttribute('aria-pressed', 'true');
+    // One Tab leaves the numbers for the modifiers, and one more leaves those for the dock.
+    await page.keyboard.press('Tab');
+    await expect(card('+2')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(card('+4')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Scores' })).toBeFocused();
+    // Back into the numbers, focus lands on the card last reached there.
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(card('1')).toBeFocused();
+    await audit(page);
+});
