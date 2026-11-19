@@ -10,6 +10,9 @@ be kept from its first round to its recap, with a player skipped for a round, a 
 finish later, and a saved round changed afterward. Games of Skyjo and Wizard can be started, but
 only Flip 7 has a screen for entering rounds. The scoring package already scores all three.
 
+It is live at [gametabletally.com](https://gametabletally.com), and installs from there to a
+phone's home screen.
+
 ## Working on it
 
 How to contribute is in [CONTRIBUTING.md](CONTRIBUTING.md), and how to report a security issue is
@@ -66,6 +69,13 @@ browser test but those of the worker, so no other test reads a cached page. `npm
 holds every page to a hundred for accessibility, and the website's pages, the start screen, the new
 game screen, a page about one game and the not-found page to ninety for performance, a good largest
 paint and layout shift, and a budget for the script and style each carries.
+
+A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
+passed, and a merge that fails one is not deployed. The live address counts page views with
+[Plausible](https://plausible.io/), with no cookie, nothing stored on the phone and no count for a
+browser that sends Global Privacy Control. A page is sent by its path alone, so the id of a game or
+a player never leaves the phone, and no other address, a local build or a test among them, is
+counted.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the

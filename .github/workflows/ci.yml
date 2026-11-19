@@ -12,7 +12,8 @@ permissions:
 
 # A newer push to a pull request supersedes the run in progress. A push to
 # main does not: runs on main wait their turn, so the newest commit is always
-# the last one checked.
+# the last one checked and deployed, and a run that has handed its site to
+# Pages is never canceled, which would leave the deployment pending.
 concurrency:
     group: ci-${{ github.ref }}
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -148,3 +149,62 @@ jobs:
             # The script builds the app before it audits it.
             - name: Lighthouse audits
               run: npm run lighthouse
+
+    # The app, published to GitHub Pages at gametabletally.com once every check above has passed
+    # on main. A merge that fails a check is never deployed. The app is built in a job with no more
+    # than read access, so nothing the build installs or runs can deploy, and the deploy job runs
+    # only GitHub's own Pages actions.
+    site:
+        name: Build the site
+        needs: [verify, browser, lighthouse]
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        runs-on: ubuntu-26.04
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Set up Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: .nvmrc
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci --ignore-scripts
+
+            - name: Build
+              run: npm run build
+
+            - name: Upload the site
+              uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+              with:
+                  path: apps/web/dist
+
+    deploy:
+        name: Deploy the site
+        needs: site
+        runs-on: ubuntu-26.04
+        timeout-minutes: 10
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Configure Pages
+              uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+            - name: Summarize the deploy
+              env:
+                  PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+              run: |
+                  commit="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+                  printf '### Deployed\n\n%s, from [`%s`](%s).\n' "$PAGE_URL" "${GITHUB_SHA:0:7}" "$commit" >> "$GITHUB_STEP_SUMMARY"

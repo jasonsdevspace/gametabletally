@@ -5,6 +5,7 @@ import './styles/screens.css';
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 
+import { countVisits } from './analytics.js';
 import { App } from './App.js';
 import { registerWorker } from './register.js';
 
@@ -20,3 +21,4 @@ const app = (
 if (root.hasChildNodes()) hydrateRoot(root, app);
 else createRoot(root).render(app);
 registerWorker();
+void countVisits();

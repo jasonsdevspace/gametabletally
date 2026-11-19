@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe('registering the service worker', () => {
-    it('registers the worker for the whole app once the built page has loaded', () => {
+    it('registers the worker for the whole app once the built page has loaded, read past the cache', () => {
         vi.stubEnv('PROD', true);
         const { register, listen } = workerBrowser();
         registerWorker();
@@ -26,7 +26,7 @@ describe('registering the service worker', () => {
         const onLoad = listen.mock.calls.find(([type]) => type === 'load')?.[1];
         if (typeof onLoad !== 'function') throw new Error('Nothing waits for the page to load.');
         onLoad(new Event('load'));
-        expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/' });
+        expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/', updateViaCache: 'none' });
     });
 
     it('registers nothing on the dev server, which has no worker to serve', () => {
