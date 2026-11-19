@@ -9,6 +9,7 @@ import { AppFrame } from './AppFrame.js';
 import {
     canSkip,
     comesAfter,
+    floorWords,
     GameScreen,
     handOf,
     lineOf,
@@ -305,9 +306,13 @@ describe('the words for skipping a player', () => {
         expect(canSkip(['ann', 'ben'], round([]))).toBe(false);
     });
 
-    it('says who is out of a round, one or several', () => {
+    it('says who is out of a round, one or several, and why no one else can be', () => {
         expect(outWords(['Ann'])).toBe('Ann is out of this round.');
         expect(outWords(['Ann', 'Ben'])).toBe('Ann and Ben are out of this round.');
+        expect(floorWords([])).toBe(
+            'A round needs two players, so no one else can sit this one out.'
+        );
+        expect(floorWords(['Ann'])).toBe('Ann is out, and a round needs two players.');
     });
 
     it('says who a player put back comes after, from the player whose turn it is', () => {
@@ -369,9 +374,7 @@ describe('skipping a player for a round', () => {
             "Ann is out of round 1, with no score for it. Ann's total stays at 0."
         );
         expect(skipButton()).toBeNull();
-        expect(
-            screen.getByText('A round needs two players, so no one else can sit this one out.')
-        ).toBeVisible();
+        expect(screen.getByText('Ann is out, and a round needs two players.')).toBeVisible();
         await waitFor(() => {
             expect(screen.getByRole('button', { name: 'Put Ann back' })).toHaveFocus();
         });

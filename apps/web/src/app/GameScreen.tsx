@@ -236,6 +236,12 @@ export const canSkip = (players: readonly string[], round: DraftRound): boolean 
 export const outWords = (names: readonly string[]): string =>
     `${listOf(names, 'and')} ${names.length === 1 ? 'is' : 'are'} out of this round.`;
 
+/** Why no one else can sit a round out, after who already is, in a sentence. */
+export const floorWords = (names: readonly string[]): string =>
+    names.length === 0
+        ? 'A round needs two players, so no one else can sit this one out.'
+        : `${listOf(names, 'and')} ${names.length === 1 ? 'is' : 'are'} out, and a round needs two players.`;
+
 /**
  * Who a player put back into a round comes after, as the turn runs on from the player whose turn
  * it is, and whether that is the player entering now, or null where the turn reaches them first.
@@ -282,42 +288,49 @@ const SkipRows = ({
     readonly off: boolean;
     readonly onSkip: () => void;
     readonly onBack: (player: string) => void;
-}) => (
-    <>
-        {skippable ? (
+}) => {
+    const backs = out.map((one) => (
+        <Button
+            key={one.player}
+            text
+            id={`put-back-${one.player}`}
+            off={off}
+            onClick={() => {
+                onBack(one.player);
+            }}
+        >
+            Put {one.name} back
+        </Button>
+    ));
+    const names = out.map((one) => one.name);
+    // Where no one else can be skipped, who is out and why share one line, so the keys keep their
+    // place above the dock on a phone.
+    if (!skippable)
+        return (
+            <p className="dk-actions gtt-fine">
+                <span>{floorWords(names)}</span>
+                {backs}
+                <Link className="dk-button dk-button-text" href={hrefOf('play')}>
+                    Leave for now
+                </Link>
+            </p>
+        );
+    return (
+        <>
             <p className="dk-actions">
                 <Button text id="skip-player" off={off} onClick={onSkip}>
                     {last ? `Skip ${name} and finish the round` : `Skip ${name} this round`}
                 </Button>
             </p>
-        ) : (
-            <p className="dk-actions gtt-fine">
-                <span>A round needs two players, so no one else can sit this one out.</span>
-                <Link className="dk-button dk-button-text" href={hrefOf('play')}>
-                    Leave for now
-                </Link>
-            </p>
-        )}
-        {out.length === 0 ? null : (
-            <p className="dk-actions gtt-fine">
-                <span>{outWords(out.map((one) => one.name))}</span>
-                {out.map((one) => (
-                    <Button
-                        key={one.player}
-                        text
-                        id={`put-back-${one.player}`}
-                        off={off}
-                        onClick={() => {
-                            onBack(one.player);
-                        }}
-                    >
-                        Put {one.name} back
-                    </Button>
-                ))}
-            </p>
-        )}
-    </>
-);
+            {out.length === 0 ? null : (
+                <p className="dk-actions gtt-fine">
+                    <span>{outWords(names)}</span>
+                    {backs}
+                </p>
+            )}
+        </>
+    );
+};
 
 /**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the

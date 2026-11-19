@@ -43,10 +43,7 @@ test('skips a player for one round by keyboard, and asks for them in the next', 
     await page.getByRole('button', { name: 'Skip Ann this round' }).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
-    await expect(page.getByText('Ann is out of this round.')).toBeVisible();
-    await expect(
-        page.getByText('A round needs two players, so no one else can sit this one out.')
-    ).toBeVisible();
+    await expect(page.getByText('Ann is out, and a round needs two players.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Put Ann back' })).toBeFocused();
     await audit(page);
 
