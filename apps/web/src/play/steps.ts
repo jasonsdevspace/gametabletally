@@ -75,15 +75,21 @@ const entryOf = (round: DraftRound, player: string): Readonly<Record<string, unk
 
 /**
  * The round with a step's entry written in. A bid and its tricks share the player's entry, so
- * each keeps the other.
+ * each keeps the other. A player's entry written as nothing is taken out, as a total typed and
+ * then deleted is, since the rules refuse an entry that holds nothing, and an ender written as
+ * nothing is no one.
  */
 export const write = (
     round: DraftRound,
     { part, player }: SavedStep,
     value: unknown
 ): DraftRound => {
-    if (part === 'ender') return { ...round, ender: value };
+    if (part === 'ender') return { ...round, ender: value ?? null };
     if (player === null) return round;
+    if (part === 'entry' && value === undefined) {
+        const { [player]: _taken, ...entries } = round.entries;
+        return { ...round, entries };
+    }
     const entry =
         part === 'bid'
             ? { ...entryOf(round, player), bid: value }
