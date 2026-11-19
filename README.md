@@ -2,11 +2,18 @@
 
 A scorekeeper for the game table. One phone is passed around, each player's round is entered with
 a few taps, and the app applies the game's scoring rules, keeps the running totals and says who is
-ahead. It works with no connection, and games, players and their history are saved on the phone.
+ahead. After the first visit it works with no connection, and games and players are saved on the
+phone.
 
-It keeps score for card games people already own, starting with Flip 7, Skyjo and Wizard.
+It is for card games people already own, and it is being built in the open. A game of Flip 7 can
+be kept from its first round to its recap, with a player skipped for a round, a game left to
+finish later, and a saved round changed afterward. Games of Skyjo and Wizard can be started, but
+only Flip 7 has a screen for entering rounds. The scoring package already scores all three.
 
 ## Working on it
+
+How to contribute is in [CONTRIBUTING.md](CONTRIBUTING.md), and how to report a security issue is
+in [SECURITY.md](SECURITY.md).
 
 You need [Node.js 24](https://nodejs.org/) and Git. The version is in `.nvmrc`, so `nvm use` picks it.
 
