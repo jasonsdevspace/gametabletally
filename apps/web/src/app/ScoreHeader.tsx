@@ -24,6 +24,9 @@ export const cardsOf = (total: number): readonly string[] => [
     ...String(Math.abs(total)),
 ];
 
+/** A number as it is drawn, with a true minus sign, as a card's face shows it. */
+export const drawnOf = (total: number): string => cardsOf(total).join('');
+
 /**
  * What tells a card apart from one drawn before it: the player, so a new player's total is drawn
  * afresh, then the sign alone, or a digit's place from the right and its character, so within one
@@ -34,12 +37,28 @@ const keysOf = (name: string, cards: readonly string[]): readonly string[] =>
         card === SIGN ? `${name}|sign` : `${name}|${String(cards.length - at)}|${card}`
     );
 
-/** What the status line says when the player or their total changes, or null for no change. */
-export const changeOf = (
-    before: { readonly name: string; readonly total: number },
-    after: { readonly name: string; readonly total: number }
-): string | null => {
-    if (before.name !== after.name) return `${after.name} is next.`;
+/**
+ * What the header shows: whose turn it is, their total, and, for a game whose round is a number
+ * typed in, what they have this round, or null for nothing yet, so each press is heard even where
+ * the total stays the same.
+ */
+interface Shown {
+    readonly name: string;
+    readonly total: number;
+    readonly round?: number | null | undefined;
+}
+
+/**
+ * What the status line says when the player, their total or their round changes, or null for no
+ * change. A new turn can carry a sentence of what to do, said after who is next.
+ */
+export const changeOf = (before: Shown, after: Shown, next?: string): string | null => {
+    if (before.name !== after.name)
+        return next === undefined ? `${after.name} is next.` : `${after.name} is next. ${next}`;
+    if (after.round !== undefined && before.round !== after.round)
+        return after.round === null
+            ? `${after.name}, nothing this round, ${spokenOf(after.total)} in all.`
+            : `${after.name}, ${spokenOf(after.round)} this round, ${spokenOf(after.total)} in all.`;
     if (before.total !== after.total) return `${after.name}'s total is ${spokenOf(after.total)}.`;
     return null;
 };
@@ -51,10 +70,17 @@ export interface ScoreHeaderProps {
     readonly total: number;
     /** How the total adds up, in a sentence. */
     readonly line: string;
+    /**
+     * What the player has this round, for a game whose round is a number typed in, or null for
+     * nothing yet, which the status line says with the total as each press changes it.
+     */
+    readonly round?: number | null | undefined;
+    /** What the player whose turn it is does first, said after who is next. */
+    readonly next?: string | undefined;
 }
 
-export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
-    const [shown, setShown] = useState({ name, total });
+export const ScoreHeader = ({ name, total, line, round, next }: ScoreHeaderProps) => {
+    const [shown, setShown] = useState<Shown>({ name, total, round });
     // The cards of the first draw, which stand still, so a total flips only as it changes and not
     // as the screen opens.
     const [still] = useState(() => new Set(keysOf(name, cardsOf(total))));
@@ -62,9 +88,9 @@ export const ScoreHeader = ({ name, total, line }: ScoreHeaderProps) => {
     // page. Each is an object of its own, so the same words said twice are said twice.
     const [change, setChange] = useState<{ readonly words: string } | null>(null);
     const [status, say] = useStatus();
-    if (shown.name !== name || shown.total !== total) {
-        const words = changeOf(shown, { name, total });
-        setShown({ name, total });
+    if (shown.name !== name || shown.total !== total || shown.round !== round) {
+        const words = changeOf(shown, { name, total, round }, next);
+        setShown({ name, total, round });
         if (words !== null) setChange({ words });
     }
     useEffect(() => {

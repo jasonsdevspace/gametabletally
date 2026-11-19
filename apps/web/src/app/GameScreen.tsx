@@ -435,6 +435,20 @@ const Entry = ({
 };
 
 /**
+ * Whether the round has just come back to a player's entry from who ended it, read from the part
+ * of the round each draw is at, so the player come back to can be told so.
+ */
+const useCameBack = (part: string | null): boolean => {
+    const [was, setWas] = useState(part);
+    const [back, setBack] = useState(false);
+    if (was !== part) {
+        setBack(was === 'ender');
+        setWas(part);
+    }
+    return back;
+};
+
+/**
  * The step a round is at, drawn by its game's own screen: a player's entry, or who ended a round of
  * Skyjo, which is a step of the round's own, or a word that the game cannot be entered here.
  */
@@ -454,6 +468,7 @@ const RoundFor = ({
     const { draft } = game;
     const step = draft.step;
     const parts = { play, game, names, summary, actions };
+    const arrived = useCameBack(step?.part ?? null);
     if (game.saved.game === 'skyjo' && step?.part === 'ender') return <SkyjoEnder {...parts} />;
     const player = step?.player ?? null;
     if (player === null)
@@ -489,7 +504,7 @@ const RoundFor = ({
             </div>
         );
     return game.saved.game === 'skyjo' ? (
-        <SkyjoRound {...parts} player={player} />
+        <SkyjoRound {...parts} player={player} arrived={arrived} />
     ) : (
         <Flip7Round {...parts} player={player} />
     );

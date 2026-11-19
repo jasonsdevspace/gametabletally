@@ -471,6 +471,31 @@ describe('players out of a round', () => {
             missed: ['ann'],
         });
     });
+
+    it('ask a player put back before who ended the round, which waits for every total', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('skyjo'));
+        await play.setOut('g-1', ['ann']);
+        await play.enter('g-1', { total: 3 });
+        await play.setOut('g-1', []);
+        // Cat is asked next, then Ann, put back, and only then who ended the round.
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+        await play.enter('g-1', { total: 9 });
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'ann' });
+        await play.enter('g-1', { total: 5 });
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'ender', player: null });
+    });
+
+    it('move the round off who ended it to a player put back there, who has no total yet', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('skyjo'));
+        await play.enter('g-1', { total: 4 });
+        await play.setOut('g-1', ['cat']);
+        await play.enter('g-1', { total: 3 });
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'ender', player: null });
+        await play.setOut('g-1', []);
+        expect(shown(play, 'g-1').draft?.step).toEqual({ part: 'entry', player: 'cat' });
+    });
 });
 
 describe('leaving a game', () => {

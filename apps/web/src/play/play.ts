@@ -172,6 +172,17 @@ const withRound = (rounds: readonly unknown[], index: number, round: unknown): u
         : [...rounds, round];
 
 /**
+ * Whether a step of a round being entered is still to be entered and can be asked now: a player's
+ * entry still empty, or a step of the round's own, such as who ended it, once every player's entry
+ * is in, so a player put back in the round is asked before it.
+ */
+const isOpen = (steps: readonly SavedStep[], round: DraftRound) => {
+    const empty = (step: SavedStep) => read(round, step) === undefined;
+    const playersLeft = steps.some((step) => step.player !== null && empty(step));
+    return (step: SavedStep): boolean => empty(step) && (step.player !== null || !playersLeft);
+};
+
+/**
  * The step a round moves to from the place given: in a round being entered, the first still to be
  * entered from there on and then from the start, or null when all are. In a saved round opened
  * again, whose every step is entered, the next step in order, or null after the last, so each
@@ -182,12 +193,11 @@ const nextStep = (
     round: DraftRound,
     from: number,
     reopened = false
-): SavedStep | null =>
-    reopened
-        ? (steps[from] ?? null)
-        : (steps.slice(from).find((step) => read(round, step) === undefined) ??
-          steps.find((step) => read(round, step) === undefined) ??
-          null);
+): SavedStep | null => {
+    if (reopened) return steps[from] ?? null;
+    const open = isOpen(steps, round);
+    return steps.slice(from).find(open) ?? steps.find(open) ?? null;
+};
 
 /**
  * The step a round moves to once the value given is entered for the step it is at, or null when
@@ -201,6 +211,22 @@ export const stepAfter = (game: GameInPlay, value: unknown): SavedStep | null =>
     const steps = stepsOf(game.saved.game, game.saved.players, round);
     const at = steps.findIndex((one) => sameStep(one, step));
     return nextStep(steps, round, at + 1, draft.index < game.saved.rounds.length);
+};
+
+/**
+ * The game scored with the value given entered for the step the round is at, as a tap makes it
+ * before the save of it lands, so a screen judges what was tapped rather than what is kept. It is
+ * null where the round has no step.
+ */
+export const previewWith = (game: GameInPlay, value: unknown): ScoreResult | null => {
+    const draft = game.draft;
+    const step = draft?.step ?? null;
+    if (draft === null || step === null) return null;
+    const round = write(draft.round, step, value);
+    return score({
+        ...toScoreInput(game.saved),
+        rounds: withRound(game.saved.rounds, draft.index, round),
+    });
 };
 
 /** A draft of a new round at a place, at its first step. */
@@ -470,16 +496,22 @@ export const openPlay = (
                 const at = seats.findIndex((step) => sameStep(step, draft.step));
                 const inRound = (step: SavedStep) => steps.some((one) => sameStep(one, step));
                 const empty = steps.find((step) => read(round, step) === undefined) ?? null;
+                const open = isOpen(steps, round);
+                // A step of the round's own, such as who ended it, waits while a player put back
+                // is still to enter.
+                const stays = still && (draft.step?.player !== null || open(draft.step));
                 const step = reopened
                     ? (empty ??
                       (still
                           ? draft.step
                           : (seats.slice(at + 1).find(inRound) ?? steps.at(-1) ?? null)))
-                    : still
+                    : stays
                       ? draft.step
                       : ([...seats.slice(at + 1), ...seats.slice(0, at + 1)].find(
-                            (one) => inRound(one) && read(round, one) === undefined
-                        ) ?? null);
+                            (one) => inRound(one) && open(one)
+                        ) ??
+                        steps.find(open) ??
+                        null);
                 await keep(
                     { ...game, draft: { ...draft, round, step } },
                     { kind: 'out', before: game }

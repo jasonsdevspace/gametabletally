@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter } from '../play/play.js';
-import { type DraftRound, playingIn, read, stepsOf, withOut } from '../play/steps.js';
+import { type DraftRound, playingIn, read, stepsOf, toDraftRound, withOut } from '../play/steps.js';
 import { atRound, changedFrom, hrefOf } from '../routes.js';
 import type { SavedStep } from '../store/format.js';
 import { listOf } from '../website/games.js';
@@ -164,6 +164,7 @@ export const RoundDock = ({
     off,
     refused,
     why = 'hand-why',
+    described,
     label,
     onNext,
     onCancel,
@@ -176,6 +177,8 @@ export const RoundDock = ({
     readonly refused: boolean;
     /** The id of what says why the round cannot move on. */
     readonly why?: string;
+    /** The id of what says what moving on will do, while it can. */
+    readonly described?: string | undefined;
     readonly label: string;
     readonly onNext: () => void;
     readonly onCancel: () => void;
@@ -196,7 +199,7 @@ export const RoundDock = ({
                 accent
                 tall
                 off={refused || off}
-                aria-describedby={refused ? why : undefined}
+                aria-describedby={refused ? why : described}
                 onClick={onNext}
             >
                 {label}
@@ -285,27 +288,33 @@ export const useRound = ({
      * Saves the round, with the players named first taken out of it, and says what each scored,
      * or what keeps it from being saved. `refusal` words what the rules refuse.
      */
-    const saveRound = async (refusal: (problem: Problem) => string, out?: readonly string[]) => {
-        // The round as the rules make it with the last entry kept, read before the save takes
-        // the draft away.
-        const kept = keptOf(play, id)?.draft ?? draft;
-        const round = out === undefined ? kept.round : withOut(kept.round, game.saved.players, out);
-        const scores = kept.preview.rounds[kept.index]?.scores ?? {};
-        const lines = game.saved.players.map((one) =>
-            lineOf(one, round, scores[one], round.out.includes(one))
-        );
+    const saveRound = async (
+        refusal: (problem: Problem) => string,
+        out?: readonly string[],
+        { quiet = false } = {}
+    ) => {
+        const index = (keptOf(play, id)?.draft ?? draft).index;
         const saved = await play.saveRound(id, out);
         // Said by the frame's toast, which stays on the page when the round ends the game and as a
-        // changed round goes back to the scores.
+        // changed round goes back to the scores. Each line is read from the round as it was saved
+        // and scored, so a player taken out in the same change counts as out of it.
         if (saved.saved) {
-            summary.offer(roundSummary(kept.index, lines));
+            const after = keptOf(play, id);
+            const round = toDraftRound(after?.saved.rounds[index]);
+            const scored = after?.result.rounds[index];
+            const scores = scored?.state === 'scored' ? scored.scores : {};
+            const lines = game.saved.players.map((one) =>
+                lineOf(one, round, scores[one], round.out.includes(one))
+            );
+            summary.offer(roundSummary(index, lines));
             // A round that ends the game opens its recap, where the table looks at the phone
             // together, and a changed round that does not goes back to the page it was opened from.
             const ended = saved.outcome === 'ended';
             if (changing) backToScores(ended);
             else if (ended) navigate(hrefOf('recap', id));
         } else if (saved.error !== null) say(saved.error);
-        else say(saved.problems[0] ? refusal(saved.problems[0]) : 'The round could not be saved.');
+        else if (!quiet)
+            say(saved.problems[0] ? refusal(saved.problems[0]) : 'The round could not be saved.');
         return saved;
     };
 
@@ -371,8 +380,10 @@ export const useRound = ({
         try {
             const without = [...draft.round.out, player];
             if (finishes) {
-                await saveRound(refusal, without);
-                return;
+                const saved = await saveRound(refusal, without, { quiet: true });
+                if (saved.saved || saved.error !== null) return;
+                // The round is not whole without them, as where the player taken out had ended
+                // it, so they are taken out and the round asks for what it still needs.
             }
             await play.setOut(id, without);
             if (keptOf(play, id)?.error !== null) return;
@@ -426,5 +437,33 @@ export const useRound = ({
         }
     };
 
-    return { id, draft, changing, busy, line, say, held, cancel, saveRound, next, skip, back };
+    /** Moves the round to a step of its own, to correct an entry, or says why it did not. */
+    const goTo = async (step: SavedStep) => {
+        if (held()) return;
+        summary.clear();
+        setBusy(true);
+        try {
+            await play.goTo(id, step);
+        } catch (error: unknown) {
+            say(error instanceof Error ? error.message : 'The round could not go back to it.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return {
+        id,
+        draft,
+        changing,
+        busy,
+        line,
+        say,
+        held,
+        cancel,
+        saveRound,
+        next,
+        skip,
+        back,
+        goTo,
+    };
 };

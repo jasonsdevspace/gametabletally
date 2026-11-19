@@ -16,6 +16,7 @@ import {
     skyjoNote,
     skyjoRefusalWords,
 } from './skyjo-round.js';
+import { heard } from './status.testing.js';
 
 /* A round of Skyjo in the app's frame, over a database in memory, and the words it draws. */
 
@@ -74,6 +75,13 @@ const key = (name: string) => within(pad()).getByRole('button', { name });
 const dockButton = (name: string | RegExp) =>
     within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name });
 const toast = () => document.querySelector('.dk-app-toast [role="status"]');
+const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+
+/** Waits for a line to say its words, which the kit's line puts in a moment after it is told. */
+const said = async (line: HTMLElement | null, words: string) => {
+    if (line === null) throw new Error('The status line is not on the page.');
+    await heard(line, words);
+};
 
 /** A refusal of Ann's entry in the first round, as the scoring package gives one. */
 const at0 = { message: 'The package says so.', round: 0, player: 'ann' } as const;
@@ -181,7 +189,7 @@ describe('a round of Skyjo', () => {
 
     it('adds up the cards tapped in, and takes one out by its own key', async () => {
         await draw(skyjo(at({ part: 'entry', player: 'ann' })));
-        fireEvent.click(await screen.findByRole('button', { name: 'Add it up for me' }));
+        fireEvent.click(await screen.findByRole('tab', { name: 'Add it up for me' }));
         const cards = screen.getByRole('group', { name: 'Cards' });
         for (const card of ['12', 'minus 2', '7'])
             fireEvent.click(within(cards).getByRole('button', { name: card }));
@@ -203,9 +211,8 @@ describe('a round of Skyjo', () => {
             await screen.findByText('No hand comes to 999. A total is from -17 to 142.')
         ).toBeTruthy();
         expect(dockButton('Next: Ben')).toHaveAttribute('aria-disabled', 'true');
-        expect(document.querySelector('.gtt-score-line')?.textContent).toBe(
-            'Nothing this round yet.'
-        );
+        // The header keeps the last total the rules took, so the refusal is said once.
+        expect(document.querySelector('.gtt-score-line')?.textContent).toBe('99 this round.');
     });
 
     it('asks who ended the round among those who played it, and saves only once one is named', async () => {
@@ -249,8 +256,8 @@ describe('a round of Skyjo', () => {
             out: [],
         };
         await draw(skyjo(at({ part: 'entry', player: 'ben' }, round), [round]));
-        expect(await screen.findByRole('button', { name: 'Add it up for me' })).toHaveAttribute(
-            'aria-pressed',
+        expect(await screen.findByRole('tab', { name: 'Add it up for me' })).toHaveAttribute(
+            'aria-selected',
             'true'
         );
         expect(screen.getByRole('group', { name: 'Cards tapped in, 10 in all' })).toBeTruthy();
@@ -262,5 +269,158 @@ describe('a round of Skyjo', () => {
         await screen.findByRole('group', { name: 'Number pad' });
         fireEvent.click(key('3'));
         expect(await screen.findByRole('button', { name: 'Next: Cat' })).toBeTruthy();
+    });
+
+    it("leaves focus on the card that takes a taken card's place, or the one before it, or the pad", async () => {
+        await draw(skyjo(at({ part: 'entry', player: 'ann' })));
+        fireEvent.click(await screen.findByRole('tab', { name: 'Add it up for me' }));
+        const cards = screen.getByRole('group', { name: 'Cards' });
+        for (const card of ['12', '7', '3'])
+            fireEvent.click(within(cards).getByRole('button', { name: card }));
+        const chip = (name: string) => screen.getByRole('button', { name: `Take out ${name}` });
+        // The first card taken out leaves focus on the card now in its place.
+        chip('12').focus();
+        fireEvent.click(chip('12'));
+        await waitFor(() => {
+            expect(chip('7')).toHaveFocus();
+        });
+        // The last card taken out leaves focus on the one before it, which keeps the strip's stop.
+        chip('3').focus();
+        fireEvent.click(chip('3'));
+        await waitFor(() => {
+            expect(chip('7')).toHaveFocus();
+        });
+        expect(chip('7')).toHaveAttribute('tabindex', '0');
+        // The strip emptied, focus goes to the pad.
+        fireEvent.click(chip('7'));
+        await waitFor(() => {
+            expect(document.activeElement?.closest('[aria-label="Cards"]')).toBeTruthy();
+        });
+    });
+
+    it('keeps what is kept, and the last Undo, as the way a total is entered changes', async () => {
+        const { open } = await draw(
+            skyjo(at({ part: 'entry', player: 'ben' }, { entries: { ann: { total: 4 } } }))
+        );
+        await screen.findByRole('group', { name: 'Number pad' });
+        fireEvent.click(key('2'));
+        fireEvent.click(key('5'));
+        fireEvent.click(screen.getByRole('tab', { name: 'Add it up for me' }));
+        fireEvent.click(screen.getByRole('tab', { name: 'Type a total' }));
+        expect(document.querySelector('.gtt-score-line')?.textContent).toBe('25 this round.');
+        await waitFor(async () => {
+            const store = await open();
+            const saved = await store.game('g-1');
+            store.close();
+            expect(saved?.draft?.round['entries']).toMatchObject({ ben: { total: 25 } });
+        });
+    });
+
+    it('takes digits, a minus sign and Backspace typed on a keyboard', async () => {
+        await draw(skyjo(at({ part: 'entry', player: 'ann' })));
+        const group = await screen.findByRole('group', { name: 'Number pad' });
+        for (const typed of ['-', '1', '2', 'Backspace', '4'])
+            fireEvent.keyDown(key('1'), { key: typed });
+        expect(document.querySelector('.gtt-score-line')?.textContent).toBe('-14 this round.');
+        expect(group).toBeTruthy();
+    });
+
+    it('says what naming a player as ender comes to as it is named, and describes the save by it', async () => {
+        await draw(
+            skyjo(
+                at(
+                    { part: 'ender', player: null },
+                    {
+                        entries: { ann: { total: 12 }, ben: { total: 9 }, cat: { total: 20 } },
+                    }
+                )
+            )
+        );
+        const group = await screen.findByRole('radiogroup', { name: 'Who ended the round?' });
+        fireEvent.click(within(group).getByRole('radio', { name: /^Ann/ }));
+        const words = "Ann's 12 doubles to 24, since Ben has as little or less.";
+        await said(screenLine(), words);
+        expect(dockButton('Save the round')).toHaveAccessibleDescription(words);
+    });
+
+    it('says who is out as the question is reached, and puts them back to be asked first', async () => {
+        await draw(
+            skyjo(
+                at(
+                    { part: 'ender', player: null },
+                    {
+                        entries: { ann: { total: 12 }, ben: { total: 9 } },
+                        out: ['cat'],
+                    }
+                )
+            )
+        );
+        await screen.findByRole('radiogroup', { name: 'Who ended the round?' });
+        await said(screenLine(), 'Cat is out of this round.');
+        fireEvent.click(screen.getByRole('button', { name: 'Put Cat back' }));
+        expect(await screen.findByRole('group', { name: 'Number pad' })).toBeTruthy();
+        expect(document.querySelector('.gtt-score-name')?.textContent).toBe('Cat');
+    });
+
+    it("goes back to the last player's total from the question, with focus on their keys", async () => {
+        await draw(
+            skyjo(
+                at(
+                    { part: 'ender', player: null },
+                    {
+                        entries: { ann: { total: 12 }, ben: { total: 9 }, cat: { total: 20 } },
+                    }
+                )
+            )
+        );
+        fireEvent.click(await screen.findByRole('button', { name: "Change Cat's total" }));
+        await screen.findByRole('group', { name: 'Number pad' });
+        await said(screenLine(), "Change Cat's total. It is 20.");
+        expect(document.activeElement?.closest('#skyjo-entry')).toBeTruthy();
+    });
+
+    it('takes a player out and asks again who ended the round where a skip leaves it with no ender', async () => {
+        await draw(
+            skyjo(
+                at(
+                    { part: 'entry', player: 'cat' },
+                    {
+                        entries: { ann: { total: 30 }, ben: { total: 40 }, cat: { total: 10 } },
+                        ender: 'cat',
+                    }
+                )
+            )
+        );
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Skip Cat and finish the round' })
+        );
+        const group = await screen.findByRole('radiogroup', { name: 'Who ended the round?' });
+        expect(
+            within(group)
+                .getAllByRole('radio')
+                .map((one) => one.getAttribute('value'))
+        ).toEqual(['ann', 'ben']);
+    });
+
+    it('says the round as it was saved where a skip finishes it, with the player out of it', async () => {
+        await draw(
+            skyjo(
+                at(
+                    { part: 'entry', player: 'cat' },
+                    {
+                        entries: { ann: { total: 30 }, ben: { total: 40 }, cat: { total: 10 } },
+                        ender: 'ann',
+                    }
+                )
+            )
+        );
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Skip Cat and finish the round' })
+        );
+        await waitFor(() => {
+            expect(toast()?.textContent).toContain(
+                'Round 1 saved. Ann 30, ended the round. Ben 40. Cat out of the round.'
+            );
+        });
     });
 });

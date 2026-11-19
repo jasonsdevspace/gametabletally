@@ -2,15 +2,16 @@ import type { Problem } from '@gametabletally/scoring';
 import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { type Play, stepAfter } from '../play/play.js';
+import { type Play, previewWith, stepAfter } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
-import { isRecord } from '../store/format.js';
+import { isRecord, type SavedStep } from '../store/format.js';
 import { listOf } from '../website/games.js';
 import { nameIn } from './opened-game.js';
 import {
     canSkip,
     type GameWithDraft,
     nextLabel,
+    outWords,
     RoundDock,
     SkipRows,
     totalBefore,
@@ -18,7 +19,7 @@ import {
 } from './round.js';
 import type { RoundLine } from './round-summary.js';
 import { useRoving } from './roving.js';
-import { ScoreHeader } from './ScoreHeader.js';
+import { drawnOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
 import type { Summary } from './summary.js';
 
 /*
@@ -38,6 +39,19 @@ const DIGITS = 3;
 
 /** The keys of the number pad, in the order they are laid out. */
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'minus', '0', 'delete'] as const;
+
+/** The most cards a hand holds, in a grid of four columns of three that never gains one. */
+const MOST_CARDS = 12;
+
+/** A key of the number pad. */
+type PadKey = (typeof PAD)[number];
+
+/** The key of the number pad a key of a keyboard types, or null for one it does not. */
+export const padKeyOf = (key: string): PadKey | null => {
+    if (key === '-') return 'minus';
+    if (key === 'Backspace' || key === 'Delete') return 'delete';
+    return PAD.find((one) => one === key && /^\d$/.test(one)) ?? null;
+};
 
 /** How a player's total is being entered: typed, or added up from the cards tapped in. */
 export interface SkyjoInput {
@@ -75,12 +89,15 @@ export const entryOf = ({ mode, typed, cards }: SkyjoInput): unknown => {
 export const heldOf = (entry: unknown): number | undefined => {
     if (!isRecord(entry)) return undefined;
     const { mode, typed, cards } = inputOf(entry);
-    if (mode === 'cards') return cards.reduce((sum, card) => sum + card, 0);
+    if (mode === 'cards') return sumOf(cards);
     return typed === '' ? undefined : Number(typed);
 };
 
+/** What cards come to, added up. */
+const sumOf = (cards: readonly number[]): number => cards.reduce((sum, card) => sum + card, 0);
+
 /** The input after a key of the number pad is pressed. */
-export const pressed = (typed: string, key: (typeof PAD)[number]): string => {
+export const pressed = (typed: string, key: PadKey): string => {
     if (key === 'delete') return typed.slice(0, -1);
     if (key === 'minus') return typed.startsWith('-') ? typed.slice(1) : `-${typed}`;
     const digits = typed.replace('-', '');
@@ -89,18 +106,12 @@ export const pressed = (typed: string, key: (typeof PAD)[number]): string => {
     return digits === '0' ? `${typed.slice(0, -1)}${key}` : `${typed}${key}`;
 };
 
-/** A card value as a screen reader says it, with a minus for the cards below zero. */
-const spokenCard = (card: number): string => (card < 0 ? `minus ${String(-card)}` : String(card));
-
-/** A card value as drawn, with a true minus sign. */
-const drawnCard = (card: number): string => (card < 0 ? `−${String(-card)}` : String(card));
-
 /** A card's value drawn with its spoken name, so a screen reader says "minus 2" for −2. */
 const CardFace = ({ card }: { readonly card: number }) =>
     card < 0 ? (
         <>
-            <span aria-hidden="true">{drawnCard(card)}</span>
-            <span className="dk-visually-hidden">{spokenCard(card)}</span>
+            <span aria-hidden="true">{drawnOf(card)}</span>
+            <span className="dk-visually-hidden">{spokenOf(card)}</span>
         </>
     ) : (
         <>{card}</>
@@ -132,25 +143,23 @@ export const skyjoNote = (held: number | undefined, score: number | undefined, e
     return ender ? 'ended the round' : '';
 };
 
-/** A player's line of a round of Skyjo, from the round as kept and the score the rules gave it. */
-const skyjoLine = (
-    name: string,
-    {
-        player,
-        round,
-        score,
-        out,
-    }: { player: string; round: DraftRound; score?: number; out: boolean }
-): RoundLine => {
-    if (out) return { name, out };
-    const held = heldOf(round.entries[player]);
-    const given = score ?? held;
-    return {
-        name,
-        ...(given === undefined ? {} : { score: given }),
-        note: skyjoNote(held, score, round['ender'] === player),
+/**
+ * Each player's line of a round of Skyjo for the toast, from the round as kept and the score the
+ * rules gave it, with what they hold where the rules gave none yet.
+ */
+const skyjoLines =
+    (names: ReadonlyMap<string, string>) =>
+    (player: string, round: DraftRound, score: number | undefined, out: boolean): RoundLine => {
+        const name = nameIn(names, player);
+        if (out) return { name, out };
+        const held = heldOf(round.entries[player]);
+        const given = score ?? held;
+        return {
+            name,
+            ...(given === undefined ? {} : { score: given }),
+            note: skyjoNote(held, score, round['ender'] === player),
+        };
     };
-};
 
 /** How a player's total adds up, in a sentence, with the round as it stands. */
 export const skyjoLineOf = ({
@@ -169,21 +178,21 @@ export const skyjoLineOf = ({
         : `${String(before)} before this round, and ${String(held)} this round.`;
 };
 
-/** The number pad a total is typed on, one stop for the Tab key. */
-const NumberPad = ({
-    input,
-    off,
-    describedBy,
-    fresh,
-    set,
-}: {
+/** What a pad of keys takes from the keys that hold it. */
+interface PadParts {
     readonly input: SkyjoInput;
     readonly off: boolean;
     readonly describedBy: string | undefined;
-    /** What starts the pad's stop again at its first key. */
+    /** What starts the pad's stop again at its first key, as for the next player. */
     readonly fresh: string;
     readonly set: (input: SkyjoInput) => void;
-}) => {
+}
+
+/**
+ * The number pad a total is typed on, one stop for the Tab key, which also takes the digits, a
+ * minus sign and Backspace typed on a keyboard.
+ */
+const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const pad = useRoving(fresh);
     return (
         <div
@@ -193,7 +202,14 @@ const NumberPad = ({
             aria-describedby={describedBy}
             onFocus={pad.onFocus}
             onClick={pad.onClick}
-            onKeyDown={pad.onKeyDown}
+            onKeyDown={(event) => {
+                pad.onKeyDown(event);
+                const key =
+                    event.altKey || event.ctrlKey || event.metaKey ? null : padKeyOf(event.key);
+                if (key === null || event.defaultPrevented) return;
+                event.preventDefault();
+                set({ ...input, typed: pressed(input.typed, key) });
+            }}
         >
             {PAD.map((key, at) => (
                 <Button
@@ -216,51 +232,56 @@ const NumberPad = ({
  * The cards a total is added up from: the strip of cards tapped in, each a key that takes it out
  * again, then the pad of card values, each one stop for the Tab key. The keys stand at the foot of
  * the screen, so a row of cards tapped in takes its room from above and leaves the pad where it is.
+ * A card taken out leaves focus on the card that takes its place in the strip, or on the one before
+ * it after the last, or on the pad once the strip is empty.
  */
-const CardPad = ({
-    input,
-    off,
-    describedBy,
-    fresh,
-    set,
-}: {
-    readonly input: SkyjoInput;
-    readonly off: boolean;
-    readonly describedBy: string | undefined;
-    readonly fresh: string;
-    readonly set: (input: SkyjoInput) => void;
-}) => {
-    const pad = useRoving(fresh);
-    const strip = useRoving(`${fresh}|strip`);
+const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const { cards } = input;
-    const sum = cards.reduce((total, card) => total + card, 0);
-    const full = cards.length >= 12;
+    const pad = useRoving(fresh);
+    const strip = useRoving(`${fresh}|strip`, cards.length);
+    const full = cards.length >= MOST_CARDS;
+    const stripRef = useRef<HTMLDivElement>(null);
+    const padRef = useRef<HTMLDivElement>(null);
+    // Where focus goes once a card taken out is drawn, by its place in the strip. Each is an object
+    // of its own, so the same place asked for twice is focused twice.
+    const [focus, setFocus] = useState<{ readonly at: number } | null>(null);
+    useEffect(() => {
+        if (focus === null) return;
+        const chips = stripRef.current?.querySelectorAll<HTMLElement>(':scope > button');
+        const chip = chips?.[Math.min(focus.at, chips.length - 1)];
+        (chip ?? padRef.current?.querySelector<HTMLElement>('[tabindex="0"]'))?.focus();
+    }, [focus]);
+    const hints = [describedBy, full ? 'cards-full' : null].filter(Boolean).join(' ');
     return (
         <>
             {cards.length === 0 ? null : (
                 <div
+                    ref={stripRef}
                     className="dk-button-grid gtt-strip"
                     role="group"
-                    aria-label={`Cards tapped in, ${String(sum)} in all`}
+                    aria-label={`Cards tapped in, ${spokenOf(sumOf(cards))} in all`}
                     onFocus={strip.onFocus}
                     onClick={strip.onClick}
                     onKeyDown={strip.onKeyDown}
                 >
                     {cards.map((card, at) => (
                         <Button
-                            // A hand holds a value more than once, so each card is known by its place.
-                            key={`${String(at)}|${String(card)}`}
+                            // Known by place, so the card that takes a taken card's place keeps
+                            // its key, and focus with it.
+                            key={at}
                             tabIndex={strip.tabIndexOf(at)}
                             off={off}
                             onClick={() => {
+                                if (off) return;
                                 set({ ...input, cards: cards.filter((_, place) => place !== at) });
+                                setFocus({ at });
                             }}
                         >
-                            <span aria-hidden="true">{drawnCard(card)}</span>
+                            <span aria-hidden="true">{drawnOf(card)}</span>
                             <span aria-hidden="true" className="gtt-take-out">
                                 ×
                             </span>
-                            <span className="dk-visually-hidden">Take out {spokenCard(card)}</span>
+                            <span className="dk-visually-hidden">Take out {spokenOf(card)}</span>
                         </Button>
                     ))}
                 </div>
@@ -269,10 +290,11 @@ const CardPad = ({
                 <p className="dk-field-hint">Tap each card your hand holds.</p>
             ) : null}
             <div
+                ref={padRef}
                 className="dk-button-grid gtt-cards"
                 role="group"
                 aria-label="Cards"
-                aria-describedby={describedBy}
+                aria-describedby={hints === '' ? undefined : hints}
                 onFocus={pad.onFocus}
                 onClick={pad.onClick}
                 onKeyDown={pad.onKeyDown}
@@ -283,21 +305,33 @@ const CardPad = ({
                         tabIndex={pad.tabIndexOf(at)}
                         off={full || off}
                         onClick={() => {
-                            if (!full) set({ ...input, cards: [...cards, card] });
+                            if (!full && !off) set({ ...input, cards: [...cards, card] });
                         }}
                     >
                         <CardFace card={card} />
                     </Button>
                 ))}
             </div>
+            {full ? (
+                <p className="dk-field-hint" id="cards-full">
+                    A hand holds {MOST_CARDS} cards at most. Take one out to add another.
+                </p>
+            ) : null}
         </>
     );
 };
 
+/** The ways a total is entered, as the tabs over the keys name them. */
+const MODES = [
+    { mode: 'total', label: 'Type a total' },
+    { mode: 'cards', label: 'Add it up for me' },
+] as const;
+
 /**
- * The keys a Skyjo total is entered with: a choice of typing it or adding up the cards, then the
- * number pad, or the strip of cards tapped in above the pad of card values, then what the rules
- * refuse in it, or what it needs before the turn moves on.
+ * The keys a Skyjo total is entered with: tabs for typing it or adding up the cards, one stop for
+ * the Tab key with the arrow keys choosing between them, then the panel they choose, the number pad
+ * or the strip of cards tapped in above the pad of card values, then what the rules refuse in it,
+ * or what it needs before the turn moves on. Choosing a way keeps what was entered the other way.
  */
 export const SkyjoKeys = ({
     name,
@@ -305,6 +339,7 @@ export const SkyjoKeys = ({
     why,
     off = false,
     onChange,
+    onMode,
 }: {
     readonly name: string;
     readonly input: SkyjoInput;
@@ -312,52 +347,119 @@ export const SkyjoKeys = ({
     readonly why: string;
     readonly off?: boolean;
     readonly onChange: (input: SkyjoInput) => void;
+    readonly onMode: (mode: SkyjoInput['mode']) => void;
 }) => {
+    const tabs = useRoving(name);
     const empty = entryOf(input) === undefined;
     const ids = [why === '' ? null : 'hand-why', empty ? 'entry-hint' : null].filter(Boolean);
     const describedBy = ids.length === 0 ? undefined : ids.join(' ');
     const set = (next: SkyjoInput) => {
         if (!off) onChange(next);
     };
-    const mode = (which: SkyjoInput['mode'], label: string) => (
-        <button
-            type="button"
-            className="dk-tab"
-            aria-pressed={input.mode === which}
-            onClick={() => {
-                set({ ...input, mode: which });
-            }}
-        >
-            {label}
-        </button>
-    );
+    const choose = (mode: SkyjoInput['mode']) => {
+        if (!off && mode !== input.mode) onMode(mode);
+    };
     const parts = { input, off, describedBy, fresh: name, set };
     return (
         <section className="gtt-keys" aria-label={`${name}'s total`}>
-            <div className="dk-tabs gtt-modes" role="group" aria-label="How to enter it">
-                {mode('total', 'Type a total')}
-                {mode('cards', 'Add it up for me')}
+            <div
+                className="dk-tabs gtt-modes"
+                role="tablist"
+                aria-label={`How to enter ${name}'s total`}
+                onFocus={tabs.onFocus}
+                onClick={tabs.onClick}
+                onKeyDown={tabs.onKeyDown}
+            >
+                {MODES.map(({ mode, label }, at) => (
+                    <button
+                        key={mode}
+                        type="button"
+                        role="tab"
+                        id={`mode-${mode}`}
+                        className="dk-tab"
+                        tabIndex={tabs.tabIndexOf(at)}
+                        aria-selected={input.mode === mode}
+                        aria-controls="skyjo-entry"
+                        aria-disabled={off || undefined}
+                        // A tab is chosen as focus reaches it, since choosing keeps both ways.
+                        onFocus={() => {
+                            choose(mode);
+                        }}
+                        onClick={() => {
+                            choose(mode);
+                        }}
+                    >
+                        {label}
+                    </button>
+                ))}
             </div>
-            {input.mode === 'cards' ? <CardPad {...parts} /> : <NumberPad {...parts} />}
-            {why === '' ? null : (
-                <div className="dk-field-hint" id="hand-why">
-                    {why}
-                </div>
-            )}
-            {empty ? (
-                <div className="dk-field-hint" id="entry-hint">
-                    {input.mode === 'cards'
-                        ? `Tap ${name}'s cards in to go on.`
-                        : `Type ${name}'s total to go on.`}
-                </div>
-            ) : null}
+            <div
+                className="gtt-keys"
+                role="tabpanel"
+                id="skyjo-entry"
+                aria-labelledby={`mode-${input.mode}`}
+            >
+                {input.mode === 'cards' ? <CardPad {...parts} /> : <NumberPad {...parts} />}
+                {why === '' ? null : (
+                    <div className="dk-field-hint" id="hand-why">
+                        {why}
+                    </div>
+                )}
+                {empty ? (
+                    <div className="dk-field-hint" id="entry-hint">
+                        {input.mode === 'cards'
+                            ? `Tap ${name}'s cards in to go on.`
+                            : `Type ${name}'s total to go on.`}
+                    </div>
+                ) : null}
+            </div>
         </section>
     );
 };
 
+/** The first problem the rules find in a player's entry of a round, or none. */
+const problemFor = (preview: ReturnType<typeof previewWith>, index: number, player: string) =>
+    preview?.problems.find((one) => one.round === index && one.player === player);
+
+/**
+ * A player's input as pressed, which runs ahead of what is kept while a save takes, judged at once
+ * by the rules over the round as pressed, so a total the rules refuse is caught before the save of
+ * it lands, and the last total the rules took, which the header keeps showing while one is refused,
+ * so a refusal is said once, beside the pad, and never reads as a total of nothing. Each starts
+ * again from what is kept at each turn.
+ */
+const useEntry = (game: GameWithDraft, player: string) => {
+    const { draft } = game;
+    const turn = `${String(draft.index)}|${player}`;
+    const fresh = () => {
+        const input = inputOf(draft.round.entries[player]);
+        return { turn, input, taken: heldOf(entryOf(input)) };
+    };
+    const [state, setState] = useState(fresh);
+    let shown = state.turn === turn ? state : fresh();
+    const entry = entryOf(shown.input);
+    const problem =
+        entry === undefined ? undefined : problemFor(previewWith(game, entry), draft.index, player);
+    const taken = entry === undefined ? undefined : problem ? shown.taken : heldOf(entry);
+    if (taken !== shown.taken) shown = { ...shown, taken };
+    if (shown !== state) setState(shown);
+    const setInput = (change: (input: SkyjoInput) => SkyjoInput) => {
+        setState((now) => ({ ...now, input: change(now.input) }));
+    };
+    return {
+        input: shown.input,
+        entry,
+        why: problem ? skyjoRefusalWords(problem) : '',
+        taken,
+        setInput,
+    };
+};
+
 /**
  * A player's total in a round of Skyjo being entered. It stays on the page from player to player,
- * so the button for the next player keeps focus as the turn moves on.
+ * so the button for the next player keeps focus as the turn moves on. What was pressed is judged
+ * at once, by the rules over the round as pressed, so a total the rules refuse is caught before the
+ * save of it lands. A player come back to from who ended the round has focus put on their keys.
  */
 export const SkyjoRound = ({
     play,
@@ -366,6 +468,7 @@ export const SkyjoRound = ({
     names,
     summary,
     actions,
+    arrived = false,
 }: {
     readonly play: Play;
     readonly game: GameWithDraft;
@@ -373,57 +476,47 @@ export const SkyjoRound = ({
     readonly names: ReadonlyMap<string, string>;
     readonly summary: Summary;
     readonly actions: ReactNode;
+    /** Whether the round has just come back to this player from who ended it. */
+    readonly arrived?: boolean;
 }) => {
     const { draft } = game;
     const id = game.saved.id;
     const nameOf = (one: string) => nameIn(names, one);
     const name = nameOf(player);
     const before = totalBefore(game, player, draft.index);
-    const turn = `${String(draft.index)}|${player}`;
-    // The input as pressed, which runs ahead of what is kept while a save takes, started again
-    // from what is kept at each turn.
-    const [state, setState] = useState(() => ({
-        turn,
-        input: inputOf(draft.round.entries[player]),
-    }));
-    let shown = state;
-    if (state.turn !== turn) shown = { turn, input: inputOf(draft.round.entries[player]) };
-    if (shown !== state) setState(shown);
-    const { input } = shown;
-    const entry = entryOf(input);
-    const problem = draft.preview.problems.find(
-        (one) => one.round === draft.index && one.player === player
-    );
-    const why = entry !== undefined && problem ? skyjoRefusalWords(problem) : '';
+    const { input, entry, why, taken, setInput } = useEntry(game, player);
     // With nothing entered, the step after is read as if a total were, so the label names it.
     const following = stepAfter(game, entry ?? { total: 0 });
-    const actionsOf = useRound({
-        play,
-        game,
-        names,
-        summary,
-        lineOf: (one, kept, score, out) =>
-            skyjoLine(nameOf(one), {
-                player: one,
-                round: kept,
-                ...(score === undefined ? {} : { score }),
-                out,
-            }),
-    });
+    const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
     const { busy, changing, line, say } = actionsOf;
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
+    // Come back from who ended the round, focus goes to the player's keys, with why it is there.
+    useEffect(() => {
+        if (!arrived) return;
+        document.querySelector<HTMLElement>('#skyjo-entry [tabindex="0"]')?.focus();
+        const held = heldOf(draft.round.entries[player]);
+        say(
+            held === undefined
+                ? `Change ${name}'s total.`
+                : `Change ${name}'s total. It is ${spokenOf(held)}.`
+        );
+        // Said once, as the player is come back to.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
+    }, []);
 
     const change = (next: SkyjoInput) => {
         if (actionsOf.held()) return;
         summary.clear();
-        setState((now) => ({ ...now, input: next }));
+        setInput(() => next);
         void play.hold(id, entryOf(next));
     };
+    // A change of the way a total is entered changes nothing kept, so the last Undo stays.
+    const choose = (mode: SkyjoInput['mode']) => {
+        setInput((now) => ({ ...now, mode }));
+    };
 
-    // A total the rules refuse is said beside the pad and left out of the header's total.
-    const held = entry === undefined || why !== '' ? undefined : heldOf(entry);
     const finishes = following === null && !changing;
     const refused = why !== '' || entry === undefined;
 
@@ -433,8 +526,10 @@ export const SkyjoRound = ({
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
-                    total={before + (held ?? 0)}
-                    line={skyjoLineOf({ before, held, first: draft.index === 0 })}
+                    total={before + (taken ?? 0)}
+                    line={skyjoLineOf({ before, held: taken, first: draft.index === 0 })}
+                    round={taken ?? null}
+                    next={entry === undefined ? `Type ${name}'s total on the pad.` : undefined}
                 />
                 <SkipRows
                     name={name}
@@ -446,7 +541,14 @@ export const SkyjoRound = ({
                     onBack={(who) => void actionsOf.back(player, who)}
                 />
             </div>
-            <SkyjoKeys name={name} input={input} why={why} off={busy} onChange={change} />
+            <SkyjoKeys
+                name={name}
+                input={input}
+                why={why}
+                off={busy}
+                onChange={change}
+                onMode={choose}
+            />
             <StatusLine ref={line} />
             {game.error === null ? null : <p role="alert">{game.error}</p>}
             <RoundDock
@@ -466,10 +568,28 @@ export const SkyjoRound = ({
     );
 };
 
+/** What naming a player as ender comes to, in a sentence, from the round scored with them named. */
+const enderWords = (
+    names: ReadonlyMap<string, string>,
+    {
+        chosen,
+        held,
+        score,
+        beaten,
+    }: { chosen: string; held: number; score: number | undefined; beaten: readonly string[] }
+): string => {
+    const name = nameIn(names, chosen);
+    if (score === undefined || score === held) return `${name} keeps ${spokenOf(held)}.`;
+    const others = beaten.map((one) => nameIn(names, one));
+    return `${name}'s ${spokenOf(held)} doubles to ${spokenOf(score)}, since ${listOf(others, 'and')} ${others.length === 1 ? 'has' : 'have'} as little or less.`;
+};
+
 /**
  * Who ended a round of Skyjo, asked once every total is in, among the players who played it, each
  * with what they hold. The choice is kept as it is made, and what the rules make of it, a doubled
- * score or none, is said under the choices before the round is saved.
+ * score or none, is shown under the choices and said as it is made, before the round is saved. Who
+ * is out of the round is said as the question is reached, with a way to put each back, and a way
+ * goes back to the last player's total.
  */
 export const SkyjoEnder = ({
     play,
@@ -488,50 +608,47 @@ export const SkyjoEnder = ({
     const id = game.saved.id;
     const nameOf = (one: string) => nameIn(names, one);
     const playing = playingIn(game.saved.players, draft.round);
+    const out = draft.round.out;
     const kept = draft.round['ender'];
     const [chosen, setChosen] = useState<string | null>(
         typeof kept === 'string' && playing.includes(kept) ? kept : null
     );
-    const actionsOf = useRound({
-        play,
-        game,
-        names,
-        summary,
-        lineOf: (one, round, score, out) =>
-            skyjoLine(nameOf(one), {
-                player: one,
-                round,
-                ...(score === undefined ? {} : { score }),
-                out,
-            }),
-    });
-    const { busy, changing, line } = actionsOf;
-    const scores = draft.preview.rounds[draft.index]?.scores ?? {};
+    const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
+    const { busy, changing, line, say } = actionsOf;
     const heldBy = (one: string) => heldOf(draft.round.entries[one]) ?? 0;
 
-    // Focus moves into the question as it is drawn, at the choice made or the first one.
+    /** What naming a player comes to, by the rules over the round with them named. */
+    const outcomeOf = (one: string) =>
+        enderWords(names, {
+            chosen: one,
+            held: heldBy(one),
+            score: previewWith(game, one)?.rounds[draft.index]?.scores[one],
+            beaten: playing.filter((other) => other !== one && heldBy(other) <= heldBy(one)),
+        });
+
+    // Focus moves into the question as it is drawn, at the choice made or the first one, and who
+    // is out of the round is said, since a skip that brought the round here was said nowhere else.
     const field = useRef<HTMLFieldSetElement>(null);
     useEffect(() => {
         const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
         const first = [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0];
         first?.focus();
+        if (out.length > 0) say(outWords(out.map(nameOf)));
+        // Said once, as the question is reached.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
     }, []);
 
     const choose = (one: string) => {
         if (actionsOf.held()) return;
         summary.clear();
         setChosen(one);
+        say(outcomeOf(one));
         void play.hold(id, one);
     };
 
     // The last player still in the round, whose total is the one to go back to.
     const last = playing.at(-1);
-    const doubled =
-        chosen !== null && scores[chosen] !== undefined && scores[chosen] !== heldBy(chosen);
-    const beaten =
-        chosen === null
-            ? []
-            : playing.filter((one) => one !== chosen && heldBy(one) <= heldBy(chosen));
+    const following = stepAfter(game, chosen ?? playing[0] ?? null);
 
     return (
         <div className="gtt-game">
@@ -544,7 +661,7 @@ export const SkyjoEnder = ({
                 choices={playing.map((one) => ({
                     value: one,
                     label: nameOf(one),
-                    hint: `scored ${String(heldBy(one))}`,
+                    hint: `scored ${spokenOf(heldBy(one))}`,
                     checked: chosen === one,
                     disabled: busy,
                     onChange: () => {
@@ -557,10 +674,21 @@ export const SkyjoEnder = ({
                     Choose who ended the round to save it.
                 </p>
             ) : (
-                <p>
-                    {doubled
-                        ? `${nameOf(chosen)}'s ${String(heldBy(chosen))} doubles to ${String(scores[chosen])}, since ${listOf(beaten.map(nameOf), 'and')} ${beaten.length === 1 ? 'has' : 'have'} as little or less.`
-                        : `${nameOf(chosen)} keeps ${String(heldBy(chosen))}.`}
+                <p id="ender-outcome">{outcomeOf(chosen)}</p>
+            )}
+            {out.length === 0 ? null : (
+                <p className="dk-actions gtt-fine">
+                    <span>{outWords(out.map(nameOf))}</span>
+                    {out.map((one) => (
+                        <Button
+                            key={one}
+                            text
+                            off={busy}
+                            onClick={() => void actionsOf.back('', one)}
+                        >
+                            Put {nameOf(one)} back
+                        </Button>
+                    ))}
                 </p>
             )}
             {last === undefined ? null : (
@@ -569,9 +697,8 @@ export const SkyjoEnder = ({
                         text
                         off={busy}
                         onClick={() => {
-                            if (actionsOf.held()) return;
-                            summary.clear();
-                            void play.goTo(id, { part: 'entry', player: last });
+                            const step: SavedStep = { part: 'entry', player: last };
+                            void actionsOf.goTo(step);
                         }}
                     >
                         Change {nameOf(last)}&apos;s total
@@ -587,7 +714,8 @@ export const SkyjoEnder = ({
                 off={busy}
                 refused={chosen === null}
                 why="ender-hint"
-                label={changing ? `Save round ${String(draft.index + 1)}` : 'Save the round'}
+                described={chosen === null ? undefined : 'ender-outcome'}
+                label={nextLabel(following, names, draft.index, changing)}
                 onNext={() => {
                     if (chosen !== null) void actionsOf.next(chosen, skyjoRefusalWords);
                 }}

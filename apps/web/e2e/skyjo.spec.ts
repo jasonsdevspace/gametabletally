@@ -55,7 +55,7 @@ test('plays a game of Skyjo through, typing totals and adding up cards, to its r
     await typeTotal(page, 5);
     await dock(page).getByRole('button', { name: 'Next: Ben' }).click();
     // Ben's cards are added up for him, one taken out again from the strip.
-    await page.getByRole('button', { name: 'Add it up for me' }).click();
+    await page.getByRole('tab', { name: 'Add it up for me' }).click();
     const cards = page.getByRole('group', { name: 'Cards', exact: true });
     for (const card of ['12', 'minus 2', '7'])
         await cards.getByRole('button', { name: card }).click();
@@ -131,8 +131,8 @@ test('opens a saved round again with what was entered and who ended it', async (
     await expect(scoring(page)).toHaveText('Ann');
     await expect(page.locator('.gtt-score-line')).toHaveText('5 this round.');
     await dock(page).getByRole('button', { name: 'Next: Ben' }).click();
-    await expect(page.getByRole('button', { name: 'Add it up for me' })).toHaveAttribute(
-        'aria-pressed',
+    await expect(page.getByRole('tab', { name: 'Add it up for me' })).toHaveAttribute(
+        'aria-selected',
         'true'
     );
     await expect(page.getByRole('group', { name: 'Cards tapped in, 10 in all' })).toBeVisible();
