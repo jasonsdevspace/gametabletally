@@ -21,4 +21,5 @@ const app = (
 if (root.hasChildNodes()) hydrateRoot(root, app);
 else createRoot(root).render(app);
 registerWorker();
-void countVisits();
+// Once the page has loaded, so the tracker never competes with the page's first draw.
+window.addEventListener('load', () => void countVisits());

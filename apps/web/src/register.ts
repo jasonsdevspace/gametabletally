@@ -6,10 +6,6 @@
 export const registerWorker = (): void => {
     if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
     window.addEventListener('load', () => {
-        // The worker's file is always asked of the server, past the browser's cache and the ten
-        // minutes GitHub Pages lets it keep a file, so a new deploy is found on the next visit.
-        navigator.serviceWorker
-            .register('/sw.js', { scope: '/', updateViaCache: 'none' })
-            .catch(() => undefined);
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
     });
 };

@@ -1,5 +1,7 @@
 import { type ComponentProps, type MouseEvent, useSyncExternalStore } from 'react';
 
+import { countMove } from './analytics.js';
+
 /**
  * Moving between screens inside the app, with no router dependency.
  *
@@ -65,6 +67,7 @@ export const navigate = (href: string, { replace = false } = {}): void => {
     else window.history.pushState(null, '', href);
     window.scrollTo(0, 0);
     notify();
+    countMove();
 };
 
 /** Whether a click is one the app takes over: the main button, with no key that asks for a new tab. */
