@@ -28,6 +28,7 @@ import {
 import { flip7Note, type RoundLine } from './round-summary.js';
 import { useRoving } from './roving.js';
 import { ScoreHeader } from './ScoreHeader.js';
+import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
 import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
 
@@ -407,14 +408,6 @@ const Entry = ({
     if (!game) return <p>This game is not on this phone.</p>;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
-    // The scores, from the dock, wherever the screen has no round to enter.
-    const scores = (
-        <Dock>
-            <Link className="dk-button dk-button-accent dk-button-tall" href={hrefOf('scores', id)}>
-                Scores
-            </Link>
-        </Dock>
-    );
     // A finished game's screen says so, and its recap is in the dock.
     if (draft === null)
         return (
@@ -430,8 +423,39 @@ const Entry = ({
                 </Dock>
             </>
         );
-    const actions = <GameActions play={play} id={id} gameName={gameName} />;
-    const player = draft.step?.player ?? null;
+    return (
+        <RoundFor
+            play={play}
+            game={{ ...game, draft }}
+            names={names}
+            summary={summary}
+            actions={<GameActions play={play} id={id} gameName={gameName} />}
+        />
+    );
+};
+
+/**
+ * The step a round is at, drawn by its game's own screen: a player's entry, or who ended a round of
+ * Skyjo, which is a step of the round's own, or a word that the game cannot be entered here.
+ */
+const RoundFor = ({
+    play,
+    game,
+    names,
+    summary,
+    actions,
+}: {
+    readonly play: Play;
+    readonly game: GameWithDraft;
+    readonly names: ReadonlyMap<string, string>;
+    readonly summary: Summary;
+    readonly actions: ReactNode;
+}) => {
+    const { draft } = game;
+    const step = draft.step;
+    const parts = { play, game, names, summary, actions };
+    if (game.saved.game === 'skyjo' && step?.part === 'ender') return <SkyjoEnder {...parts} />;
+    const player = step?.player ?? null;
     if (player === null)
         return (
             <>
@@ -451,21 +475,23 @@ const Entry = ({
                     />
                 </div>
                 <p>
-                    Only Flip 7 has a screen for entering rounds, so a game of {gameName} can be
-                    started here but not scored.
+                    Only Flip 7 and Skyjo have a screen for entering rounds, so a game of{' '}
+                    {gameNameOf(game.saved.game)} can be started here but not scored.
                 </p>
-                {scores}
+                <Dock>
+                    <Link
+                        className="dk-button dk-button-accent dk-button-tall"
+                        href={hrefOf('scores', game.saved.id)}
+                    >
+                        Scores
+                    </Link>
+                </Dock>
             </div>
         );
-    return (
-        <Flip7Round
-            play={play}
-            game={{ ...game, draft }}
-            player={player}
-            names={names}
-            summary={summary}
-            actions={actions}
-        />
+    return game.saved.game === 'skyjo' ? (
+        <SkyjoRound {...parts} player={player} />
+    ) : (
+        <Flip7Round {...parts} player={player} />
     );
 };
 

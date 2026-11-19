@@ -203,6 +203,27 @@
     --dk-button-grid-columns: 6;
 }
 
+/* Skyjo's number pad, laid out as a phone's, three keys to a row. */
+.gtt-pad {
+    --dk-button-grid-columns: 3;
+}
+
+/* Skyjo's card values, from minus two to twelve, five to a row in three rows. */
+.gtt-cards {
+    --dk-button-grid-columns: 5;
+}
+
+/* The cards tapped in, up to a hand of twelve, six to a row in two rows. */
+.gtt-strip {
+    --dk-button-grid-columns: 6;
+}
+
+/* The mark beside a card tapped in, which says a tap takes it out. */
+.gtt-take-out {
+    margin-inline-start: var(--dk-space-1);
+    color: var(--dk-muted);
+}
+
 /*
  * The round's dock: the way to the scores beside the button that moves the round on, on one row at
  * any text size, so the dock never takes a second row from the keys on every hand. The way to the
