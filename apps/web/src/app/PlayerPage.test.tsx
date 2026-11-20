@@ -7,7 +7,7 @@ import { openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { PlayerPage } from './PlayerPage.js';
 import { PLAYERS_CHANGED } from './players.js';
-import { act, appLine,fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard, refused } from './status.testing.js';
 
 /* A player's own page in the app's frame, over a database in memory. */

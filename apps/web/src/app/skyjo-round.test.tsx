@@ -6,7 +6,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
-import { appLine,fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import { appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import {
     entryOf,
     heldOf,
