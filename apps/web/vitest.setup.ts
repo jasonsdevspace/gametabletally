@@ -29,9 +29,11 @@ if (!('ResizeObserver' in globalThis))
 if (!('checkVisibility' in Element.prototype))
     Object.assign(Element.prototype, {
         checkVisibility(this: Element): boolean {
-            for (let at: Element | null = this; at !== null; at = at.parentElement)
-                if (at.hasAttribute('hidden') || getComputedStyle(at).display === 'none')
-                    return false;
-            return true;
+            const shown = (at: Element | null): boolean =>
+                at === null ||
+                (!at.hasAttribute('hidden') &&
+                    getComputedStyle(at).display !== 'none' &&
+                    shown(at.parentElement));
+            return shown(this);
         },
     });
