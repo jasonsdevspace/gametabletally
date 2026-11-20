@@ -7,7 +7,7 @@ import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
 import { act, appLine, fireEvent, render, screen, waitFor } from './render.testing.js';
-import { canSkip, comesAfter, floorWords, outWords } from './round.js';
+import { busyWordsOf, canSkip, comesAfter, floorWords, outWords } from './round.js';
 import { heard } from './status.testing.js';
 
 /* The game in play in the app's frame, over a database in memory, and the words it draws. */
@@ -77,6 +77,24 @@ const said = async (line: HTMLElement | null, words: string) => {
     if (line === null) throw new Error('The status line is not on the page.');
     await heard(line, words);
 };
+
+describe('the words a round says while it moves on', () => {
+    it('names the save it makes, the entry it keeps, and nothing where it saves nothing', () => {
+        expect(busyWordsOf('Save the round')).toBe('Saving the round.');
+        expect(busyWordsOf('Save round 2')).toBe('Saving round 2.');
+        expect(busyWordsOf('Save the bids')).toBe('Saving the bids.');
+        expect(busyWordsOf('Next: Ben')).toBe('Keeping the entry.');
+        expect(busyWordsOf('Next: who ended the round')).toBe('Keeping the entry.');
+        expect(busyWordsOf('Enter the tricks')).toBe('');
+    });
+
+    it('marks the button that moves on busy with the words for its press', async () => {
+        await draw();
+        const next = screen.getByRole('button', { name: 'Next: Ben' });
+        fireEvent.click(next);
+        expect(next).toHaveAttribute('data-busy', 'Keeping the entry.');
+    });
+});
 
 describe('a game that could not be read', () => {
     it('reads it afresh from Try again, with focus on the screen once the callout goes', async () => {

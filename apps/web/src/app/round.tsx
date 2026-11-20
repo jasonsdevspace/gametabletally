@@ -157,6 +157,17 @@ export const SkipRows = ({
 };
 
 /**
+ * What the button that moves a round on says while its press runs, from its label: the save it
+ * makes, or the entry it keeps on the way to the next player, and nothing for a move that saves
+ * nothing, such as from the hand to the tricks.
+ */
+export const busyWordsOf = (label: string): string => {
+    if (label.startsWith('Save ')) return `Saving ${label.slice('Save '.length)}.`;
+    if (label.startsWith('Next: ')) return 'Keeping the entry.';
+    return '';
+};
+
+/**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
  * way to the scores, or, for a saved round opened again, the way to let the change go. The button
  * that moves the round on is the kit's busy button while what it started runs, so a second press
@@ -190,6 +201,7 @@ export const RoundDock = ({
     readonly onCancel: () => void;
 }) => {
     const next = useBusy<HTMLButtonElement>();
+    const busyWords = busyWordsOf(label);
     return (
         <Dock>
             <div className="dk-app-dock-inline">
@@ -207,8 +219,8 @@ export const RoundDock = ({
                     ref={next}
                     accent
                     tall
-                    off={refused}
-                    busy={off}
+                    off={refused || (off && busyWords === '')}
+                    busy={off && busyWords !== '' ? busyWords : false}
                     aria-describedby={refused ? why : described}
                     onClick={onNext}
                 >
