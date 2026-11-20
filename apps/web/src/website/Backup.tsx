@@ -1,4 +1,4 @@
-import { Button, useBusy } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
 import { readFile } from '../store/format.js';
@@ -61,6 +61,10 @@ export const Backup = ({
     const [ready, setReady] = useState<Ready | null>(null);
     const [said, setSaid] = useState('');
     const [busy, setBusy] = useState<'save' | 'restore' | null>(null);
+    // The busy buttons say their wait on the app's status line, and the result is said there too,
+    // so the page speaks on one line and the result gives no way to a late wait's words. The
+    // result also stays in words on the page, out of the line, for whoever looks.
+    const say = useStatus();
     const saveButton = useBusy<HTMLButtonElement>();
     const restoreButton = useBusy<HTMLButtonElement>();
     const picker = useRef<HTMLInputElement>(null);
@@ -77,13 +81,16 @@ export const Backup = ({
                 const agreed = await kept().catch(() => null);
                 if (here()) setReady({ kept: agreed, damaged });
             } catch (error) {
-                if (here()) setSaid(notOpened(error));
+                if (here()) {
+                    setSaid(notOpened(error));
+                    say(notOpened(error));
+                }
             }
         })();
         return () => {
             left = true;
         };
-    }, [open, kept]);
+    }, [open, kept, say]);
 
     /**
      * Runs a save or a restore, with its button busy and the other off, so one runs at a time, and
@@ -95,15 +102,17 @@ export const Backup = ({
         failed: string
     ) => {
         setBusy(doing);
-        // Emptied first, so the same sentence said twice is heard twice.
         setSaid('');
+        let words: string;
         try {
-            setSaid(await withStore(open, work));
+            words = await withStore(open, work);
         } catch (error) {
-            setSaid(refusalOf(error) ?? failed);
+            words = refusalOf(error) ?? failed;
         } finally {
             setBusy(null);
         }
+        setSaid(words);
+        say(words);
     };
 
     const saveAll = () =>
@@ -178,9 +187,7 @@ export const Backup = ({
             <noscript>
                 <p>Turn on JavaScript to save your games to a file or restore them.</p>
             </noscript>
-            <p className="gtt-status" role="status">
-                {said}
-            </p>
+            <p className="gtt-status">{said}</p>
         </section>
     );
 };
