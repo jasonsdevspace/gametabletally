@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from '../app/render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
+import { fireEvent, render, screen, waitFor, within } from '../app/render.testing.js';
 import { FORMAT, FORMAT_VERSION, readFile, type SavedGame } from '../store/format.js';
 import { DATABASE, GAMES, NEWER_DATABASE, openStore, type Store } from '../store/store.js';
 import { Backup } from './Backup.js';

@@ -1,5 +1,4 @@
 import type { Problem } from '@gametabletally/scoring';
-import { fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
+import { appLine,fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import {
     entryOf,
     heldOf,

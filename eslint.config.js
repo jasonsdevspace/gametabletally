@@ -215,6 +215,7 @@ export default defineConfig(
                     devDependencies: [
                         '**/*.test.{ts,tsx}',
                         '**/*.testing.ts',
+                        '**/*.testing.tsx',
                         '**/*.config.{ts,js,mjs}',
                         '**/scripts/**',
                         '**/vitest.setup.ts',

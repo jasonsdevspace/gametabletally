@@ -336,7 +336,7 @@ export const NewGame = ({
                         ))}
                     </div>
                 )}
-                <AddByName field={nameField} onAdd={addByName} say={say} />
+                <AddByName field={nameField} onAdd={addByName} />
             </section>
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}

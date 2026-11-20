@@ -91,7 +91,7 @@ export const PlayersList = ({
                     ))}
                 </ul>
             )}
-            <AddByName onAdd={add} say={say} />
+            <AddByName onAdd={add} />
         </>
     );
 };

@@ -1,6 +1,7 @@
 import { useStatus } from '@jasonsdevspace/design-kit/react';
-import { render, screen, waitFor } from './render.testing.js';
 import { describe, expect, it } from 'vitest';
+
+import { render, screen, waitFor } from './render.testing.js';
 
 /*
  * The screens' fields and status lines are the kit's, so none of the app's screens writes the

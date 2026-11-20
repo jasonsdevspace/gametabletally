@@ -1,4 +1,4 @@
-import { Button, InputField, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, InputField, useFormRefusal, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -25,46 +25,51 @@ export interface PlayerPageProps {
     readonly go?: (href: string) => void;
 }
 
-/** The field a player's name is changed in, saved as it is left or as Enter is pressed. */
+/**
+ * The field a player's name is changed in, saved as it is left or as Enter is pressed. A name
+ * refused by Enter is refused through the kit's form, which says the error where focus already is,
+ * and one refused as the field is left is said on the status line, leaving focus where it went.
+ */
 const RenameField = ({
     player,
     players,
     onRename,
-    say,
 }: {
     readonly player: SavedPlayer;
     readonly players: readonly SavedPlayer[];
     readonly onRename: (name: string) => Promise<string | null>;
-    /** Says a refusal on the screen's status line, since the kit's field error is not live. */
-    readonly say: (words: string) => void;
 }) => {
     const [name, setName] = useState(player.name);
     const [error, setError] = useState('');
+    const say = useStatus();
+    const [form, refuse] = useFormRefusal<HTMLFormElement>({
+        invalid: (failures) => {
+            setError(failures[0]?.words ?? '');
+        },
+    });
 
     // Each save is put in order by the page, which skips one that changes nothing, so a blur that
     // follows Enter saves the name once and a name typed while another saves is saved after it.
-    const save = async () => {
+    const save = async ({ entered = false } = {}) => {
         const typed = cleanName(name);
         if (typed === player.name) return;
-        const refused = nameRefusal(players, typed, player.id);
+        const refused = nameRefusal(players, typed, player.id) ?? (await onRename(typed));
+        setError(refused ?? '');
         if (refused !== null) {
-            setError(refused);
-            say(refused);
+            if (entered) refuse();
+            else say(refused);
             return;
         }
-        const failed = await onRename(typed);
-        setError(failed ?? '');
-        if (failed !== null) say(failed);
         // Tidied to the name saved, unless something else has been typed since.
-        if (failed === null) setName((now) => (cleanName(now) === typed ? typed : now));
+        setName((now) => (cleanName(now) === typed ? typed : now));
     };
 
     return (
         <form
-            noValidate
+            ref={form}
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
                 event.preventDefault();
-                void save();
+                void save({ entered: true });
             }}
         >
             <InputField
@@ -208,13 +213,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
         <>
             <h2 className="gtt-player-name">{player.name}</h2>
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
-            <RenameField
-                key={player.id}
-                player={player}
-                players={read.players}
-                onRename={rename}
-                say={say}
-            />
+            <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>

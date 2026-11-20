@@ -1,4 +1,3 @@
-import { fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -6,6 +5,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { againOf, RecapScreen, winnerWords } from './RecapScreen.js';
+import { fireEvent, render, screen, waitFor, within } from './render.testing.js';
 
 /* The recap of a game in the app's frame, over a database in memory, and the words it draws. */
 

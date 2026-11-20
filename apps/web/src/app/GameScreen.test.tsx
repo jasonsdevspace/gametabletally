@@ -1,5 +1,4 @@
 import type { Problem } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import { act, appLine,fireEvent, render, screen, waitFor } from './render.testing.js';
 import { canSkip, comesAfter, floorWords, outWords } from './round.js';
 import { heard } from './status.testing.js';
 

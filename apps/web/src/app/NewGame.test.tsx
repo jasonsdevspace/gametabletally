@@ -1,5 +1,4 @@
 import { GAMES } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
+import { act, appLine,fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* The new game screen in the app's frame, over a database in memory. */
@@ -294,9 +294,9 @@ describe('the new game screen', () => {
         const { open } = await draw([player('ann', 'Ann')]);
         const field = screen.getByRole('textbox', { name: "A new player's name" });
         fireEvent.change(field, { target: { value: 'Cat' } });
-        const form = field.closest('form') ?? document.body;
-        fireEvent.submit(form);
-        fireEvent.submit(form);
+        const add = screen.getByRole('button', { name: 'Add' });
+        fireEvent.click(add);
+        fireEvent.click(add);
         await waitFor(() => {
             expect(seated()).toEqual(['Cat']);
         });

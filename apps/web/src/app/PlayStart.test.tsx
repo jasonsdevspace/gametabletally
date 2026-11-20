@@ -1,5 +1,4 @@
 import { GAMES } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import { openPlay } from '../play/play.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { PlayStart } from './PlayStart.js';
+import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 
 /* The start screen over a database in memory, with a game in play or none. */
 

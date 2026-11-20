@@ -1,4 +1,3 @@
-import { render, screen } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { expect, it } from 'vitest';
 
@@ -6,6 +5,7 @@ import type { Play } from '../play/play.js';
 import type { SavedGame } from '../store/format.js';
 import { openStore, type Store } from '../store/store.js';
 import { GamesProvider, WithOpenedGame } from './opened-game.js';
+import { render, screen } from './render.testing.js';
 
 /* How a screen about one game reads it, and lets its database go once the screen is left. */
 

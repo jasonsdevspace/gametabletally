@@ -1,9 +1,9 @@
 import base from '@jasonsdevspace/design-kit/base.css?raw';
-import { render, screen } from './render.testing.js';
 import axe from 'axe-core';
 import { describe, expect, it } from 'vitest';
 
 import sheet from '../styles/screens.css?raw';
+import { render, screen } from './render.testing.js';
 import { cardsOf, changeOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
 import { heard } from './status.testing.js';
 

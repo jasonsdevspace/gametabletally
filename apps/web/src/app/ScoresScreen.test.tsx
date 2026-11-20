@@ -1,10 +1,10 @@
-import { render, screen, within } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
+import { render, screen, within } from './render.testing.js';
 import { leadWords, placeWords, ScoresScreen, standingsOf } from './ScoresScreen.js';
 
 /* The scores of a game in play in the app's frame, over a database in memory, and their words. */

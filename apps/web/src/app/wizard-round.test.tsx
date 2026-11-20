@@ -1,4 +1,3 @@
-import { fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -6,6 +5,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
+import { appLine,fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard } from './status.testing.js';
 import { bidNote, countIn, countsOf, dealerOf, tricksLeftWords } from './wizard-round.js';
 
@@ -170,7 +170,7 @@ describe('a round of Wizard', () => {
         expect(screen.getByText('Every trick is in, 2 of 2.')).toBeTruthy();
         setCount('tricks-ben', 2);
         await heard(
-            screenLine() ?? document.body,
+            screenLine(),
             'The tricks come to 3, 1 more than the 2 in the hand. Take 1 off.'
         );
         const save = dockButton('Save the round');
@@ -288,7 +288,7 @@ describe('a round of Wizard', () => {
             expect(count('bid-ben')).not.toBeNull();
         });
         expect(count('bid-ann')?.value).toBe('1');
-        await heard(screenLine() ?? document.body, "Ben is back in round 2. Set Ben's bid.");
+        await heard(screenLine(), "Ben is back in round 2. Set Ben's bid.");
         expect(document.activeElement?.id).toBe('counts-line');
     });
 
@@ -308,7 +308,7 @@ describe('a round of Wizard', () => {
         fireEvent.click(dockButton('Enter the tricks'));
         expect(await screen.findByText('Every trick is in, 2 of 2.')).toBeTruthy();
         await heard(
-            screenLine() ?? document.body,
+            screenLine(),
             'Enter the tricks for round 2. Every trick is in, 2 of 2.'
         );
         fireEvent.click(screen.getByRole('button', { name: 'Change the bids' }));
@@ -351,6 +351,6 @@ describe('a round of Wizard', () => {
         await new Promise((resolve) => {
             setTimeout(resolve, 300);
         });
-        expect(screenLine()?.textContent).toBe('');
+        expect(screenLine().textContent).toBe('');
     });
 });

@@ -1,4 +1,3 @@
-import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { playersChanged } from './players.js';
 import { PlayersList } from './PlayersList.js';
+import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* The players screen over a database in memory. */
