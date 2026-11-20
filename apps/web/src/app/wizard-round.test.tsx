@@ -5,7 +5,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
-import { appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard } from './status.testing.js';
 import { bidNote, countIn, countsOf, dealerOf, tricksLeftWords } from './wizard-round.js';
 
@@ -149,6 +149,56 @@ describe('a round of Wizard', () => {
                 'The bids for round 2 are in: Ann 2, Ben 0 and Cat 1.'
             );
         });
+    });
+
+    it('says the tricks still to enter with the value a press sets, in one message', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        fireEvent.click(screen.getByRole('button', { name: "Lower Ben's tricks" }));
+        await heard(screenLine(), tricksLeftWords(1, 2));
+    });
+
+    it('lets go of the tricks still to enter, not yet said, once the round is saved', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        await heard(screenLine(), 'Enter the tricks for round 2.');
+        const said: string[] = [];
+        const watch = new MutationObserver(() => {
+            said.push(screenLine().textContent);
+        });
+        watch.observe(screenLine(), { childList: true, characterData: true, subtree: true });
+        // Typed over and back, then saved before the typing has rested.
+        setCount('tricks-ben', 0);
+        setCount('tricks-ben', 1);
+        fireEvent.click(dockButton('Save the round'));
+        await waitFor(() => {
+            expect(toast()?.textContent).toContain('Round 2 saved.');
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+        watch.disconnect();
+        expect(said.filter((words) => words.includes('trick'))).toEqual([]);
     });
 
     it('starts the tricks at the bids, and saves only once they add up, saying why', async () => {

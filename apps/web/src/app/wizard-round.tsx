@@ -138,6 +138,7 @@ const Count = ({
     max,
     off,
     onText,
+    pressWords,
 }: {
     readonly id: string;
     readonly name: string;
@@ -148,12 +149,22 @@ const Count = ({
     readonly max: number;
     readonly off: boolean;
     readonly onText: (text: string) => void;
+    /** The page's words said after the value of each press, read as the press is said. */
+    readonly pressWords?: (() => string) | undefined;
 }) => {
     const field = useRef<HTMLInputElement>(null);
-    // The stepper says its presses on the screen's status line, and describes its own range.
+    // The stepper says its presses on the screen's status line, with the page's words after the
+    // value in one message, and describes its own range.
     const say = useStatus();
+    const words = useRef(pressWords);
+    useEffect(() => {
+        words.current = pressWords;
+    });
     useEffect(
-        () => (field.current === null ? undefined : attachStepper(field.current, { say })),
+        () =>
+            field.current === null
+                ? undefined
+                : attachStepper(field.current, { say, words: () => words.current?.() ?? '' }),
         [say]
     );
     return (
@@ -392,6 +403,7 @@ const CountsView = ({
     left,
     wrong,
     onText,
+    pressWords,
 }: {
     readonly game: GameWithDraft;
     readonly playing: readonly string[];
@@ -405,6 +417,8 @@ const CountsView = ({
     /** Why a count typed is refused, in words, or an empty string. */
     readonly wrong: string;
     readonly onText: (player: string, text: string) => void;
+    /** The words said after each press's value, the tricks still to enter. */
+    readonly pressWords?: (() => string) | undefined;
 }) => {
     const { draft } = game;
     const dealt = draft.index + 1;
@@ -447,6 +461,7 @@ const CountsView = ({
                         onText={(text) => {
                             onText(one, text);
                         }}
+                        pressWords={pressWords}
                     />
                 ))}
             </div>
@@ -498,17 +513,41 @@ export const WizardRound = ({
             ? ''
             : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
 
-    // The tricks still to enter are said once a run of presses rests, as the status line lets words
-    // settle, so each press's own value is heard first, and not where a skip, a put back or the move
-    // to the tricks already said them.
-    const lastSaid = useRef(left);
+    // The tricks still to enter, as last said, so the same words are not said again. A press says
+    // them with its value, in the stepper's own message, and a count typed says them once the
+    // typing rests, as the status line lets words settle. Words not yet said by then are let go
+    // where the tricks change again, the round moves to another step or the screen goes, and the
+    // words are marked said only as they are put on the line, so words the line dropped are said
+    // with the next change.
+    const spoken = useRef(left);
+    const leftNow = useRef(left);
+    const tricksNow = useRef(phase === 'tricks');
     useEffect(() => {
-        if (phase !== 'tricks' || lastSaid.current === left) return;
-        lastSaid.current = left;
-        say(left, { settle: SETTLE });
+        leftNow.current = left;
+        tricksNow.current = phase === 'tricks';
+    });
+    const pressWords = () => {
+        if (!tricksNow.current) return '';
+        spoken.current = leftNow.current;
+        return leftNow.current;
+    };
+    useEffect(() => {
+        if (phase !== 'tricks' || spoken.current === left) return undefined;
+        let live = true;
+        say(
+            () => {
+                if (!live || spoken.current === left) return null;
+                spoken.current = left;
+                return left;
+            },
+            { settle: SETTLE }
+        );
+        return () => {
+            live = false;
+        };
     }, [left, phase, say]);
     const sayInstead = (words: string, after: string) => {
-        lastSaid.current = after;
+        spoken.current = after;
         say(words);
     };
 
@@ -643,6 +682,7 @@ export const WizardRound = ({
                     left={left}
                     wrong={wrong}
                     onText={change}
+                    pressWords={pressWords}
                 />
             )}
             <Failure words={game.error} />
