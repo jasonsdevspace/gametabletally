@@ -82,11 +82,6 @@
     stroke-linecap: round;
 }
 
-/* The opening is the kit's hero, its words beside the photo, with the website's own room. */
-.gtt-hero {
-    padding-block: var(--dk-space-7);
-}
-
 .gtt-hero-line {
     font-size: var(--dk-text-heading);
 }
@@ -116,9 +111,10 @@
     border-radius: var(--dk-radius-large);
 }
 
+/* The opening is a band holding the kit's hero, with more room on a wide screen. */
 @media (min-width: 48rem) {
     .gtt-hero {
-        padding-block: var(--dk-space-8);
+        --dk-band-room: var(--dk-space-8);
     }
 }
 
