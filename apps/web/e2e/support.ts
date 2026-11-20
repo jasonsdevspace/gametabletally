@@ -199,3 +199,6 @@ export const seed = async (
         }
     );
 };
+
+/** The status line every screen speaks on, drawn once for the whole app, apart from any toast's. */
+export const appLine = (page: Page): Locator => page.locator('#root > p[role="status"]');

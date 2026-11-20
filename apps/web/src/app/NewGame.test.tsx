@@ -82,7 +82,7 @@ const addByName = (name: string) => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 };
 
-/** The screen's own status line, apart from the frame's toast. */
+/** The app's status line, apart from the frame's toast. */
 const status = appLine;
 
 afterEach(() => {

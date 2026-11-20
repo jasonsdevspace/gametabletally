@@ -209,7 +209,11 @@ export const NewGame = ({
     const move = (id: string, action: 'up' | 'down') => {
         const moved = moveSeat(seats, id, action === 'up' ? -1 : 1);
         if (moved === seats) return;
-        focusOn({ seat: id, action });
+        // Focus stays on the button pressed, unless the move took the seat to the end that turns it
+        // off, when it goes to the seat's other move, which the kit's focus would not pass over.
+        const at = moved.indexOf(id);
+        const ended = action === 'down' ? at === moved.length - 1 : at === 0;
+        focusOn({ seat: id, action: ended ? (action === 'down' ? 'up' : 'down') : action });
         setSeats(moved);
         say(`${nameOf(id)} moves to seat ${moved.indexOf(id) + 1}.`);
     };

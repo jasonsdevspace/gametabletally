@@ -65,7 +65,7 @@ const press = (name: string) => {
 
 const digits = () => document.querySelector('.gtt-digits');
 
-/** The score header's status line, and the screen's own, each saying what changed. */
+/** The app's one status line, where the score header and the screen each say what changed. */
 const headerLine = appLine;
 const screenLine = appLine;
 

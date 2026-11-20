@@ -58,7 +58,7 @@ test('saves every game to a file in one browser and restores it in another, by k
         page.keyboard.press('Enter'),
     ]);
     expect(download.suggestedFilename()).toMatch(/^game-table-tally-\d{4}-\d{2}-\d{2}\.json$/);
-    await expect(page.getByRole('status')).toHaveText(
+    await expect(page.locator('.gtt-status')).toHaveText(
         `1 game is ready in ${download.suggestedFilename()}. Your browser saves it with your downloads.`
     );
     const path = await download.path();
@@ -78,7 +78,7 @@ test('saves every game to a file in one browser and restores it in another, by k
             second.keyboard.press('Enter'),
         ]);
         await chooser.setFiles(path);
-        await expect(second.getByRole('status')).toHaveText('Restored 1 game from the file.');
+        await expect(second.locator('.gtt-status')).toHaveText('Restored 1 game from the file.');
         expect(await savedIds(second)).toEqual(['g-moved']);
     } finally {
         await other.close();
@@ -98,7 +98,7 @@ test('says why a file that is not one of the app’s was not read, and changes n
         mimeType: 'application/json',
         buffer: Buffer.from('{"shopping": ["milk"]}'),
     });
-    await expect(page.getByRole('status')).toHaveText(
+    await expect(page.locator('.gtt-status')).toHaveText(
         'This is not a file of saved games, so nothing changed. Choose a file this app saved.'
     );
     expect(await savedIds(page)).toEqual([]);

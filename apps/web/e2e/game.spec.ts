@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test';
 
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, expect, type Page, seed, smallTargets, test } from './support.js';
+import { appLine, audit, expect, type Page, seed, smallTargets, test } from './support.js';
 
 /*
  * The game in play, as deployed: a round of Flip 7 entered player by player on a phone by tapping
@@ -51,8 +51,8 @@ const total = (page: Page) => page.locator('.gtt-digits');
 const next = (page: Page) => page.getByRole('region', { name: 'Actions' }).getByRole('button');
 
 /** The screen's own status line, and the score header's, each saying what changed. */
-const said = (page: Page) => page.locator('.gtt-game > [role="status"]');
-const headerSaid = (page: Page) => page.locator('.gtt-score [role="status"]');
+const said = appLine;
+const headerSaid = appLine;
 
 test('enters a round of Flip 7 by tapping cards, player by player, and saves it after the last', async ({
     page,
