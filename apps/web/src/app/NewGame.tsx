@@ -6,7 +6,7 @@ import {
     useFocusAfterDraw,
     useStatus,
 } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
@@ -17,7 +17,7 @@ import { playersOf } from '../website/games.js';
 import { Dock, useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { Icon } from './icon.js';
-import { AddByName, useRunning } from './player-parts.js';
+import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
 /**
@@ -116,41 +116,25 @@ const goInPlace = (href: string) => {
     navigate(href, { replace: true });
 };
 
+/** No players, the same each time, so the seats' effects do not run again for nothing. */
+const NONE: readonly SavedPlayer[] = [];
+
 /**
- * The saved players, read once the screen is running, whether they have been, and why they could
- * not be, if so.
+ * The saved players, read as every screen that names players reads them, whether they have been,
+ * and why they could not be, if so, with Try again reading them afresh.
  */
 const usePlayers = (open: () => Promise<Store>) => {
-    const [players, setPlayers] = useState<readonly SavedPlayer[]>([]);
-    const [loaded, setLoaded] = useState(false);
-    const [unread, setUnread] = useState('');
-    // Each Try again reads afresh.
-    const [attempts, setAttempts] = useState(0);
-    useEffect(() => {
-        let left = false;
-        withStore(open, (store) => store.players()).then(
-            (saved) => {
-                if (left) return;
-                setPlayers(saved);
-                setLoaded(true);
-            },
-            (error: unknown) => {
-                if (!left)
-                    setUnread(
-                        refusalOf(error) ??
-                            'Your saved players could not be opened in this browser.'
-                    );
-            }
-        );
-        return () => {
-            left = true;
-        };
-    }, [open, attempts]);
-    const tryAgain = () => {
-        setUnread('');
-        setAttempts((count) => count + 1);
-    };
-    return { players, setPlayers, loaded, unread, tryAgain };
+    const { read, setRead, unread, tryAgain } = usePlayersRead(
+        open,
+        'Your saved players could not be opened in this browser.'
+    );
+    const setPlayers = useCallback(
+        (change: (before: readonly SavedPlayer[]) => readonly SavedPlayer[]) => {
+            setRead((now) => (now === null ? now : { ...now, players: change(now.players) }));
+        },
+        [setRead]
+    );
+    return { players: read?.players ?? NONE, setPlayers, loaded: read !== null, unread, tryAgain };
 };
 
 export const NewGame = ({
