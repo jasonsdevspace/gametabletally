@@ -1,7 +1,7 @@
 import { useStatus } from '@jasonsdevspace/design-kit/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { render, screen, waitFor } from './render.testing.js';
+import { act, fireEvent, render, screen, waitFor } from './render.testing.js';
 
 /*
  * The screens' fields and status lines are the kit's, so none of the app's screens writes the
@@ -50,4 +50,24 @@ describe("the screens' fields and status lines", () => {
             expect(line).toHaveTextContent('Ann added.');
         });
     });
+
+    it('leaves no timer running once a screen that spoke is taken away', async () => {
+        vi.useFakeTimers();
+        const { unmount } = render(<Speaker words="Ann added." />);
+        fireEvent.click(screen.getByRole('button', { name: 'Say' }));
+        act(() => {
+            vi.advanceTimersByTime(150);
+        });
+        unmount();
+        // Microtasks run, as the kit lets the line go in one, and the faked clock stands still, so
+        // a timer still set is counted rather than run out.
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });

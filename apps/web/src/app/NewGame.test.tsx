@@ -121,8 +121,11 @@ describe('the new game screen', () => {
         expect(seated()).toEqual(['Ben']);
         expect(within(saved).queryByRole('button', { name: 'Add Ben' })).toBeNull();
         await heard(status(), 'Ben takes seat 1.');
-        // Focus moves on to the next saved player, since the one pressed is gone.
-        expect(within(saved).getByRole('button', { name: 'Add Ann' })).toHaveFocus();
+        // Focus moves on to the next saved player, since the one pressed is gone, in a frame of its
+        // own.
+        await waitFor(() => {
+            expect(within(saved).getByRole('button', { name: 'Add Ann' })).toHaveFocus();
+        });
     });
 
     it('saves a name typed as a new player and seats them', async () => {

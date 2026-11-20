@@ -1,5 +1,5 @@
 import { IDBFactory } from 'fake-indexeddb';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
@@ -55,7 +55,7 @@ const draw = async (game: SavedGame) => {
         await store.savePlayer(one);
     await store.saveGame(game);
     store.close();
-    render(
+    const { unmount } = render(
         <AppFrame screen="game" title="Game in play">
             <GameScreen
                 open={() => openStore(factory)}
@@ -64,7 +64,7 @@ const draw = async (game: SavedGame) => {
         </AppFrame>
     );
     await screen.findByText(/^Round \d+ of \d+$/);
-    return { open: () => openStore(factory) };
+    return { open: () => openStore(factory), unmount };
 };
 
 const dockButton = (name: string) =>
@@ -149,6 +149,48 @@ describe('a round of Wizard', () => {
                 'The bids for round 2 are in: Ann 2, Ben 0 and Cat 1.'
             );
         });
+    });
+
+    it("says nothing and leaves no timer when the round's screen goes while a typed count settles", async () => {
+        const { unmount } = await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        await heard(screenLine(), 'Enter the tricks for round 2.');
+        // The words leave the line before the page's timers are faked, so no timer the line set
+        // with the real clock is left running unseen.
+        await waitFor(
+            () => {
+                expect(screenLine()).toHaveTextContent('');
+            },
+            { timeout: 3000 }
+        );
+        // Only the page's own timers are faked, so the database in memory keeps its own.
+        vi.useFakeTimers({
+            toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+        });
+        setCount('tricks-ben', 0);
+        const line = screenLine();
+        unmount();
+        // Microtasks run, as the kit lets the line go in one, and the faked clock stands still, so
+        // a timer still set is counted rather than run out.
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(vi.getTimerCount()).toBe(0);
+        act(() => {
+            vi.advanceTimersByTime(1000);
+        });
+        expect(line.textContent).toBe('');
     });
 
     it('says the tricks still to enter with the value a press sets, in one message', async () => {
@@ -410,4 +452,8 @@ describe('a round of Wizard', () => {
         });
         expect(screenLine().textContent).toBe('');
     });
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });
