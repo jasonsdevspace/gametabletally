@@ -199,6 +199,32 @@ describe('the start screen', () => {
         expect(screen.queryByRole('alert')).toBeNull();
     });
 
+    it("lets a discard that never finishes hold back only its own games, not another model's", async () => {
+        const hung = await database(true);
+        const stuck = async () => {
+            const opened = await hung.open();
+            return { ...opened, removeGame: () => new Promise<void>(() => undefined) };
+        };
+        const first = render(<PlayStart open={stuck} />);
+        fireEvent.click(
+            await within(first.container).findByRole('button', {
+                name: 'Discard the game of Skyjo, round 1',
+            })
+        );
+        const { open } = await database(true);
+        const second = render(<PlayStart open={open} />);
+        fireEvent.click(
+            await within(second.container).findByRole('button', {
+                name: 'Discard the game of Skyjo, round 1',
+            })
+        );
+        await waitFor(() => {
+            expect(
+                within(second.container).queryByText('Skyjo', { selector: 'strong' })
+            ).toBeNull();
+        });
+    });
+
     it('discards one game at a time, letting a second discard go while the first runs', async () => {
         const { open, factory } = await database(true);
         const other = await openStore(factory);
