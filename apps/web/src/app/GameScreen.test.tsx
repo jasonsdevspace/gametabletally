@@ -172,7 +172,7 @@ describe('the game screen', () => {
         const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
         expect(await screen.findByText(why)).toBeVisible();
         await said(screenLine(), why);
-        expect(screen.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
+        expect(screen.getByRole('toolbar', { name: 'Number cards' })).toHaveAccessibleDescription(
             why
         );
         expect(screen.getByRole('button', { name: 'Next: Ben' })).toHaveAttribute(
@@ -425,7 +425,7 @@ describe('skipping a player for a round', () => {
 });
 
 describe('the card grids, one stop each', () => {
-    const grid = (name: string) => screen.getByRole('group', { name });
+    const grid = (name: string) => screen.getByRole('toolbar', { name });
     const stops = (name: string) => grid(name).querySelectorAll('[tabindex="0"]').length;
 
     it('gives each grid one stop, and leaves an arrow held with a modifier key to the browser', async () => {

@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, ChoiceField } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, useRoving } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
@@ -19,7 +19,6 @@ import {
     useRound,
 } from './round.js';
 import type { RoundLine } from './round-summary.js';
-import { useRoving } from './roving.js';
 import { drawnOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
 import type { Summary } from './summary.js';
 
@@ -194,17 +193,17 @@ interface PadParts {
  * minus sign and Backspace typed on a keyboard.
  */
 const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
-    const pad = useRoving(fresh);
+    const pad = useRoving<HTMLDivElement>();
     return (
+        // Drawn afresh for each player, so the pad's stop starts at its first key.
         <div
+            key={fresh}
+            ref={pad}
             className="dk-button-grid gtt-pad"
-            role="group"
             aria-label="Number pad"
             aria-describedby={describedBy}
-            onFocus={pad.onFocus}
-            onClick={pad.onClick}
             onKeyDown={(event) => {
-                pad.onKeyDown(event);
+                // The arrow keys, Home and End are the kit's, which it marks as handled.
                 const key =
                     event.altKey || event.ctrlKey || event.metaKey ? null : padKeyOf(event.key);
                 if (key === null || event.defaultPrevented) return;
@@ -212,10 +211,9 @@ const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
                 set({ ...input, typed: pressed(input.typed, key) });
             }}
         >
-            {PAD.map((key, at) => (
+            {PAD.map((key) => (
                 <Button
                     key={key}
-                    tabIndex={pad.tabIndexOf(at)}
                     {...(key === 'minus' ? { pressed: input.typed.startsWith('-') } : {})}
                     off={off || (key === 'delete' && input.typed === '')}
                     onClick={() => {
@@ -238,8 +236,8 @@ const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
  */
 const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const { cards } = input;
-    const pad = useRoving(fresh);
-    const strip = useRoving(`${fresh}|strip`, cards.length);
+    const pad = useRoving<HTMLDivElement>();
+    const strip = useRoving<HTMLDivElement>();
     const full = cards.length >= MOST_CARDS;
     const stripRef = useRef<HTMLDivElement>(null);
     const padRef = useRef<HTMLDivElement>(null);
@@ -257,20 +255,19 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
         <>
             {cards.length === 0 ? null : (
                 <div
-                    ref={stripRef}
+                    key={`strip|${fresh}`}
+                    ref={(element) => {
+                        stripRef.current = element;
+                        return strip(element);
+                    }}
                     className="dk-button-grid gtt-strip"
-                    role="group"
                     aria-label={`Cards tapped in, ${spokenOf(sumOf(cards))} in all`}
-                    onFocus={strip.onFocus}
-                    onClick={strip.onClick}
-                    onKeyDown={strip.onKeyDown}
                 >
                     {cards.map((card, at) => (
                         <Button
                             // Known by place, so the card that takes a taken card's place keeps
                             // its key, and focus with it.
                             key={at}
-                            tabIndex={strip.tabIndexOf(at)}
                             off={off}
                             onClick={() => {
                                 if (off) return;
@@ -291,19 +288,18 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
                 <p className="dk-field-hint">Tap each card your hand holds.</p>
             ) : null}
             <div
-                ref={padRef}
+                key={`cards|${fresh}`}
+                ref={(element) => {
+                    padRef.current = element;
+                    return pad(element);
+                }}
                 className="dk-button-grid gtt-cards"
-                role="group"
                 aria-label="Cards"
                 aria-describedby={hints === '' ? undefined : hints}
-                onFocus={pad.onFocus}
-                onClick={pad.onClick}
-                onKeyDown={pad.onKeyDown}
             >
-                {CARDS.map((card, at) => (
+                {CARDS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={pad.tabIndexOf(at)}
                         off={full || off}
                         onClick={() => {
                             if (!full && !off) set({ ...input, cards: [...cards, card] });
@@ -350,7 +346,7 @@ export const SkyjoKeys = ({
     readonly onChange: (input: SkyjoInput) => void;
     readonly onMode: (mode: SkyjoInput['mode']) => void;
 }) => {
-    const tabs = useRoving(name);
+    const tabs = useRoving<HTMLDivElement>();
     const empty = entryOf(input) === undefined;
     const ids = [why === '' ? null : 'hand-why', empty ? 'entry-hint' : null].filter(Boolean);
     const describedBy = ids.length === 0 ? undefined : ids.join(' ');
@@ -366,19 +362,16 @@ export const SkyjoKeys = ({
             <div
                 className="dk-tabs gtt-modes"
                 role="tablist"
+                ref={tabs}
                 aria-label={`How to enter ${name}'s total`}
-                onFocus={tabs.onFocus}
-                onClick={tabs.onClick}
-                onKeyDown={tabs.onKeyDown}
             >
-                {MODES.map(({ mode, label }, at) => (
+                {MODES.map(({ mode, label }) => (
                     <button
                         key={mode}
                         type="button"
                         role="tab"
                         id={`mode-${mode}`}
                         className="dk-tab"
-                        tabIndex={tabs.tabIndexOf(at)}
                         aria-selected={input.mode === mode}
                         aria-controls="skyjo-entry"
                         aria-disabled={off || undefined}

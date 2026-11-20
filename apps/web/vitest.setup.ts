@@ -20,3 +20,18 @@ if (!('ResizeObserver' in globalThis))
             disconnect(): void {}
         },
     });
+
+/*
+ * The kit's controls ask whether a control can be seen before they move focus to it, by
+ * checkVisibility, which jsdom does not have. Nothing is laid out here, so one that counts a control
+ * seen unless it or what holds it is hidden or not displayed stands in for it.
+ */
+if (!('checkVisibility' in Element.prototype))
+    Object.assign(Element.prototype, {
+        checkVisibility(this: Element): boolean {
+            for (let at: Element | null = this; at !== null; at = at.parentElement)
+                if (at.hasAttribute('hidden') || getComputedStyle(at).display === 'none')
+                    return false;
+            return true;
+        },
+    });

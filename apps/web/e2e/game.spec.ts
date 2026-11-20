@@ -128,7 +128,7 @@ test('says in words beside the keys why a hand of eight numbers is refused, and 
     // The header keeps the last score the rules took, so a refusal never reads as nothing.
     await expect(total(page)).toHaveAccessibleName('36');
     await audit(page);
-    await expect(page.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
+    await expect(page.getByRole('toolbar', { name: 'Number cards' })).toHaveAccessibleDescription(
         why
     );
     await expect(next(page)).toHaveAttribute('aria-disabled', 'true');
@@ -226,7 +226,7 @@ test('sets the keys at the foot of the body on a tall phone, in reach of a thumb
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
-    const modifiers = await page.getByRole('group', { name: 'Modifier cards' }).boundingBox();
+    const modifiers = await page.getByRole('toolbar', { name: 'Modifier cards' }).boundingBox();
     const dock = await page.getByRole('region', { name: 'Actions' }).boundingBox();
     // The last row of keys ends a step or two above the dock, with the spare room above the keys.
     expect((dock?.y ?? 0) - ((modifiers?.y ?? 0) + (modifiers?.height ?? 0))).toBeLessThan(48);
@@ -238,7 +238,7 @@ test('draws the six modifier cards in two even rows of three on the narrowest ph
     await page.setViewportSize({ width: 320, height: 640 });
     await open(page);
     const tops = await page
-        .getByRole('group', { name: 'Modifier cards' })
+        .getByRole('toolbar', { name: 'Modifier cards' })
         .getByRole('button')
         .evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().top)));
     expect(tops).toHaveLength(6);

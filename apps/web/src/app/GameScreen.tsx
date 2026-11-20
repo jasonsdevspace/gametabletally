@@ -5,7 +5,7 @@ import {
     type Flip7Modifier,
     type Problem,
 } from '@gametabletally/scoring';
-import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useRoving, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -27,7 +27,6 @@ import {
     useRound,
 } from './round.js';
 import { flip7Note, type RoundLine } from './round-summary.js';
-import { useRoving } from './roving.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
@@ -133,8 +132,8 @@ export const Flip7Keys = ({
     readonly off?: boolean;
     readonly onChange: (hand: Flip7Entry) => void;
 }) => {
-    const numbers = useRoving(name);
-    const modifiers = useRoving(name);
+    const numbers = useRoving<HTMLDivElement>();
+    const modifiers = useRoving<HTMLDivElement>();
     return (
         <section className="gtt-keys" aria-label={`${name}'s cards`}>
             <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
@@ -155,19 +154,17 @@ export const Flip7Keys = ({
                     {name} bust, so nothing counts this round. Press Bust again to take it back.
                 </div>
             ) : null}
+            {/* Drawn afresh for each player, so their grid's stop starts at its first card. */}
             <div
+                key={`numbers|${name}`}
+                ref={numbers}
                 className="dk-button-grid gtt-numbers"
-                role="group"
                 aria-label="Number cards"
                 aria-describedby={why === '' ? undefined : 'hand-why'}
-                onFocus={numbers.onFocus}
-                onClick={numbers.onClick}
-                onKeyDown={numbers.onKeyDown}
             >
-                {NUMBERS.map((card, at) => (
+                {NUMBERS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={numbers.tabIndexOf(at)}
                         pressed={hand.numbers.includes(card)}
                         off={hand.bust || off}
                         onClick={() => {
@@ -185,17 +182,14 @@ export const Flip7Keys = ({
                 </div>
             )}
             <div
+                key={`modifiers|${name}`}
+                ref={modifiers}
                 className="dk-button-grid gtt-modifiers"
-                role="group"
                 aria-label="Modifier cards"
-                onFocus={modifiers.onFocus}
-                onClick={modifiers.onClick}
-                onKeyDown={modifiers.onKeyDown}
             >
-                {FLIP_7_MODIFIERS.map((card, at) => (
+                {FLIP_7_MODIFIERS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={modifiers.tabIndexOf(at)}
                         pressed={hand.modifiers.includes(card)}
                         off={hand.bust || off}
                         onClick={() => {
