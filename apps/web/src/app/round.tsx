@@ -156,6 +156,12 @@ export const SkipRows = ({
     );
 };
 
+/** Where focus goes after a put back: the way to put back the next player still out, or the skip. */
+const focusAfterBack = (rest: readonly string[]): string => {
+    const [stillOut] = rest;
+    return stillOut === undefined ? 'skip-player' : `put-back-${stillOut}`;
+};
+
 /**
  * What the button that moves a round on says while its press runs, from its label: the save it
  * makes, or the entry it keeps on the way to the next player, and nothing for a move that saves
@@ -178,6 +184,7 @@ export const RoundDock = ({
     index,
     changing,
     off,
+    moving = false,
     refused,
     why = 'hand-why',
     described,
@@ -188,8 +195,10 @@ export const RoundDock = ({
     readonly id: string;
     readonly index: number;
     readonly changing: boolean;
-    /** Whether a change to the round is under way, which the button that moves it on says. */
+    /** Whether a change to the round is under way, which turns the dock's buttons off. */
     readonly off: boolean;
+    /** Whether that change is the press of the button that moves the round on, which it says. */
+    readonly moving?: boolean;
     /** Whether the round cannot move on, which the element named by `why` says why. */
     readonly refused: boolean;
     /** The id of what says why the round cannot move on. */
@@ -219,8 +228,8 @@ export const RoundDock = ({
                     ref={next}
                     accent
                     tall
-                    off={refused || (off && busyWords === '')}
-                    busy={off && busyWords !== '' ? busyWords : false}
+                    off={refused || (off && !(moving && busyWords !== ''))}
+                    busy={moving && busyWords !== '' ? busyWords : false}
                     aria-describedby={refused ? why : described}
                     onClick={onNext}
                 >
@@ -274,6 +283,9 @@ export const useRound = ({
     const id = game.saved.id;
     const nameOf = (one: string) => nameIn(names, one);
     const [busy, setBusy] = useState(false);
+    // Whether what is under way is the press of the button that moves the round on, the one
+    // action the dock's busy words name, apart from a skip, a put back or a change let go.
+    const [moving, setMoving] = useState(false);
     const say = useStatus();
 
     // A saved round opened again from the scores, which its address and so the bar name, and
@@ -355,6 +367,7 @@ export const useRound = ({
         // Moving on begins the next entry, so the last summary and its Undo go before it does.
         summary.clear();
         setBusy(true);
+        setMoving(true);
         try {
             const step = draft.step;
             if (stepAfter(game, value) === null) {
@@ -380,6 +393,7 @@ export const useRound = ({
                 );
         } finally {
             setBusy(false);
+            setMoving(false);
         }
     };
 
@@ -388,8 +402,9 @@ export const useRound = ({
      * than `before`, read from the round as kept. The header says who is next as well, a moment
      * before, so these words carry it, since they take its place on the status line.
      */
+    const turnNow = (): string | null => keptOf(play, id)?.draft?.step?.player ?? null;
     const nextWords = (before: string | null): string => {
-        const now = keptOf(play, id)?.draft?.step?.player ?? null;
+        const now = turnNow();
         return now === null || now === before ? '' : ` ${nameOf(now)} is next.`;
     };
 
@@ -454,21 +469,26 @@ export const useRound = ({
         return `${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`;
     };
 
-    /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
-    const back = async (player: string, who: string, { focus: move = true } = {}) => {
+    /**
+     * Puts a skipped player back in the round, to be asked as the turn reaches them. `quiet` leaves
+     * the words to a screen that says its own.
+     */
+    const back = async (
+        player: string,
+        who: string,
+        { focus: move = true, quiet = false } = {}
+    ) => {
         if (held()) return;
         // Whose turn it was, so a put back that moves the turn says who is next.
-        const turn = keptOf(play, id)?.draft?.step?.player ?? null;
+        const turn = turnNow();
         summary.clear();
         setBusy(true);
         try {
             const rest = draft.round.out.filter((one) => one !== who);
             await play.setOut(id, rest);
             if (keptOf(play, id)?.error !== null) return;
-            say(`${backWords(player, who, rest)}${nextWords(turn)}`);
-            const stillOut = rest[0];
-            if (move)
-                focusAfterDraw(stillOut === undefined ? 'skip-player' : `put-back-${stillOut}`);
+            if (!quiet) say(`${backWords(player, who, rest)}${nextWords(turn)}`);
+            if (move) focusAfterDraw(focusAfterBack(rest));
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
@@ -480,10 +500,15 @@ export const useRound = ({
      * Makes a change to the round while nothing else is, with the last summary taken away first,
      * and resolves to whether it was kept, saying why where it was not.
      */
-    const run = async (work: () => Promise<unknown>, failed: string): Promise<boolean> => {
+    const run = async (
+        work: () => Promise<unknown>,
+        failed: string,
+        { moves = false }: { readonly moves?: boolean } = {}
+    ): Promise<boolean> => {
         if (held()) return false;
         summary.clear();
         setBusy(true);
+        setMoving(moves);
         try {
             await work();
             // A save the store refused is said by the screen's alert.
@@ -493,6 +518,7 @@ export const useRound = ({
             return false;
         } finally {
             setBusy(false);
+            setMoving(false);
         }
     };
 
@@ -505,6 +531,7 @@ export const useRound = ({
         draft,
         changing,
         busy,
+        moving,
         say,
         held,
         cancel,

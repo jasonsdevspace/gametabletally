@@ -573,7 +573,8 @@ export const WizardRound = ({
         if (values === null) return;
         const done = await actionsOf.run(
             () => play.enterAll(id, values),
-            'The bids could not be saved.'
+            'The bids could not be saved.',
+            { moves: true }
         );
         if (!done) return;
         const bids = playing.map((one) => `${nameOf(one)} ${String(counts.countOf(one) ?? 0)}`);
@@ -585,7 +586,8 @@ export const WizardRound = ({
         if (values === null || given !== dealt) return;
         await actionsOf.run(
             () => actionsOf.saveRound(wizardRefusalWords, undefined, { values }),
-            'The round could not be saved.'
+            'The round could not be saved.',
+            { moves: true }
         );
     };
 
@@ -618,7 +620,8 @@ export const WizardRound = ({
 
     // A player put back has no bid, so the round goes back to the bids, which are kept as set.
     const back = async (one: string) => {
-        await actionsOf.back('', one, { focus: false });
+        // The round's own words for a put back are left unsaid, since these say the bid to set.
+        await actionsOf.back('', one, { focus: false, quiet: true });
         const step = keptOf(play, id)?.draft?.step;
         if (step?.part === 'tricks') await actionsOf.goTo({ part: 'bid', player: one });
         setOver(null);
@@ -691,6 +694,7 @@ export const WizardRound = ({
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={refused}
                 why={wrong === '' ? 'tricks-left' : 'counts-why'}
                 label={labelOf(phase, changing, draft.index)}

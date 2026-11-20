@@ -333,12 +333,22 @@ describe('a round of Wizard', () => {
                 [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
             )
         );
+        const said: string[] = [];
+        const watch = new MutationObserver(() => {
+            said.push(screenLine().textContent);
+        });
+        watch.observe(screenLine(), { childList: true, characterData: true, subtree: true });
         fireEvent.click(await screen.findByRole('button', { name: 'Put Ben back' }));
         await waitFor(() => {
             expect(count('bid-ben')).not.toBeNull();
         });
         expect(count('bid-ann')?.value).toBe('1');
         await heard(screenLine(), "Ben is back in round 2. Set Ben's bid.");
+        watch.disconnect();
+        // Said once, in the round's own words, and never in the words every game says.
+        expect(said.filter((words) => words.includes('is back'))).toEqual([
+            "Ben is back in round 2. Set Ben's bid.",
+        ]);
         expect(document.activeElement?.id).toBe('counts-line');
     });
 

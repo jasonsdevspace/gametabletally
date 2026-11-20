@@ -76,6 +76,46 @@ describe('the words a round says while it moves on', () => {
         expect(busyWordsOf('Enter the tricks')).toBe('');
     });
 
+    it('leaves the button that moves on unmarked while a skip is saved, which is not its press', async () => {
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
+            await store.savePlayer(one);
+        await store.saveGame(flip7(AT_ANN));
+        store.close();
+        // Saves wait once the screen is open, so the skip stays under way.
+        let hold = false;
+        const gate: { open?: () => void } = {};
+        const held = new Promise<void>((resolve) => {
+            gate.open = resolve;
+        });
+        const open = async () => {
+            const opened = await openStore(factory);
+            return {
+                ...opened,
+                saveGame: async (game: SavedGame) => {
+                    if (hold) await held;
+                    return opened.saveGame(game);
+                },
+            };
+        };
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen open={open} now={() => new Date('2026-11-15T09:00:00Z')} />
+            </AppFrame>
+        );
+        const next = await screen.findByRole('button', { name: 'Next: Ben' });
+        hold = true;
+        press('Skip Ann this round');
+        await waitFor(() => {
+            expect(next).toHaveAttribute('aria-disabled', 'true');
+        });
+        expect(next).not.toHaveAttribute('data-busy');
+        gate.open?.();
+        await heard(appLine(), 'Ann is out of round 1');
+    });
+
     it('marks the button that moves on busy with the words for its press', async () => {
         await draw();
         const next = screen.getByRole('button', { name: 'Next: Ben' });

@@ -329,6 +329,7 @@ const Flip7Round = ({
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={why !== ''}
                 label={nextLabel(following, names, draft.index, changing)}
                 onNext={() => {

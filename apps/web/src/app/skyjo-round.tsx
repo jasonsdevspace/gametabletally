@@ -571,6 +571,7 @@ export const SkyjoRound = ({
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={refused}
                 why={why === '' ? 'entry-hint' : 'hand-why'}
                 label={nextLabel(following, names, draft.index, changing)}
@@ -728,6 +729,7 @@ export const SkyjoEnder = ({
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={chosen === null}
                 why="ender-hint"
                 described={chosen === null ? undefined : 'ender-outcome'}

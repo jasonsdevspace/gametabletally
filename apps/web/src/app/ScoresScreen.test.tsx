@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import { render, screen, within } from './render.testing.js';
+import { render, screen, waitFor, within } from './render.testing.js';
 import { leadWords, placeWords, ScoresScreen, standingsOf } from './ScoresScreen.js';
 
 /* The scores of a game in play in the app's frame, over a database in memory, and their words. */
@@ -31,8 +31,8 @@ const saved = (game: string, rounds: unknown[], draft: SavedGame['draft'] = null
 });
 
 /** The screen at the game's address, over a database holding the game and its players. */
-const draw = async (game: SavedGame) => {
-    window.history.replaceState(null, '', '/scores/?id=g-1');
+const draw = async (game: SavedGame, search = '?id=g-1') => {
+    window.history.replaceState(null, '', `/scores/${search}`);
     const factory = new IDBFactory();
     const store = await openStore(factory);
     for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
@@ -202,6 +202,24 @@ describe('the scores screen', () => {
             'Cat, 3rd place, 0 points',
         ]);
         expect(screen.getByText('Ben won with 227.')).toBeTruthy();
+    });
+
+    it('keeps the round arrived back at in the Tab order', async () => {
+        await draw(
+            saved('flip-7', [{ entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) } }], {
+                index: 1,
+                round: { entries: {}, out: [] },
+                step: { part: 'entry', player: 'ann' },
+            }),
+            '?id=g-1&round=1'
+        );
+        const round = await waitFor(() => {
+            const found = document.getElementById('round-1');
+            if (found === null) throw new Error('Round 1 has no heading to change it by.');
+            return found;
+        });
+        expect(round).not.toHaveAttribute('tabindex', '-1');
+        expect(round.tabIndex).toBe(0);
     });
 
     it('marks a round still being entered as not yet counted, with what stands so far', async () => {
