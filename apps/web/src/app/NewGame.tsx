@@ -1,6 +1,12 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+    Button,
+    ChoiceField,
+    useBusy,
+    useFocusAfterDraw,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
@@ -11,9 +17,8 @@ import { playersOf } from '../website/games.js';
 import { Dock, useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { Icon } from './icon.js';
-import { AddByName, useRunning } from './player-parts.js';
+import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
-import { useStatus } from './status.js';
 
 /**
  * The new game screen: the game, the players and their seats, and the button that starts it. The
@@ -112,34 +117,31 @@ const goInPlace = (href: string) => {
 };
 
 /**
- * The saved players, read once the screen is running, whether they have been, and why they could
- * not be, if so.
+ * The saved players alone, since a new game counts no games played, so a games read that fails
+ * never keeps a player from being added.
+ */
+const savedPlayers = (open: () => Promise<Store>) => withStore(open, (store) => store.players());
+
+/** No players, the same each time, so the seats' effects do not run again for nothing. */
+const NONE: readonly SavedPlayer[] = [];
+
+/**
+ * The saved players, read as every screen that names players reads them, whether they have been,
+ * and why they could not be, if so, with Try again reading them afresh.
  */
 const usePlayers = (open: () => Promise<Store>) => {
-    const [players, setPlayers] = useState<readonly SavedPlayer[]>([]);
-    const [loaded, setLoaded] = useState(false);
-    const [unread, setUnread] = useState('');
-    useEffect(() => {
-        let left = false;
-        withStore(open, (store) => store.players()).then(
-            (saved) => {
-                if (left) return;
-                setPlayers(saved);
-                setLoaded(true);
-            },
-            (error: unknown) => {
-                if (!left)
-                    setUnread(
-                        refusalOf(error) ??
-                            'Your saved players could not be opened in this browser. Reload the page to try again.'
-                    );
-            }
-        );
-        return () => {
-            left = true;
-        };
-    }, [open]);
-    return { players, setPlayers, loaded, unread };
+    const { read, setRead, unread, tryAgain } = usePlayersRead(
+        open,
+        'Your saved players could not be opened in this browser.',
+        savedPlayers
+    );
+    const setPlayers = useCallback(
+        (change: (before: readonly SavedPlayer[]) => readonly SavedPlayer[]) => {
+            setRead((now) => (now === null ? now : change(now)));
+        },
+        [setRead]
+    );
+    return { players: read ?? NONE, setPlayers, loaded: read !== null, unread, tryAgain };
 };
 
 export const NewGame = ({
@@ -151,15 +153,16 @@ export const NewGame = ({
 }: NewGameProps) => {
     const { search } = usePlace();
     const running = useRunning();
-    const { players, setPlayers, loaded, unread } = usePlayers(open);
+    const { players, setPlayers, loaded, unread, tryAgain } = usePlayers(open);
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
-    const [line, say] = useStatus();
+    const say = useStatus();
     const show = useToast();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
-    const focus = useRef<Focus | null>(null);
+    const startButton = useBusy<HTMLButtonElement>();
+    const focusAfterDraw = useFocusAfterDraw();
     const screen = useRef<HTMLDivElement>(null);
     const nameField = useRef<HTMLInputElement>(null);
     // The seats and players as last drawn, for a name whose save is answered after they change.
@@ -171,14 +174,13 @@ export const NewGame = ({
 
     // After a press redraws the seats or the saved players, focus goes to the control the press
     // chose, which may be the one pressed or its neighbor, or to the name field when none is left.
-    useLayoutEffect(() => {
-        const wanted = focus.current;
-        focus.current = null;
-        if (wanted === null) return;
+    const focusOn = (wanted: Focus) => {
         const selector = selectorOf(wanted);
-        const element = selector ? screen.current?.querySelector<HTMLElement>(selector) : null;
-        (element ?? nameField.current)?.focus();
-    }, [seats, players]);
+        focusAfterDraw(
+            () => (selector ? (screen.current?.querySelector(selector) ?? null) : null),
+            { fallbacks: [() => nameField.current] }
+        );
+    };
 
     // The link's game is read only once the screen is running, so the prerendered page, which
     // has no query, and the browser's first draw are the same.
@@ -198,7 +200,11 @@ export const NewGame = ({
     const move = (id: string, action: 'up' | 'down') => {
         const moved = moveSeat(seats, id, action === 'up' ? -1 : 1);
         if (moved === seats) return;
-        focus.current = { seat: id, action };
+        // Focus stays on the button pressed, unless the move took the seat to the end that turns it
+        // off, when it goes to the seat's other move, which the kit's focus would not pass over.
+        const at = moved.indexOf(id);
+        const ended = action === 'down' ? at === moved.length - 1 : at === 0;
+        focusOn({ seat: id, action: ended ? (action === 'down' ? 'up' : 'down') : action });
         setSeats(moved);
         say(`${nameOf(id)} moves to seat ${moved.indexOf(id) + 1}.`);
     };
@@ -207,7 +213,7 @@ export const NewGame = ({
         const at = seats.indexOf(id);
         const left = seats.filter((other) => other !== id);
         const next = left[at] ?? left[at - 1];
-        focus.current = next === undefined ? 'name' : { seat: next, action: 'remove' };
+        focusOn(next === undefined ? 'name' : { seat: next, action: 'remove' });
         setSeats(left);
         // The frame's toast says it and offers Undo, so a double tap that removes two seats can be
         // put right, and Undo puts the player back in the seat they left.
@@ -227,7 +233,7 @@ export const NewGame = ({
     const seatSaved = (player: SavedPlayer) => {
         const at = offered.indexOf(player);
         const next = offered[at + 1] ?? offered[at - 1];
-        focus.current = next === undefined ? 'name' : { saved: next.id };
+        focusOn(next === undefined ? 'name' : { saved: next.id });
         seat(player);
     };
 
@@ -256,7 +262,7 @@ export const NewGame = ({
     };
 
     const start = async () => {
-        if (!game || why !== null || busy) return;
+        if (!game || why !== null) return;
         setBusy(true);
         setRefused('');
         const id = newId();
@@ -284,8 +290,8 @@ export const NewGame = ({
     };
 
     return (
-        <div className="gtt-new" ref={screen}>
-            <Failure words={unread} />
+        <div className="dk-stack" ref={screen}>
+            <Failure words={unread} onTryAgain={tryAgain} />
             <ChoiceField
                 label="Game"
                 name="game"
@@ -299,10 +305,12 @@ export const NewGame = ({
                     },
                 }))}
             />
-            <section className="gtt-seats" aria-labelledby="seats">
+            <section className="dk-stack dk-stack-heading" aria-labelledby="seats">
                 <h2 id="seats">Players, in seat order</h2>
                 {seats.length === 0 ? (
-                    <p>No one is seated yet. Add the players in the order they sit.</p>
+                    <div className="dk-empty">
+                        <p>No one is seated yet. Add the players in the order they sit.</p>
+                    </div>
                 ) : (
                     <ol className="dk-rows" role="list" aria-labelledby="seats">
                         {seats.map((id, at) => (
@@ -319,7 +327,7 @@ export const NewGame = ({
                     </ol>
                 )}
             </section>
-            <section className="gtt-add" aria-labelledby="add">
+            <section className="dk-stack dk-stack-heading" aria-labelledby="add">
                 <h2 id="add">Add a player</h2>
                 {offered.length === 0 ? null : (
                     <div className="dk-actions" role="group" aria-label="Saved players">
@@ -336,9 +344,8 @@ export const NewGame = ({
                         ))}
                     </div>
                 )}
-                <AddByName field={nameField} onAdd={addByName} say={say} />
+                <AddByName field={nameField} onAdd={addByName} />
             </section>
-            <StatusLine ref={line} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
                 <Failure words={refused} />
@@ -348,9 +355,11 @@ export const NewGame = ({
                     </p>
                 )}
                 <Button
+                    ref={startButton}
                     accent
                     tall
-                    off={why !== null || busy}
+                    off={why !== null}
+                    busy={busy ? 'Starting the game.' : false}
                     aria-describedby={why === null ? undefined : 'start-why'}
                     onClick={() => void start()}
                 >

@@ -1,4 +1,10 @@
-import { Button, InputField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    InputField,
+    useBusy,
+    useFormRefusal,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -8,9 +14,8 @@ import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
-import { gamesOf, nameRefusal, playersChanged } from './players.js';
+import { gamesOf, nameRefusal, playersChanged, readPlayers } from './players.js';
 import { cleanName } from './seats.js';
-import { useStatus } from './status.js';
 
 /**
  * A player's own page, named by `?id=`: their name, how many games they have played, the field
@@ -26,46 +31,51 @@ export interface PlayerPageProps {
     readonly go?: (href: string) => void;
 }
 
-/** The field a player's name is changed in, saved as it is left or as Enter is pressed. */
+/**
+ * The field a player's name is changed in, saved as it is left or as Enter is pressed. A name
+ * refused by Enter is refused through the kit's form, which says the error where focus already is,
+ * and one refused as the field is left is said on the status line, leaving focus where it went.
+ */
 const RenameField = ({
     player,
     players,
     onRename,
-    say,
 }: {
     readonly player: SavedPlayer;
     readonly players: readonly SavedPlayer[];
     readonly onRename: (name: string) => Promise<string | null>;
-    /** Says a refusal on the screen's status line, since the kit's field error is not live. */
-    readonly say: (words: string) => void;
 }) => {
     const [name, setName] = useState(player.name);
     const [error, setError] = useState('');
+    const say = useStatus();
+    const [form, refuse] = useFormRefusal<HTMLFormElement>({
+        invalid: (failures) => {
+            setError(failures[0]?.words ?? '');
+        },
+    });
 
     // Each save is put in order by the page, which skips one that changes nothing, so a blur that
     // follows Enter saves the name once and a name typed while another saves is saved after it.
-    const save = async () => {
+    const save = async ({ entered = false } = {}) => {
         const typed = cleanName(name);
         if (typed === player.name) return;
-        const refused = nameRefusal(players, typed, player.id);
+        const refused = nameRefusal(players, typed, player.id) ?? (await onRename(typed));
+        setError(refused ?? '');
         if (refused !== null) {
-            setError(refused);
-            say(refused);
+            if (entered) refuse();
+            else say(refused);
             return;
         }
-        const failed = await onRename(typed);
-        setError(failed ?? '');
-        if (failed !== null) say(failed);
         // Tidied to the name saved, unless something else has been typed since.
-        if (failed === null) setName((now) => (cleanName(now) === typed ? typed : now));
+        setName((now) => (cleanName(now) === typed ? typed : now));
     };
 
     return (
         <form
-            noValidate
+            ref={form}
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
                 event.preventDefault();
-                void save();
+                void save({ entered: true });
             }}
         >
             <InputField
@@ -93,14 +103,14 @@ const goInPlace = (href: string) => {
     navigate(href, { replace: true });
 };
 
-const UNREAD = 'This player could not be opened in this browser. Reload the page to try again.';
+const UNREAD = 'This player could not be opened in this browser.';
 
 export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps) => {
     const { search } = usePlace();
     const running = useRunning();
     const show = useToast();
-    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
-    const [line, say] = useStatus();
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD, readPlayers);
+    const say = useStatus();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;
     const player = read?.players.find((one) => one.id === id && !one.removed);
@@ -108,14 +118,16 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     const current = useRef(player);
     // Each save waits for the one before it, so a rename and a removal land in the order made.
     const queue = useRef<Promise<unknown>>(Promise.resolve());
-    // Set once a removal starts, so a second press does not remove the player twice.
-    const removing = useRef(false);
+    // Set once a removal starts, while Remove is the kit's busy button, so a second press does not
+    // remove the player twice.
+    const [removing, setRemoving] = useState(false);
+    const removeButton = useBusy<HTMLButtonElement>();
 
     useEffect(() => {
         current.current = player;
     }, [player]);
 
-    if (unread !== '') return <Failure words={unread} />;
+    if (unread !== '') return <Failure words={unread} onTryAgain={tryAgain} />;
     if (read === null || !running) return null;
     if (!player)
         return (
@@ -177,8 +189,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     };
 
     const remove = async () => {
-        if (removing.current) return;
-        removing.current = true;
+        setRemoving(true);
         setFailed('');
         let was: SavedPlayer | undefined;
         try {
@@ -188,7 +199,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
                 return last;
             });
         } catch (error) {
-            removing.current = false;
+            setRemoving(false);
             setFailed(refusalOf(error) ?? `${player.name} could not be removed. Try again.`);
             return;
         }
@@ -209,19 +220,18 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
         <>
             <h2 className="gtt-player-name">{player.name}</h2>
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
-            <RenameField
-                key={player.id}
-                player={player}
-                players={read.players}
-                onRename={rename}
-                say={say}
-            />
-            <StatusLine ref={line} />
+            <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
             <div className="dk-actions">
-                <Button onClick={() => void remove()}>Remove {player.name}</Button>
+                <Button
+                    ref={removeButton}
+                    busy={removing ? `Removing ${player.name}.` : false}
+                    onClick={() => void remove()}
+                >
+                    Remove {player.name}
+                </Button>
             </div>
             <Failure words={failed} />
-            <p className="gtt-fine">
+            <p className="dk-note">
                 {played === 0
                     ? 'Removing a player who has played no game deletes them.'
                     : 'Removing a player keeps them in the games they played, but no longer offers them for a new game.'}

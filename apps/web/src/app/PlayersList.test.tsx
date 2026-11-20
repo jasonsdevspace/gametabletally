@@ -1,4 +1,3 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,7 +6,8 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { playersChanged } from './players.js';
 import { PlayersList } from './PlayersList.js';
-import { heard, refused, refusedInPlace } from './status.testing.js';
+import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import { heard, refusedInPlace } from './status.testing.js';
 
 /* The players screen over a database in memory. */
 
@@ -121,11 +121,7 @@ describe('the players screen', () => {
         await refusedInPlace(field, 'A player is already named Ben.');
         field.focus();
         fireEvent.submit(field);
-        await refused(
-            field,
-            screen.getByRole('status', { hidden: true }),
-            'A player is already named Ben.'
-        );
+        await refusedInPlace(field, 'A player is already named Ben.');
         const store = await open();
         expect(await store.players()).toHaveLength(SAVED.length);
         store.close();
@@ -150,6 +146,24 @@ describe('the players screen', () => {
             // Said as an error first, so the tone is not told by color alone.
             expect(screen.getByRole('alert')).toHaveTextContent(`Error: ${BLOCKED_DATABASE}`);
         });
+    });
+
+    it('reads the players afresh from Try again, which the alert never reads', async () => {
+        const { open } = await database(SAVED);
+        let failing = true;
+        render(
+            <PlayersList
+                open={() => (failing ? Promise.reject(new Error(BLOCKED_DATABASE)) : open())}
+            />
+        );
+        const again = await screen.findByRole('button', { name: 'Try again' });
+        expect(screen.getByRole('alert')).not.toHaveTextContent('Try again');
+        failing = false;
+        fireEvent.click(again);
+        await waitFor(() => {
+            expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben']);
+        });
+        expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('lists a removed player brought back by name in their place, by the day they were added', async () => {

@@ -195,7 +195,7 @@ const useLent = (
     open: () => Promise<Store>,
     now: () => Date,
     /** Whether what was read for an earlier key is kept in view while a later one is read. */
-    keep = false
+    keep: (earlier: { readonly key: string; readonly lent: Lent }) => boolean = () => false
 ): { readonly key: string; readonly lent: Lent } | null => {
     // What was read, and for which key, so a move to another game never draws the last one.
     const [read, setRead] = useState<{ readonly key: string; readonly lent: Lent } | null>(null);
@@ -241,7 +241,8 @@ const useLent = (
             shown.release?.();
         };
     }, [key, open, now, lend]);
-    return read?.key === key || keep ? read : null;
+    if (read?.key === key) return read;
+    return read !== null && keep(read) ? read : null;
 };
 
 /**
@@ -256,7 +257,9 @@ export const WithOpenedGame = ({
     const running = useRunning();
     const { search } = usePlace();
     const id = running ? new URLSearchParams(search).get('id') : null;
-    const read = useLent(id, open, now);
+    // Each Try again reads the game afresh.
+    const [attempts, setAttempts] = useState(0);
+    const read = useLent(id === null ? null : `${id} ${String(attempts)}`, open, now);
     if (!running) return null;
     if (id === null)
         return (
@@ -265,7 +268,15 @@ export const WithOpenedGame = ({
             </p>
         );
     if (read === null) return null;
-    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
+    if ('failed' in read.lent)
+        return (
+            <Failure
+                words={read.lent.failed}
+                onTryAgain={() => {
+                    setAttempts((count) => count + 1);
+                }}
+            />
+        );
     return children({ id, ...read.lent });
 };
 
@@ -296,8 +307,26 @@ export const WithGames = ({
             window.removeEventListener('pageshow', again);
         };
     }, []);
-    const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
+    // Each Try again reads afresh too, and only a Try again takes a failure out of view while the
+    // games are read again, so it comes back and is heard again where the read fails again. A read
+    // as the app comes back to the front keeps what was read in view, a failure as well, so the
+    // alert is not said again each time the visitor returns.
+    const [retries, setRetries] = useState(0);
+    const read = useLent(
+        running ? `all|${String(arrivals)}|${String(retries)}` : null,
+        open,
+        now,
+        (earlier) => !('failed' in earlier.lent) || earlier.key.endsWith(`|${String(retries)}`)
+    );
     if (read === null) return null;
-    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
+    if ('failed' in read.lent)
+        return (
+            <Failure
+                words={read.lent.failed}
+                onTryAgain={() => {
+                    setRetries((count) => count + 1);
+                }}
+            />
+        );
     return children(read.lent);
 };

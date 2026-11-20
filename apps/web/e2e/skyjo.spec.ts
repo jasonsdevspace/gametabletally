@@ -20,7 +20,7 @@ const player = (name: string): SavedPlayer => ({
 });
 
 const dock = (page: Page) => page.getByRole('region', { name: 'Actions' });
-const pad = (page: Page) => page.getByRole('group', { name: 'Number pad' });
+const pad = (page: Page) => page.getByRole('toolbar', { name: 'Number pad' });
 const scoring = (page: Page) => page.locator('.gtt-score-name');
 
 /** Types a total on the number pad, a minus sign first where it is below zero. */
@@ -56,14 +56,14 @@ test('plays a game of Skyjo through, typing totals and adding up cards, to its r
     await dock(page).getByRole('button', { name: 'Next: Ben' }).click();
     // Ben's cards are added up for him, one taken out again from the strip.
     await page.getByRole('tab', { name: 'Add it up for me' }).click();
-    const cards = page.getByRole('group', { name: 'Cards', exact: true });
+    const cards = page.getByRole('toolbar', { name: 'Cards', exact: true });
     for (const card of ['12', 'minus 2', '7'])
         await cards.getByRole('button', { name: card }).click();
     await page
-        .getByRole('group', { name: 'Cards tapped in' })
+        .getByRole('toolbar', { name: 'Cards tapped in' })
         .getByRole('button', { name: 'Take out 7' })
         .click();
-    await expect(page.getByRole('group', { name: 'Cards tapped in, 10 in all' })).toBeVisible();
+    await expect(page.getByRole('toolbar', { name: 'Cards tapped in, 10 in all' })).toBeVisible();
     await audit(page);
     await dock(page).getByRole('button', { name: 'Next: Cat' }).click();
     await typeTotal(page, 20);
@@ -135,7 +135,7 @@ test('opens a saved round again with what was entered and who ended it', async (
         'aria-selected',
         'true'
     );
-    await expect(page.getByRole('group', { name: 'Cards tapped in, 10 in all' })).toBeVisible();
+    await expect(page.getByRole('toolbar', { name: 'Cards tapped in, 10 in all' })).toBeVisible();
     await dock(page).getByRole('button', { name: 'Next: Cat' }).click();
     await dock(page).getByRole('button', { name: 'Next: who ended the round' }).click();
     await expect(page.getByRole('radio', { name: /^Ann/ })).toBeChecked();

@@ -1,13 +1,14 @@
 import type { Problem } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
-import { canSkip, comesAfter, floorWords, outWords } from './round.js';
+import { Flip7Keys, GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import { act, appLine, fireEvent, render, screen, waitFor } from './render.testing.js';
+import { busyWordsOf, canSkip, comesAfter, floorWords, outWords } from './round.js';
 import { heard } from './status.testing.js';
 
 /* The game in play in the app's frame, over a database in memory, and the words it draws. */
@@ -65,18 +66,96 @@ const press = (name: string) => {
 
 const digits = () => document.querySelector('.gtt-digits');
 
-/** The score header's status line, and the screen's own, each saying what changed. */
-const headerLine = () => document.querySelector<HTMLElement>('.gtt-score [role="status"]');
-const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+describe('the words a round says while it moves on', () => {
+    it('names the save it makes, the entry it keeps, and nothing where it saves nothing', () => {
+        expect(busyWordsOf('Save the round')).toBe('Saving the round.');
+        expect(busyWordsOf('Save round 2')).toBe('Saving round 2.');
+        expect(busyWordsOf('Save the bids')).toBe('Saving the bids.');
+        expect(busyWordsOf('Next: Ben')).toBe('Keeping the entry.');
+        expect(busyWordsOf('Next: who ended the round')).toBe('Keeping the entry.');
+        expect(busyWordsOf('Enter the tricks')).toBe('');
+    });
 
-/**
- * Waits for a line to say its words. The kit's line puts them in a moment after it is told, so a
- * test waits for them before it ends, or the moment would come after the page is gone.
- */
-const said = async (line: HTMLElement | null, words: string) => {
-    if (line === null) throw new Error('The status line is not on the page.');
-    await heard(line, words);
-};
+    it('leaves the button that moves on unmarked while a skip is saved, which is not its press', async () => {
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
+            await store.savePlayer(one);
+        await store.saveGame(flip7(AT_ANN));
+        store.close();
+        // Saves wait once the screen is open, so the skip stays under way.
+        let hold = false;
+        const gate: { open?: () => void } = {};
+        const held = new Promise<void>((resolve) => {
+            gate.open = resolve;
+        });
+        const open = async () => {
+            const opened = await openStore(factory);
+            return {
+                ...opened,
+                saveGame: async (game: SavedGame) => {
+                    if (hold) await held;
+                    return opened.saveGame(game);
+                },
+            };
+        };
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen open={open} now={() => new Date('2026-11-15T09:00:00Z')} />
+            </AppFrame>
+        );
+        const next = await screen.findByRole('button', { name: 'Next: Ben' });
+        hold = true;
+        press('Skip Ann this round');
+        await waitFor(() => {
+            expect(next).toHaveAttribute('aria-disabled', 'true');
+        });
+        expect(next).not.toHaveAttribute('data-busy');
+        gate.open?.();
+        await heard(appLine(), 'Ann is out of round 1');
+    });
+
+    it('marks the button that moves on busy with the words for its press', async () => {
+        await draw();
+        const next = screen.getByRole('button', { name: 'Next: Ben' });
+        fireEvent.click(next);
+        expect(next).toHaveAttribute('data-busy', 'Keeping the entry.');
+    });
+});
+
+describe('a game that could not be read', () => {
+    it('reads it afresh from Try again, with focus on the screen once the callout goes', async () => {
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
+            await store.savePlayer(one);
+        await store.saveGame(flip7(AT_ANN));
+        store.close();
+        let failing = true;
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen
+                    open={() =>
+                        failing
+                            ? Promise.reject(new Error('No database here.'))
+                            : openStore(factory)
+                    }
+                    now={() => new Date('2026-11-15T09:00:00Z')}
+                />
+            </AppFrame>
+        );
+        const again = await screen.findByRole('button', { name: 'Try again' });
+        again.focus();
+        failing = false;
+        fireEvent.click(again);
+        await screen.findByRole('button', { name: 'Bust' });
+        await waitFor(() => {
+            expect(screen.getByRole('main')).toHaveFocus();
+        });
+    });
+});
 
 describe('the words the game screen draws', () => {
     it('words a hand of too many numbers from its code and data', () => {
@@ -141,7 +220,7 @@ describe('the game screen', () => {
         await waitFor(() => {
             expect(digits()).toHaveAccessibleName('14');
         });
-        await said(headerLine(), "Ann's total is 14.");
+        await heard(appLine(), "Ann's total is 14.");
         expect(screen.getByRole('button', { name: '7' })).toHaveAttribute('aria-pressed', 'true');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
@@ -161,7 +240,7 @@ describe('the game screen', () => {
         );
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-disabled', 'true');
-        await said(headerLine(), "Ann's total is 0.");
+        await heard(appLine(), "Ann's total is 0.");
         press('Bust');
         expect(bust).toHaveAttribute('aria-pressed', 'false');
     });
@@ -171,8 +250,8 @@ describe('the game screen', () => {
         for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) press(card);
         const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
         expect(await screen.findByText(why)).toBeVisible();
-        await said(screenLine(), why);
-        expect(screen.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
+        await heard(appLine(), why);
+        expect(screen.getByRole('toolbar', { name: 'Number cards' })).toHaveAccessibleDescription(
             why
         );
         expect(screen.getByRole('button', { name: 'Next: Ben' })).toHaveAttribute(
@@ -184,7 +263,7 @@ describe('the game screen', () => {
     it('names the next player, and moves to them', async () => {
         await draw();
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
         expect(screen.getByRole('button', { name: 'Next: Cat' })).toBeVisible();
     });
@@ -208,10 +287,10 @@ describe('the game screen as the turn moves on', () => {
     it('ignores a tap made while the hand is entered, so it never lands in the next seat', async () => {
         const { open } = await draw();
         press('3');
-        await said(headerLine(), "Ann's total is 3.");
+        await heard(appLine(), "Ann's total is 3.");
         press('Next: Ben');
         press('9');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
             ann: { numbers: [3], modifiers: [], bust: false },
@@ -222,13 +301,13 @@ describe('the game screen as the turn moves on', () => {
     it('ignores a tap made while Undo puts a hand back, so it never lands in the player it restores', async () => {
         const { open } = await draw();
         press('3');
-        await said(headerLine(), "Ann's total is 3.");
+        await heard(appLine(), "Ann's total is 3.");
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         const undo = await screen.findByRole('button', { name: 'Undo' });
         fireEvent.click(undo);
         press('9');
-        await said(headerLine(), 'Ann is next.');
+        await heard(appLine(), 'Ann is next.');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
             ann: { numbers: [3], modifiers: [], bust: false },
@@ -343,9 +422,10 @@ describe('skipping a player for a round', () => {
         const skip = await screen.findByRole('button', { name: 'Skip Ann this round' });
         skip.focus();
         fireEvent.click(skip);
-        await said(
-            screenLine(),
-            "Ann is out of round 1, with no score for it. Ann's total stays at 0."
+        // Said with who is next, since the header's own words are said a moment before.
+        await heard(
+            appLine(),
+            "Ann is out of round 1, with no score for it. Ann's total stays at 0. Ben is next."
         );
         expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
         expect(screen.getByText('Ann is out of this round.')).toBeVisible();
@@ -353,7 +433,7 @@ describe('skipping a player for a round', () => {
         expect(skipButton()).toHaveFocus();
         // Put back while Ben enters, Ann is asked after the others still to enter.
         fireEvent.click(screen.getByRole('button', { name: 'Put Ann back' }));
-        await said(screenLine(), 'Ann is back in round 1, and is asked after Dan.');
+        await heard(appLine(), 'Ann is back in round 1, and is asked after Dan.');
         expect(screen.queryByText('Ann is out of this round.')).toBeNull();
         await waitFor(() => {
             expect(skipButton()).toHaveFocus();
@@ -363,8 +443,8 @@ describe('skipping a player for a round', () => {
     it('offers no skip that would leave one player, says why, and still puts a player back', async () => {
         await draw();
         press('Skip Ann this round');
-        await said(
-            screenLine(),
+        await heard(
+            appLine(),
             "Ann is out of round 1, with no score for it. Ann's total stays at 0."
         );
         expect(skipButton()).toBeNull();
@@ -373,8 +453,11 @@ describe('skipping a player for a round', () => {
             expect(screen.getByRole('button', { name: 'Put Ann back' })).toHaveFocus();
         });
         press('Put Ann back');
-        await said(screenLine(), 'Ann is back in round 1, and is asked after Cat.');
+        await heard(appLine(), 'Ann is back in round 1, and is asked after Cat.');
         expect(skipButton()).toHaveTextContent('Skip Ben this round');
+        await waitFor(() => {
+            expect(skipButton()).toHaveFocus();
+        });
     });
 
     it('says from the start of a game of two that no one can sit a round out', async () => {
@@ -390,8 +473,8 @@ describe('skipping a player for a round', () => {
         press('Next: Ben');
         expect(await screen.findByRole('button', { name: 'Undo' })).toBeVisible();
         press('Skip Ben this round');
-        await said(
-            screenLine(),
+        await heard(
+            appLine(),
             "Ben is out of round 1, with no score for it. Ben's total stays at 0."
         );
         expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
@@ -425,8 +508,25 @@ describe('skipping a player for a round', () => {
 });
 
 describe('the card grids, one stop each', () => {
-    const grid = (name: string) => screen.getByRole('group', { name });
+    const grid = (name: string) => screen.getByRole('toolbar', { name });
     const stops = (name: string) => grid(name).querySelectorAll('[tabindex="0"]').length;
+
+    it('writes each grid as a group, which the kit names a toolbar once it is attached', () => {
+        const markup = renderToStaticMarkup(
+            <Flip7Keys
+                name="Ann"
+                hand={{ numbers: [], modifiers: [], bust: false }}
+                why=""
+                onChange={() => undefined}
+            />
+        );
+        for (const name of ['Number cards', 'Modifier cards'])
+            expect(markup).toMatch(
+                new RegExp(
+                    `role="group" aria-label="${name}"|aria-label="${name}"[^>]*role="group"`
+                )
+            );
+    });
 
     it('gives each grid one stop, and leaves an arrow held with a modifier key to the browser', async () => {
         await draw();
@@ -453,7 +553,7 @@ describe('the card grids, one stop each', () => {
         fireEvent.click(screen.getByRole('button', { name: '9' }));
         expect(screen.getByRole('button', { name: '9' })).toHaveAttribute('tabindex', '0');
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         expect(screen.getByRole('button', { name: '0' })).toHaveAttribute('tabindex', '0');
         expect(stops('Number cards')).toBe(1);
     });

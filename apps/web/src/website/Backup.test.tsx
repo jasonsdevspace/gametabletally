@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
+import { appLine, fireEvent, render, screen, waitFor, within } from '../app/render.testing.js';
 import { FORMAT, FORMAT_VERSION, readFile, type SavedGame } from '../store/format.js';
 import { DATABASE, GAMES, NEWER_DATABASE, openStore, type Store } from '../store/store.js';
 import { Backup } from './Backup.js';
@@ -40,7 +40,12 @@ const pick = (text: string) => {
     fireEvent.change(input, { target: { files: [new File([text], 'games.json')] } });
 };
 
-const said = () => screen.getByRole('status');
+/** What the page says it did, in words on the page, which the app's status line says as well. */
+const said = (): HTMLElement => {
+    const shown = document.querySelector<HTMLElement>('.gtt-status');
+    if (shown === null) throw new Error('The page has no line for what it did.');
+    return shown;
+};
 
 describe('saving and restoring the games', () => {
     it('says whether the browser will keep the games, and offers both once the games are open', async () => {
@@ -49,6 +54,35 @@ describe('saving and restoring the games', () => {
         expect(await screen.findByRole('button', { name: 'Save to a file' })).toBeVisible();
         expect(screen.getByRole('button', { name: 'Restore from a file' })).toBeVisible();
         expect(screen.getByText(/has not agreed to keep your games/)).toBeVisible();
+    });
+
+    it("says a slow save and then its result on the app's one status line, the page holding no other", async () => {
+        const { open } = await database(async (store) => {
+            await store.savePlayer(ANN);
+            await store.saveGame(game('g-1'));
+        });
+        const slow = async () => {
+            const opened = await open();
+            return {
+                ...opened,
+                exportFile: async (when: string) => {
+                    await new Promise((resolve) => setTimeout(resolve, 700));
+                    return opened.exportFile(when);
+                },
+            };
+        };
+        render(<Backup open={slow} kept={() => Promise.resolve(true)} save={vi.fn()} />);
+        (await screen.findByRole('button', { name: 'Save to a file' })).click();
+        await waitFor(() => {
+            expect(appLine()).toHaveTextContent('Saving your games to a file.');
+        });
+        await waitFor(() => {
+            expect(appLine()).toHaveTextContent('1 game is ready in');
+        });
+        expect(said()).toHaveTextContent('1 game is ready in');
+        expect(
+            within(screen.getByRole('region', { name: 'Your games' })).queryByRole('status')
+        ).toBeNull();
     });
 
     it('saves every game to a file named for the day, one the app reads back', async () => {

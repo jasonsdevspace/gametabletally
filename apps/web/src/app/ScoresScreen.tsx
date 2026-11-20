@@ -1,6 +1,6 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
 import { attachTable } from '@jasonsdevspace/design-kit/controls';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useArrivalFocus, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useRef } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -10,7 +10,6 @@ import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
-import { useStatus } from './status.js';
 import { useSummary } from './summary.js';
 
 /*
@@ -185,7 +184,7 @@ export const GameTables = ({
     readonly from: ChangedFrom;
     readonly lead?: boolean;
 }) => {
-    const [line, say] = useStatus();
+    const say = useStatus();
     const summary = useSummary(play);
     const { search } = usePlace();
     const arrivedFrom = roundIn(search);
@@ -198,10 +197,11 @@ export const GameTables = ({
     useEffect(() => {
         const element = frame.current;
         if (!drawn || element === null) return undefined;
-        const detach = attachTable(element);
-        if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
-        return detach;
-    }, [arrivedFrom, drawn]);
+        return attachTable(element);
+    }, [drawn]);
+    // The round's heading takes focus on arriving from a change to it, as the kit's arrival does
+    // for the press that saved or let go of the change.
+    const arrival = useArrivalFocus<HTMLButtonElement>(arrivedFrom);
 
     /**
      * Opens a saved round on its entry screen, filled with what was entered, to change it, in this
@@ -315,6 +315,14 @@ export const GameTables = ({
                                                     <Button
                                                         text
                                                         id={`round-${String(column.index + 1)}`}
+                                                        // Kept in the Tab order, which the kit's
+                                                        // arrival would take it out of.
+                                                        tabIndex={0}
+                                                        ref={
+                                                            column.index + 1 === arrivedFrom
+                                                                ? arrival
+                                                                : undefined
+                                                        }
                                                         onClick={() => void change(column.index)}
                                                     >
                                                         <span className="dk-visually-hidden">
@@ -364,7 +372,6 @@ export const GameTables = ({
                     </>
                 )}
             </section>
-            <StatusLine ref={line} />
         </>
     );
 };

@@ -5,7 +5,7 @@ import {
     type Flip7Modifier,
     type Problem,
 } from '@gametabletally/scoring';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useRoving, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -27,10 +27,8 @@ import {
     useRound,
 } from './round.js';
 import { flip7Note, type RoundLine } from './round-summary.js';
-import { useRoving } from './roving.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
-import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
 import { WizardRound } from './wizard-round.js';
 
@@ -134,10 +132,10 @@ export const Flip7Keys = ({
     readonly off?: boolean;
     readonly onChange: (hand: Flip7Entry) => void;
 }) => {
-    const numbers = useRoving(name);
-    const modifiers = useRoving(name);
+    const numbers = useRoving<HTMLDivElement>();
+    const modifiers = useRoving<HTMLDivElement>();
     return (
-        <section className="gtt-keys" aria-label={`${name}'s cards`}>
+        <section className="dk-stack dk-stack-heading gtt-keys" aria-label={`${name}'s cards`}>
             <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
                 <Button
                     pressed={hand.bust}
@@ -156,19 +154,18 @@ export const Flip7Keys = ({
                     {name} bust, so nothing counts this round. Press Bust again to take it back.
                 </div>
             ) : null}
+            {/* Drawn afresh for each player, so their grid's stop starts at its first card. */}
             <div
+                key={`numbers|${name}`}
+                ref={numbers}
                 className="dk-button-grid gtt-numbers"
                 role="group"
                 aria-label="Number cards"
                 aria-describedby={why === '' ? undefined : 'hand-why'}
-                onFocus={numbers.onFocus}
-                onClick={numbers.onClick}
-                onKeyDown={numbers.onKeyDown}
             >
-                {NUMBERS.map((card, at) => (
+                {NUMBERS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={numbers.tabIndexOf(at)}
                         pressed={hand.numbers.includes(card)}
                         off={hand.bust || off}
                         onClick={() => {
@@ -186,17 +183,15 @@ export const Flip7Keys = ({
                 </div>
             )}
             <div
+                key={`modifiers|${name}`}
+                ref={modifiers}
                 className="dk-button-grid gtt-modifiers"
                 role="group"
                 aria-label="Modifier cards"
-                onFocus={modifiers.onFocus}
-                onClick={modifiers.onClick}
-                onKeyDown={modifiers.onKeyDown}
             >
-                {FLIP_7_MODIFIERS.map((card, at) => (
+                {FLIP_7_MODIFIERS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={modifiers.tabIndexOf(at)}
                         pressed={hand.modifiers.includes(card)}
                         off={hand.bust || off}
                         onClick={() => {
@@ -289,7 +284,7 @@ const Flip7Round = ({
         lineOf: (one, kept, score, out) =>
             flip7Line(nameOf(one), handOf(kept.entries[one]), score, out),
     });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
     // A refusal is said once as it appears, since focus is on the key that caused it.
     useEffect(() => {
         if (why !== '') say(why);
@@ -310,7 +305,7 @@ const Flip7Round = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -328,13 +323,13 @@ const Flip7Round = ({
                 />
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={why !== ''}
                 label={nextLabel(following, names, draft.index, changing)}
                 onNext={() => {
@@ -360,8 +355,9 @@ const GameActions = ({
     readonly id: string;
     readonly gameName: string;
 }) => {
-    const [line, say] = useStatus();
-    const discardGame = useDiscard(play);
+    const say = useStatus();
+    const [discardGame, discarding] = useDiscard(play);
+    const discardButton = useBusy<HTMLButtonElement>();
     const discard = async () => {
         const done = await discardGame(id, gameName);
         if (done === true) navigate(hrefOf('play'));
@@ -373,11 +369,15 @@ const GameActions = ({
                 <Link className="dk-button dk-button-text" href={hrefOf('play')}>
                     Leave for now
                 </Link>
-                <Button text onClick={() => void discard()}>
+                <Button
+                    ref={discardButton}
+                    text
+                    busy={discarding === null ? false : 'Discarding the game.'}
+                    onClick={() => void discard()}
+                >
                     Discard the game
                 </Button>
             </p>
-            <StatusLine ref={line} />
         </>
     );
 };
@@ -497,7 +497,9 @@ const RoundFor = ({
     if (screen === 'flip-7' && player !== null) return <Flip7Round {...parts} player={player} />;
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">{isChanging(game, draft) ? null : actions}</div>
+            <div className="dk-stack dk-stack-heading">
+                {isChanging(game, draft) ? null : actions}
+            </div>
             <p>
                 {player === null
                     ? 'Every score of the round is in.'

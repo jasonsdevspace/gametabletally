@@ -1,12 +1,11 @@
-import { StatusLine } from '@jasonsdevspace/design-kit/react';
+import { useStatus } from '@jasonsdevspace/design-kit/react';
 
 import { Link } from '../navigation.js';
 import { hrefOf } from '../routes.js';
 import { byAdded, openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { Failure } from './failure.js';
 import { AddByName, usePlayersRead } from './player-parts.js';
-import { gamesOf, nameRefusal, newPlayerOf } from './players.js';
-import { useStatus } from './status.js';
+import { gamesOf, nameRefusal, newPlayerOf, readPlayers } from './players.js';
 
 /**
  * The players screen: every player still offered for a new game, in the order they were added,
@@ -26,15 +25,15 @@ export interface PlayersListProps {
 const today = () => new Date();
 const randomId = () => crypto.randomUUID();
 
-const UNREAD = 'Your players could not be opened in this browser. Reload the page to try again.';
+const UNREAD = 'Your players could not be opened in this browser.';
 
 export const PlayersList = ({
     open = openStore,
     newId = randomId,
     now = today,
 }: PlayersListProps) => {
-    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
-    const [line, say] = useStatus();
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD, readPlayers);
+    const say = useStatus();
 
     const add = async (typed: string): Promise<string | null> => {
         // A name is checked against the saved players, so none is added before they are read.
@@ -66,12 +65,15 @@ export const PlayersList = ({
     const listed = read?.players.filter(({ removed }) => !removed) ?? [];
     return (
         <>
-            <Failure words={unread} />
+            <Failure words={unread} onTryAgain={tryAgain} />
             {read === null ? null : listed.length === 0 ? (
-                <p>
-                    No players yet. A player is saved the first time they sit down to a game, and
-                    each one is listed here. Add one below, or start a game.
-                </p>
+                // The way to add a player is in view under it, so it offers no button of its own.
+                <div className="dk-empty">
+                    <p>
+                        No players yet. A player is saved the first time they sit down to a game,
+                        and each one is listed here. Add one below, or start a game.
+                    </p>
+                </div>
             ) : (
                 <ul className="dk-rows" role="list" aria-label="Players">
                     {listed.map((player) => (
@@ -92,8 +94,7 @@ export const PlayersList = ({
                     ))}
                 </ul>
             )}
-            <AddByName onAdd={add} say={say} />
-            <StatusLine ref={line} />
+            <AddByName onAdd={add} />
         </>
     );
 };

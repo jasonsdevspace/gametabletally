@@ -1,7 +1,5 @@
-import { StatusLine } from '@jasonsdevspace/design-kit/react';
+import { useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useState } from 'react';
-
-import { useStatus } from './status.js';
 
 /**
  * The top of every game's screen: whose turn it is, their total as flip digits large enough to read
@@ -87,7 +85,7 @@ export const ScoreHeader = ({ name, total, line, round, next }: ScoreHeaderProps
     // The change to say, worked out in the render that draws it and said once that render is on the
     // page. Each is an object of its own, so the same words said twice are said twice.
     const [change, setChange] = useState<{ readonly words: string } | null>(null);
-    const [status, say] = useStatus();
+    const say = useStatus();
     if (shown.name !== name || shown.total !== total || shown.round !== round) {
         const words = changeOf(shown, { name, total, round }, next);
         setShown({ name, total, round });
@@ -99,9 +97,9 @@ export const ScoreHeader = ({ name, total, line, round, next }: ScoreHeaderProps
     const cards = cardsOf(total);
     const keys = keysOf(name, cards);
     return (
-        <div className="gtt-score">
+        <div className="dk-stack dk-stack-pair gtt-score">
             <p className="dk-eyebrow">Now scoring</p>
-            <div className="gtt-score-who">
+            <div className="dk-split">
                 <p className="gtt-score-name">{name}</p>
                 <span className="gtt-digits" role="img" aria-label={spokenOf(total)}>
                     {cards.map((card, at) => {
@@ -120,7 +118,6 @@ export const ScoreHeader = ({ name, total, line, round, next }: ScoreHeaderProps
                 </span>
             </div>
             {line === '' ? null : <p className="gtt-score-line">{line}</p>}
-            <StatusLine ref={status} />
         </div>
     );
 };

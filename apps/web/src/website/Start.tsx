@@ -36,43 +36,45 @@ const POINTS = [
 
 export const Start = () => (
     <Website current="start">
-        <section className="dk-page gtt-hero">
-            <section className="gtt-hero-text">
-                <p className="dk-eyebrow">For game night</p>
-                <h1 className="gtt-display gtt-display-hero">{ROUTES[0].title}</h1>
-                <p className="gtt-display gtt-hero-line">Keep the score. Stay in the moment.</p>
-                <p className="dk-lead gtt-lead">
-                    One phone, passed around the table. Tap in each round, and the app adds it up by
-                    the rules of {NAMES}.
-                </p>
-                <p className="dk-actions">
-                    <Link
-                        className="dk-button dk-button-accent dk-button-large"
-                        href={hrefOf('play')}
-                    >
-                        Open the app
-                    </Link>
-                    <Link className="dk-button dk-button-large" href={hrefOf('install')}>
-                        Install the app
-                    </Link>
-                </p>
-                <ul className="gtt-ticks" role="list">
-                    <li>Free</li>
-                    <li>No account</li>
-                    <li>Made for phones</li>
-                </ul>
-            </section>
-            <img
-                className="gtt-hero-photo"
-                src={photoLarge}
-                srcSet={`${photoSmall} 440w, ${photoLarge} 880w`}
-                sizes="(min-width: 48rem) 28rem, calc(100vw - 2rem)"
-                width={880}
-                height={1008}
-                alt="Numbered cards in blue, green and gold laid out on a table, with wooden tokens, a score pad and a pencil."
-                fetchPriority="high"
-                decoding="async"
-            />
+        <section className="dk-band gtt-hero">
+            <div className="dk-band-hero">
+                <div className="dk-stack">
+                    <p className="dk-eyebrow">For game night</p>
+                    <h1 className="gtt-display gtt-display-hero">{ROUTES[0].title}</h1>
+                    <p className="gtt-display gtt-hero-line">Keep the score. Stay in the moment.</p>
+                    <p className="dk-lead gtt-lead">
+                        One phone, passed around the table. Tap in each round, and the app adds it
+                        up by the rules of {NAMES}.
+                    </p>
+                    <p className="dk-actions">
+                        <Link
+                            className="dk-button dk-button-accent dk-button-large"
+                            href={hrefOf('play')}
+                        >
+                            Open the app
+                        </Link>
+                        <Link className="dk-button dk-button-large" href={hrefOf('install')}>
+                            Install the app
+                        </Link>
+                    </p>
+                    <ul className="dk-note gtt-ticks" role="list">
+                        <li>Free</li>
+                        <li>No account</li>
+                        <li>Made for phones</li>
+                    </ul>
+                </div>
+                <img
+                    className="gtt-hero-photo"
+                    src={photoLarge}
+                    srcSet={`${photoSmall} 440w, ${photoLarge} 880w`}
+                    sizes="(min-width: 48rem) min(28rem, 45vw), calc(100vw - 2rem)"
+                    width={880}
+                    height={1008}
+                    alt="Numbered cards in blue, green and gold laid out on a table, with wooden tokens, a score pad and a pencil."
+                    fetchPriority="high"
+                    decoding="async"
+                />
+            </div>
         </section>
 
         <section className="dk-band gtt-band" aria-labelledby="games">
@@ -100,7 +102,7 @@ export const Start = () => (
             </h2>
             <ul className="gtt-points" role="list">
                 {POINTS.map(({ title, text }) => (
-                    <li key={title}>
+                    <li key={title} className="dk-stack dk-stack-pair">
                         <h3>{title}</h3>
                         <p>{text}</p>
                     </li>

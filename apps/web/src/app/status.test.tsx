@@ -1,34 +1,30 @@
-import { StatusLine } from '@jasonsdevspace/design-kit/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { useStatus } from '@jasonsdevspace/design-kit/react';
 import { describe, expect, it } from 'vitest';
 
-import { useStatus } from './status.js';
+import { render, screen, waitFor } from './render.testing.js';
 
 /*
  * The screens' fields and status lines are the kit's, so none of the app's screens writes the
  * markup of either by hand, and what a screen says goes through the kit's status line.
  */
 
-const sources = import.meta.glob<string>(['./*.tsx', '!./*.test.tsx'], {
+const sources = import.meta.glob<string>(['./*.tsx', '!./*.test.tsx', '!./*.testing.tsx'], {
     eager: true,
     query: '?raw',
     import: 'default',
 });
 
 const Speaker = ({ words }: { readonly words: string }) => {
-    const [line, say] = useStatus();
+    const say = useStatus();
     return (
-        <>
-            <button
-                type="button"
-                onClick={() => {
-                    say(words);
-                }}
-            >
-                Say
-            </button>
-            <StatusLine ref={line} />
-        </>
+        <button
+            type="button"
+            onClick={() => {
+                say(words);
+            }}
+        >
+            Say
+        </button>
     );
 };
 

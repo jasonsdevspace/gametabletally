@@ -1,6 +1,6 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useState } from 'react';
+import { Button, useBusy, useFocusAfterDraw, useStatus } from '@jasonsdevspace/design-kit/react';
+import { useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter, type StepValue } from '../play/play.js';
@@ -12,7 +12,6 @@ import { Dock } from './AppFrame.js';
 import { nameIn } from './opened-game.js';
 import { entrySummary, type RoundLine, roundSummary } from './round-summary.js';
 import { spokenOf } from './ScoreHeader.js';
-import { useStatus } from './status.js';
 import type { Summary } from './summary.js';
 
 /*
@@ -135,7 +134,7 @@ export const SkipRows = ({
     // place above the dock on a phone.
     if (!skippable)
         return (
-            <p className="dk-actions gtt-fine">
+            <p className="dk-actions dk-note">
                 <span>{floorWords(names)}</span>
                 {backs}
             </p>
@@ -148,7 +147,7 @@ export const SkipRows = ({
                 </Button>
             </p>
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(names)}</span>
                     {backs}
                 </p>
@@ -157,15 +156,35 @@ export const SkipRows = ({
     );
 };
 
+/** Where focus goes after a put back: the way to put back the next player still out, or the skip. */
+const focusAfterBack = (rest: readonly string[]): string => {
+    const [stillOut] = rest;
+    return stillOut === undefined ? 'skip-player' : `put-back-${stillOut}`;
+};
+
+/**
+ * What the button that moves a round on says while its press runs, from its label: the save it
+ * makes, or the entry it keeps on the way to the next player, and nothing for a move that saves
+ * nothing, such as from the hand to the tricks.
+ */
+export const busyWordsOf = (label: string): string => {
+    if (label.startsWith('Save ')) return `Saving ${label.slice('Save '.length)}.`;
+    if (label.startsWith('Next: ')) return 'Keeping the entry.';
+    return '';
+};
+
 /**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
- * way to the scores, or, for a saved round opened again, the way to let the change go.
+ * way to the scores, or, for a saved round opened again, the way to let the change go. The button
+ * that moves the round on is the kit's busy button while what it started runs, so a second press
+ * is let go.
  */
 export const RoundDock = ({
     id,
     index,
     changing,
     off,
+    moving = false,
     refused,
     why = 'hand-why',
     described,
@@ -176,7 +195,10 @@ export const RoundDock = ({
     readonly id: string;
     readonly index: number;
     readonly changing: boolean;
+    /** Whether a change to the round is under way, which turns the dock's buttons off. */
     readonly off: boolean;
+    /** Whether that change is the press of the button that moves the round on, which it says. */
+    readonly moving?: boolean;
     /** Whether the round cannot move on, which the element named by `why` says why. */
     readonly refused: boolean;
     /** The id of what says why the round cannot move on. */
@@ -186,31 +208,37 @@ export const RoundDock = ({
     readonly label: string;
     readonly onNext: () => void;
     readonly onCancel: () => void;
-}) => (
-    <Dock>
-        <div className="gtt-dock-row">
-            {changing ? (
-                <Button tall off={off} onClick={onCancel}>
-                    Cancel
-                    <span className="dk-visually-hidden"> the change to round {index + 1}</span>
+}) => {
+    const next = useBusy<HTMLButtonElement>();
+    const busyWords = busyWordsOf(label);
+    return (
+        <Dock>
+            <div className="dk-app-dock-inline">
+                {changing ? (
+                    <Button tall off={off} onClick={onCancel}>
+                        Cancel
+                        <span className="dk-visually-hidden"> the change to round {index + 1}</span>
+                    </Button>
+                ) : (
+                    <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
+                        Scores
+                    </Link>
+                )}
+                <Button
+                    ref={next}
+                    accent
+                    tall
+                    off={refused || (off && !(moving && busyWords !== ''))}
+                    busy={moving && busyWords !== '' ? busyWords : false}
+                    aria-describedby={refused ? why : described}
+                    onClick={onNext}
+                >
+                    {label}
                 </Button>
-            ) : (
-                <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
-                    Scores
-                </Link>
-            )}
-            <Button
-                accent
-                tall
-                off={refused || off}
-                aria-describedby={refused ? why : described}
-                onClick={onNext}
-            >
-                {label}
-            </Button>
-        </div>
-    </Dock>
-);
+            </div>
+        </Dock>
+    );
+};
 
 /**
  * The label of the button that moves a round on: the next player, the question of who ended it,
@@ -255,7 +283,10 @@ export const useRound = ({
     const id = game.saved.id;
     const nameOf = (one: string) => nameIn(names, one);
     const [busy, setBusy] = useState(false);
-    const [line, say] = useStatus();
+    // Whether what is under way is the press of the button that moves the round on, the one
+    // action the dock's busy words name, apart from a skip, a put back or a change let go.
+    const [moving, setMoving] = useState(false);
+    const say = useStatus();
 
     // A saved round opened again from the scores, which its address and so the bar name, and
     // which goes back to its heading there once it is saved or let go.
@@ -323,11 +354,7 @@ export const useRound = ({
     };
 
     // Where focus goes once a skip or a put back is drawn, by the id of the button it lands on.
-    // Each is an object of its own, so the same button asked for twice is focused twice.
-    const [focus, setFocus] = useState<{ readonly id: string } | null>(null);
-    useEffect(() => {
-        if (focus !== null) document.getElementById(focus.id)?.focus();
-    }, [focus]);
+    const focusAfterDraw = useFocusAfterDraw();
 
     /**
      * Moves the round on with the value given for the step it is at: to the next step, or, after
@@ -335,10 +362,12 @@ export const useRound = ({
      * with no step, which would take the round's view off the page.
      */
     const next = async (value: unknown, refusal: (problem: Problem) => string) => {
-        if (held()) return;
+        // A second press while this one runs is let go by the dock's busy button.
+        if (summary.undoing()) return;
         // Moving on begins the next entry, so the last summary and its Undo go before it does.
         summary.clear();
         setBusy(true);
+        setMoving(true);
         try {
             const step = draft.step;
             if (stepAfter(game, value) === null) {
@@ -364,7 +393,19 @@ export const useRound = ({
                 );
         } finally {
             setBusy(false);
+            setMoving(false);
         }
+    };
+
+    /**
+     * Who is next, as a sentence after a skip or a put back, where the turn moved to another player
+     * than `before`, read from the round as kept. The header says who is next as well, a moment
+     * before, so these words carry it, since they take its place on the status line.
+     */
+    const turnNow = (): string | null => keptOf(play, id)?.draft?.step?.player ?? null;
+    const nextWords = (before: string | null): string => {
+        const now = turnNow();
+        return now === null || now === before ? '' : ` ${nameOf(now)} is next.`;
     };
 
     /**
@@ -391,11 +432,11 @@ export const useRound = ({
             }
             await play.setOut(id, without);
             if (keptOf(play, id)?.error !== null) return;
-            say(skipWords(name, draft.index, before));
+            say(`${skipWords(name, draft.index, before)}${nextWords(player)}`);
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
-                setFocus({ id: `put-back-${player}` });
+                focusAfterDraw(`put-back-${player}`);
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be skipped.');
         } finally {
@@ -403,36 +444,51 @@ export const useRound = ({
         }
     };
 
-    /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
-    const back = async (player: string, who: string, { focus: move = true } = {}) => {
+    /**
+     * What a put back says: the player is back, and, in a round being entered, after whom they are
+     * asked, with `rest` still out of it.
+     */
+    const backWords = (player: string, who: string, rest: readonly string[]): string => {
+        const after = changing
+            ? null
+            : comesAfter(
+                  {
+                      game: game.saved.game,
+                      players: game.saved.players,
+                      round: withOut(draft.round, game.saved.players, rest),
+                  },
+                  player,
+                  who
+              );
+        const where =
+            after === null
+                ? ''
+                : after.now
+                  ? `, and is next after ${nameOf(after.player)}`
+                  : `, and is asked after ${nameOf(after.player)}`;
+        return `${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`;
+    };
+
+    /**
+     * Puts a skipped player back in the round, to be asked as the turn reaches them. `quiet` leaves
+     * the words to a screen that says its own.
+     */
+    const back = async (
+        player: string,
+        who: string,
+        { focus: move = true, quiet = false } = {}
+    ) => {
         if (held()) return;
+        // Whose turn it was, so a put back that moves the turn says who is next.
+        const turn = turnNow();
         summary.clear();
         setBusy(true);
         try {
             const rest = draft.round.out.filter((one) => one !== who);
             await play.setOut(id, rest);
             if (keptOf(play, id)?.error !== null) return;
-            const after = changing
-                ? null
-                : comesAfter(
-                      {
-                          game: game.saved.game,
-                          players: game.saved.players,
-                          round: withOut(draft.round, game.saved.players, rest),
-                      },
-                      player,
-                      who
-                  );
-            const where =
-                after === null
-                    ? ''
-                    : after.now
-                      ? `, and is next after ${nameOf(after.player)}`
-                      : `, and is asked after ${nameOf(after.player)}`;
-            say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
-            const stillOut = rest[0];
-            if (move)
-                setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+            if (!quiet) say(`${backWords(player, who, rest)}${nextWords(turn)}`);
+            if (move) focusAfterDraw(focusAfterBack(rest));
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
@@ -444,10 +500,15 @@ export const useRound = ({
      * Makes a change to the round while nothing else is, with the last summary taken away first,
      * and resolves to whether it was kept, saying why where it was not.
      */
-    const run = async (work: () => Promise<unknown>, failed: string): Promise<boolean> => {
+    const run = async (
+        work: () => Promise<unknown>,
+        failed: string,
+        { moves = false }: { readonly moves?: boolean } = {}
+    ): Promise<boolean> => {
         if (held()) return false;
         summary.clear();
         setBusy(true);
+        setMoving(moves);
         try {
             await work();
             // A save the store refused is said by the screen's alert.
@@ -457,6 +518,7 @@ export const useRound = ({
             return false;
         } finally {
             setBusy(false);
+            setMoving(false);
         }
     };
 
@@ -469,7 +531,7 @@ export const useRound = ({
         draft,
         changing,
         busy,
-        line,
+        moving,
         say,
         held,
         cancel,
@@ -481,7 +543,7 @@ export const useRound = ({
         run,
         /** Moves focus to the element with the id given, once the change that draws it is drawn. */
         focusOn: (to: string) => {
-            setFocus({ id: to });
+            focusAfterDraw(to);
         },
     };
 };

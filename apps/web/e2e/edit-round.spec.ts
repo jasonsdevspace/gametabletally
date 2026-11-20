@@ -1,6 +1,15 @@
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, buildGame, expect, type Page, seed, smallTargets, test } from './support.js';
+import {
+    appLine,
+    audit,
+    buildGame,
+    expect,
+    type Page,
+    seed,
+    smallTargets,
+    test,
+} from './support.js';
 
 /*
  * An earlier round changed from the scores page, as deployed: each saved round's heading opens it
@@ -163,9 +172,7 @@ test('says why a round cannot be opened while the round in play holds an entry',
     await key(page, '4').click();
     await dock(page).getByRole('link', { name: 'Scores' }).click();
     await heading(page, 1).click();
-    await expect(page.locator('.gtt-scores > [role="status"]')).toHaveText(
-        'Save or let go of the round being entered first.'
-    );
+    await expect(appLine(page)).toHaveText('Save or let go of the round being entered first.');
     await expect(page).toHaveURL(/\/scores\//);
 });
 

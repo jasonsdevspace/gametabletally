@@ -108,8 +108,8 @@ test("keeps the install page's status line on the page while it is empty, so it 
     page,
 }) => {
     await page.goto(hrefOf('install'));
-    await expect(page.getByRole('status')).toBeAttached();
-    await expect(page.getByRole('status')).toHaveText('');
+    await expect(page.locator('.gtt-status')).toBeAttached();
+    await expect(page.locator('.gtt-status')).toHaveText('');
 });
 
 test("offers the browser's own prompt, and shows it when pressed", async ({ page }) => {
@@ -129,7 +129,7 @@ test("offers the browser's own prompt, and shows it when pressed", async ({ page
     });
     await page.getByRole('button', { name: 'Install the app' }).click();
     expect(await page.evaluate(() => 'prompted' in window && window.prompted === 1)).toBe(true);
-    await expect(page.getByRole('status')).toHaveText(
+    await expect(page.locator('.gtt-status')).toHaveText(
         'The app is installed. Open it from your home screen.'
     );
     await expect(page.getByRole('button', { name: 'Install the app' })).toHaveCount(0);

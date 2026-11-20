@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useSyncExternalStore } from 'react';
 
 import { Link } from '../navigation.js';
@@ -10,7 +10,6 @@ import { cardOf, playersOf } from '../website/games.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { type Continuing, inPlayOf } from './in-play.js';
 import { WithGames } from './opened-game.js';
-import { useStatus } from './status.js';
 import { useDiscard } from './summary.js';
 
 /**
@@ -30,58 +29,71 @@ export const newGameOf = (game: string): string =>
  */
 const GamePanel = ({
     game,
+    discarding,
     onDiscard,
     onLetGo,
 }: {
     readonly game: Continuing;
+    /** Whether the game is being discarded, while its Discard is busy. */
+    readonly discarding: boolean;
     readonly onDiscard: () => void;
     readonly onLetGo: () => void;
-}) => (
-    <li className="dk-panel dk-panel-raised gtt-continue">
-        <p className="gtt-continue-game">
-            <strong>{game.name}</strong>
-            <span>Round {game.round}</span>
-        </p>
-        <p>
-            {game.changing === null ? game.turn : `Round ${String(game.round)} is being changed.`}
-        </p>
-        {game.changing === null ? (
-            <>
-                <Link
-                    className="dk-button dk-button-accent dk-button-tall"
-                    href={hrefOf('game', game.id)}
-                >
-                    Continue the game{' '}
-                    <span className="dk-visually-hidden">
-                        of {game.name}, round {game.round}
-                    </span>
-                </Link>
-                <Button text onClick={onDiscard}>
-                    Discard{' '}
-                    <span className="dk-visually-hidden">
-                        the game of {game.name}, round {game.round}
-                    </span>
-                </Button>
-            </>
-        ) : (
-            <>
-                <Link
-                    className="dk-button dk-button-accent dk-button-tall"
-                    href={changingRoundOf(game.id, game.changing)}
-                >
-                    Continue changing round {game.round}{' '}
-                    <span className="dk-visually-hidden">of {game.name}</span>
-                </Link>
-                <Button text onClick={onLetGo}>
-                    Cancel the change{' '}
-                    <span className="dk-visually-hidden">
-                        to round {game.round} of {game.name}
-                    </span>
-                </Button>
-            </>
-        )}
-    </li>
-);
+}) => {
+    const discardButton = useBusy<HTMLButtonElement>();
+    return (
+        <li className="dk-panel dk-panel-raised gtt-continue">
+            <p className="dk-split gtt-continue-game">
+                <strong>{game.name}</strong>
+                <span className="dk-note gtt-continue-round">Round {game.round}</span>
+            </p>
+            <p>
+                {game.changing === null
+                    ? game.turn
+                    : `Round ${String(game.round)} is being changed.`}
+            </p>
+            {game.changing === null ? (
+                <>
+                    <Link
+                        className="dk-button dk-button-accent dk-button-tall"
+                        href={hrefOf('game', game.id)}
+                    >
+                        Continue the game{' '}
+                        <span className="dk-visually-hidden">
+                            of {game.name}, round {game.round}
+                        </span>
+                    </Link>
+                    <Button
+                        ref={discardButton}
+                        text
+                        busy={discarding ? 'Discarding the game.' : false}
+                        onClick={onDiscard}
+                    >
+                        Discard{' '}
+                        <span className="dk-visually-hidden">
+                            the game of {game.name}, round {game.round}
+                        </span>
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Link
+                        className="dk-button dk-button-accent dk-button-tall"
+                        href={changingRoundOf(game.id, game.changing)}
+                    >
+                        Continue changing round {game.round}{' '}
+                        <span className="dk-visually-hidden">of {game.name}</span>
+                    </Link>
+                    <Button text onClick={onLetGo}>
+                        Cancel the change{' '}
+                        <span className="dk-visually-hidden">
+                            to round {game.round} of {game.name}
+                        </span>
+                    </Button>
+                </>
+            )}
+        </li>
+    );
+};
 
 /**
  * The games in play from the model the frame shares, each to continue or to discard. A discard is
@@ -95,8 +107,8 @@ const InPlay = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const games = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot).games;
-    const discard = useDiscard(play);
-    const [line, say] = useStatus();
+    const [discard, discarding] = useDiscard(play);
+    const say = useStatus();
     const shown = inPlayOf(games, names);
 
     const discardGame = async (game: Continuing) => {
@@ -117,15 +129,19 @@ const InPlay = ({
     return (
         <>
             {shown.length === 0 ? null : (
-                <section className="gtt-in-play" aria-labelledby="in-play">
+                <section
+                    className="dk-stack dk-stack-heading gtt-in-play"
+                    aria-labelledby="in-play"
+                >
                     <h2 className="dk-eyebrow" id="in-play">
                         {shown.length === 1 ? 'Game in play' : 'Games in play'}
                     </h2>
-                    <ul className="gtt-in-play-list" role="list">
+                    <ul className="dk-stack" role="list">
                         {shown.map((game) => (
                             <GamePanel
                                 key={game.id}
                                 game={game}
+                                discarding={discarding === game.id}
                                 onDiscard={() => void discardGame(game)}
                                 onLetGo={() => void letGo(game)}
                             />
@@ -133,7 +149,6 @@ const InPlay = ({
                     </ul>
                 </section>
             )}
-            <StatusLine ref={line} />
         </>
     );
 };
@@ -143,7 +158,7 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
         <WithGames open={open}>
             {({ play, names }) => <InPlay play={play} names={names} />}
         </WithGames>
-        <div className="gtt-start">
+        <div className="dk-stack dk-stack-heading">
             <h2 className="dk-eyebrow" id="start">
                 Start a new game
             </h2>
@@ -170,6 +185,6 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
                 ))}
             </ul>
         </div>
-        <p className="gtt-fine">{NOT_AFFILIATED}</p>
+        <p className="dk-note">{NOT_AFFILIATED}</p>
     </>
 );

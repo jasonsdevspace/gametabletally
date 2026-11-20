@@ -1,4 +1,4 @@
-import { Button, InputField } from '@jasonsdevspace/design-kit/react';
+import { Button, InputField, useBusy, useFormRefusal } from '@jasonsdevspace/design-kit/react';
 import {
     type FormEvent,
     type RefObject,
@@ -9,7 +9,7 @@ import {
 } from 'react';
 
 import { refusalOf, type Store } from '../store/store.js';
-import { PLAYERS_CHANGED, type PlayersRead, readPlayers } from './players.js';
+import { PLAYERS_CHANGED } from './players.js';
 import { cleanName } from './seats.js';
 
 /*
@@ -21,20 +21,27 @@ import { cleanName } from './seats.js';
 export const NAME_LENGTH = 30;
 
 /**
- * The saved players and how many games each has played, read once the screen is running and again
- * when a player is put back from a toast, and why they could not be read, if so. Only the latest
- * read is drawn, so one that is answered late never draws over a newer one.
+ * The saved players as `readWith` reads them, such as with how many games each has played, read
+ * once the screen is running and again when a player is put back from a toast, and why they could
+ * not be read, if so, with Try again reading them afresh. Only the latest read is drawn, so one
+ * that is answered late never draws over a newer one. `readWith` is the same across renders.
  */
-export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) => {
-    const [read, setRead] = useState<PlayersRead | null>(null);
+export const usePlayersRead = <Read,>(
+    open: () => Promise<Store>,
+    unreadWords: string,
+    readWith: (open: () => Promise<Store>) => Promise<Read>
+) => {
+    const [read, setRead] = useState<Read | null>(null);
     const [unread, setUnread] = useState('');
+    // Each Try again reads afresh.
+    const [attempts, setAttempts] = useState(0);
     useEffect(() => {
         let latest = 0;
         let left = false;
         const again = () => {
             latest += 1;
             const asked = latest;
-            readPlayers(open).then(
+            readWith(open).then(
                 (found) => {
                     if (left || asked !== latest) return;
                     setRead(found);
@@ -51,8 +58,12 @@ export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) 
             left = true;
             window.removeEventListener(PLAYERS_CHANGED, again);
         };
-    }, [open, unreadWords]);
-    return { read, setRead, unread };
+    }, [open, unreadWords, readWith, attempts]);
+    const tryAgain = () => {
+        setUnread('');
+        setAttempts((count) => count + 1);
+    };
+    return { read, setRead, unread, tryAgain };
 };
 
 const subscribeToNothing = () => () => undefined;
@@ -71,48 +82,43 @@ export const useRunning = (): boolean =>
 /**
  * The form a new player's name is typed in: the kit's field, with its button as the field's
  * action. `onAdd` takes the name and resolves to why it could not, which is drawn as the field's
- * error, or null once it is taken. A name refused from the Add button moves focus to the field
- * once its error is drawn, so a screen reader says its label, that it is invalid and the error
- * together, as the kit's reference asks of a refused submit. One refused by Enter in the field,
- * where focus already is and moving it says nothing, is said on the status line instead.
+ * error, or null once it is taken. A refused name is refused through the kit's form, which moves
+ * focus to the field once its error is drawn, or says the error on the status line where focus is
+ * in the field already. The Add button is the kit's busy button while a name is saved, so a second
+ * press, or Enter, saves nothing twice.
  */
 export const AddByName = ({
     field,
     onAdd,
-    say,
 }: {
     readonly field?: RefObject<HTMLInputElement | null>;
     readonly onAdd: (typed: string) => Promise<string | null>;
-    /** Says a refusal on the screen's status line, since the kit's field error is not live. */
-    readonly say: (words: string) => void;
 }) => {
     const own = useRef<HTMLInputElement>(null);
     const input = field ?? own;
     const [name, setName] = useState('');
     const [error, setError] = useState('');
-    // Counts the refusals, so focus moves after each one is drawn, the same words twice included.
-    const [refusals, setRefusals] = useState(0);
-    useEffect(() => {
-        if (refusals > 0) input.current?.focus();
-    }, [refusals, input]);
-    // Set while a name is being saved, so a second press does not save it twice.
-    const adding = useRef(false);
+    const [adding, setAdding] = useState(false);
+    const addButton = useBusy<HTMLButtonElement>();
+    const [form, refuse] = useFormRefusal<HTMLFormElement>({
+        invalid: (failures) => {
+            setError(failures[0]?.words ?? '');
+        },
+    });
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (adding.current) return;
-        adding.current = true;
+        setAdding(true);
         try {
             const refused = await onAdd(cleanName(name));
             setError(refused ?? '');
             if (refused === null) setName('');
-            else if (document.activeElement === input.current) say(refused);
-            else setRefusals((count) => count + 1);
+            else refuse();
         } finally {
-            adding.current = false;
+            setAdding(false);
         }
     };
     return (
-        <form noValidate onSubmit={(event) => void submit(event)}>
+        <form ref={form} onSubmit={(event) => void submit(event)}>
             <InputField
                 ref={input}
                 id="new-player"
@@ -127,7 +133,15 @@ export const AddByName = ({
                     setName(event.currentTarget.value);
                     setError('');
                 }}
-                action={<Button type="submit">Add</Button>}
+                action={
+                    <Button
+                        ref={addButton}
+                        type="submit"
+                        busy={adding ? 'Adding the player.' : false}
+                    >
+                        Add
+                    </Button>
+                }
             />
         </form>
     );

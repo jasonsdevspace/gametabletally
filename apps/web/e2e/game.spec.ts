@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test';
 
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, expect, type Page, seed, smallTargets, test } from './support.js';
+import { appLine, audit, expect, type Page, seed, smallTargets, test } from './support.js';
 
 /*
  * The game in play, as deployed: a round of Flip 7 entered player by player on a phone by tapping
@@ -49,10 +49,6 @@ const key = (page: Page, name: string) => page.getByRole('button', { name, exact
 
 const total = (page: Page) => page.locator('.gtt-digits');
 const next = (page: Page) => page.getByRole('region', { name: 'Actions' }).getByRole('button');
-
-/** The screen's own status line, and the score header's, each saying what changed. */
-const said = (page: Page) => page.locator('.gtt-game > [role="status"]');
-const headerSaid = (page: Page) => page.locator('.gtt-score [role="status"]');
 
 test('enters a round of Flip 7 by tapping cards, player by player, and saves it after the last', async ({
     page,
@@ -124,11 +120,11 @@ test('says in words beside the keys why a hand of eight numbers is refused, and 
     for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) await key(page, card).click();
     const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
     await expect(page.getByText(why)).toBeVisible();
-    await expect(said(page)).toHaveText(why);
+    await expect(appLine(page)).toHaveText(why);
     // The header keeps the last score the rules took, so a refusal never reads as nothing.
     await expect(total(page)).toHaveAccessibleName('36');
     await audit(page);
-    await expect(page.getByRole('group', { name: 'Number cards' })).toHaveAccessibleDescription(
+    await expect(page.getByRole('toolbar', { name: 'Number cards' })).toHaveAccessibleDescription(
         why
     );
     await expect(next(page)).toHaveAttribute('aria-disabled', 'true');
@@ -212,7 +208,7 @@ test('keeps focus on the button for the next player as the turn moves on, and sa
     await page.keyboard.press('Enter');
     await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
     await expect(page.getByRole('button', { name: 'Next: Cat' })).toBeFocused();
-    await expect(headerSaid(page)).toHaveText('Ben is next.');
+    await expect(appLine(page)).toHaveText('Ben is next.');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: 'Save the round' })).toBeFocused();
     await page.keyboard.press('Enter');
@@ -226,7 +222,7 @@ test('sets the keys at the foot of the body on a tall phone, in reach of a thumb
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
-    const modifiers = await page.getByRole('group', { name: 'Modifier cards' }).boundingBox();
+    const modifiers = await page.getByRole('toolbar', { name: 'Modifier cards' }).boundingBox();
     const dock = await page.getByRole('region', { name: 'Actions' }).boundingBox();
     // The last row of keys ends a step or two above the dock, with the spare room above the keys.
     expect((dock?.y ?? 0) - ((modifiers?.y ?? 0) + (modifiers?.height ?? 0))).toBeLessThan(48);
@@ -238,7 +234,7 @@ test('draws the six modifier cards in two even rows of three on the narrowest ph
     await page.setViewportSize({ width: 320, height: 640 });
     await open(page);
     const tops = await page
-        .getByRole('group', { name: 'Modifier cards' })
+        .getByRole('toolbar', { name: 'Modifier cards' })
         .getByRole('button')
         .evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().top)));
     expect(tops).toHaveLength(6);

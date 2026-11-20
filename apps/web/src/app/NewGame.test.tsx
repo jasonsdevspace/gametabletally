@@ -1,5 +1,4 @@
 import { GAMES } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -7,7 +6,8 @@ import type { SavedPlayer } from '../store/format.js';
 import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
-import { heard, refused, refusedInPlace } from './status.testing.js';
+import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import { heard, refusedInPlace } from './status.testing.js';
 
 /* The new game screen in the app's frame, over a database in memory. */
 
@@ -82,8 +82,8 @@ const addByName = (name: string) => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 };
 
-/** The screen's own status line, apart from the frame's toast. */
-const status = () => within(screen.getByRole('main')).getByRole('status', { hidden: true });
+/** The app's status line, apart from the frame's toast. */
+const status = appLine;
 
 afterEach(() => {
     window.history.replaceState(null, '', '/');
@@ -153,6 +153,26 @@ describe('the new game screen', () => {
         store.close();
     });
 
+    it('reads the saved players alone, so a games read that fails keeps no one from a seat', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open } = await database([player('ann', 'Ann')]);
+        const noGames = async () => {
+            const opened = await open();
+            return {
+                ...opened,
+                games: () => Promise.reject(new Error('The games could not be read.')),
+            };
+        };
+        render(
+            <AppFrame screen="new" title="New game">
+                <NewGame open={noGames} />
+            </AppFrame>
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Add Ann' }));
+        expect(seated()).toEqual(['Ann']);
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('says why a name is not added, beside the field', async () => {
         await draw();
         const field = screen.getByRole('textbox', { name: "A new player's name" });
@@ -160,13 +180,18 @@ describe('the new game screen', () => {
         await refusedInPlace(field, "Enter the player's name.");
         expect(field).toHaveAccessibleDescription(/^Error: ?Enter the player's name\.$/);
         fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        // Seating the last saved player sends focus to the field, and the Add button is pressed.
+        await waitFor(() => {
+            expect(field).toHaveFocus();
+        });
+        screen.getByRole('button', { name: 'Add' }).focus();
         addByName('ANN');
         await refusedInPlace(field, 'Ann has a seat already.');
         expect(seated()).toEqual(['Ann']);
         // Refused by Enter in the field, where focus already is, the refusal is said instead.
         field.focus();
         fireEvent.submit(field);
-        await refused(field, status(), 'Ann has a seat already.');
+        await refusedInPlace(field, 'Ann has a seat already.');
     });
 
     it('moves a seat up and down, says its new place and keeps focus on the button', async () => {
@@ -219,7 +244,9 @@ describe('the new game screen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Remove Ben' }));
         expect(screen.queryByRole('list', { name: 'Players, in seat order' })).toBeNull();
         expect(screen.getByText(/No one is seated yet/)).toBeVisible();
-        expect(screen.getByRole('textbox', { name: "A new player's name" })).toHaveFocus();
+        await waitFor(() => {
+            expect(screen.getByRole('textbox', { name: "A new player's name" })).toHaveFocus();
+        });
     });
 
     it('puts a removed seat back in the seat it left from the toast', async () => {
@@ -294,9 +321,9 @@ describe('the new game screen', () => {
         const { open } = await draw([player('ann', 'Ann')]);
         const field = screen.getByRole('textbox', { name: "A new player's name" });
         fireEvent.change(field, { target: { value: 'Cat' } });
-        const form = field.closest('form') ?? document.body;
-        fireEvent.submit(form);
-        fireEvent.submit(form);
+        const add = screen.getByRole('button', { name: 'Add' });
+        fireEvent.click(add);
+        fireEvent.click(add);
         await waitFor(() => {
             expect(seated()).toEqual(['Cat']);
         });

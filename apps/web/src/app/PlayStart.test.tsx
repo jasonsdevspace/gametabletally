@@ -1,5 +1,4 @@
 import { GAMES } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import { openPlay } from '../play/play.js';
 import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { PlayStart } from './PlayStart.js';
+import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 
 /* The start screen over a database in memory, with a game in play or none. */
 
@@ -159,6 +159,101 @@ describe('the start screen', () => {
         });
         expect(await screen.findByRole('region', { name: 'Game in play' })).toBeTruthy();
         expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('empties a failure as Try again reads afresh, and says it again where the read fails again', async () => {
+        render(<PlayStart open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
+        fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+    });
+
+    it('keeps a failure on the page as the app comes back to the front, so it is not said again', async () => {
+        const { open, nextRead } = await database(true);
+        let tries = 0;
+        render(
+            <PlayStart
+                open={() => {
+                    tries += 1;
+                    return tries <= 2 ? Promise.reject(new Error(BLOCKED_DATABASE)) : open();
+                }}
+            />
+        );
+        const alert = await screen.findByRole('alert');
+        act(() => {
+            window.dispatchEvent(new Event('pageshow'));
+        });
+        expect(screen.getByRole('alert')).toBe(alert);
+        await waitFor(() => {
+            expect(tries).toBe(2);
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(screen.getByRole('alert')).toBe(alert);
+        // A read that works takes the failure's place.
+        const read = nextRead();
+        act(() => {
+            window.dispatchEvent(new Event('pageshow'));
+        });
+        await act(() => read);
+        expect(await screen.findByRole('region', { name: 'Game in play' })).toBeTruthy();
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it("lets a discard that never finishes hold back only its own games, not another model's", async () => {
+        const hung = await database(true);
+        const stuck = async () => {
+            const opened = await hung.open();
+            return { ...opened, removeGame: () => new Promise<void>(() => undefined) };
+        };
+        const first = render(<PlayStart open={stuck} />);
+        fireEvent.click(
+            await within(first.container).findByRole('button', {
+                name: 'Discard the game of Skyjo, round 1',
+            })
+        );
+        const { open } = await database(true);
+        const second = render(<PlayStart open={open} />);
+        fireEvent.click(
+            await within(second.container).findByRole('button', {
+                name: 'Discard the game of Skyjo, round 1',
+            })
+        );
+        await waitFor(() => {
+            expect(
+                within(second.container).queryByText('Skyjo', { selector: 'strong' })
+            ).toBeNull();
+        });
+    });
+
+    it('discards one game at a time, letting a second discard go while the first runs', async () => {
+        const { open, factory } = await database(true);
+        const other = await openStore(factory);
+        await openPlay(other, undefined, () => Promise.resolve()).start({
+            id: 'g-2',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
+        other.close();
+        render(<PlayStart open={open} />);
+        const section = await screen.findByRole('region', { name: 'Games in play' });
+        const skyjo = within(section).getByRole('button', {
+            name: 'Discard the game of Skyjo, round 1',
+        });
+        const flip7 = within(section).getByRole('button', {
+            name: 'Discard the game of Flip 7, round 1',
+        });
+        fireEvent.click(skyjo);
+        expect(skyjo).toHaveAttribute('data-busy');
+        expect(flip7).not.toHaveAttribute('data-busy');
+        fireEvent.click(flip7);
+        await waitFor(() => {
+            expect(screen.queryByText('Skyjo', { selector: 'strong' })).toBeNull();
+        });
+        // Long enough for a second discard, had it run, to be drawn.
+        await act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+        expect(screen.getByText('Flip 7', { selector: 'strong' })).toBeVisible();
     });
 
     it('offers a round being changed to continue or let go, never to discard its game', async () => {

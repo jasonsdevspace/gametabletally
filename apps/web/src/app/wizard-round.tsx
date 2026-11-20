@@ -1,6 +1,11 @@
 import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
-import { Button, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    StepperField,
+    useFocusAfterDraw,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
@@ -107,7 +112,7 @@ const RoundTitle = ({
     readonly rounds: number;
     readonly dealer: string | null;
 }) => (
-    <div className="gtt-wizard-title">
+    <div className="dk-stack dk-stack-pair gtt-wizard-title">
         <p className="dk-eyebrow">
             {index + 1} {index === 0 ? 'card' : 'cards'} each
             {dealer === null ? null : `, ${dealer} deals`}
@@ -133,6 +138,7 @@ const Count = ({
     max,
     off,
     onText,
+    pressWords,
 }: {
     readonly id: string;
     readonly name: string;
@@ -143,9 +149,24 @@ const Count = ({
     readonly max: number;
     readonly off: boolean;
     readonly onText: (text: string) => void;
+    /** The page's words said after the value of each press, read as the press is said. */
+    readonly pressWords?: (() => string) | undefined;
 }) => {
     const field = useRef<HTMLInputElement>(null);
-    useEffect(() => (field.current === null ? undefined : attachStepper(field.current)), []);
+    // The stepper says its presses on the screen's status line, with the page's words after the
+    // value in one message, and describes its own range.
+    const say = useStatus();
+    const words = useRef(pressWords);
+    useEffect(() => {
+        words.current = pressWords;
+    });
+    useEffect(
+        () =>
+            field.current === null
+                ? undefined
+                : attachStepper(field.current, { say, words: () => words.current?.() ?? '' }),
+        [say]
+    );
     return (
         <StepperField
             ref={field}
@@ -158,7 +179,7 @@ const Count = ({
                     {detail === '' ? null : (
                         <>
                             {' '}
-                            <span className="gtt-count-detail">{detail}</span>
+                            <span className="dk-note">{detail}</span>
                         </>
                     )}
                     <span className="dk-visually-hidden">
@@ -170,7 +191,6 @@ const Count = ({
             min={0}
             max={max}
             value={text}
-            aria-describedby="counts-limits"
             rangeError={`${name}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(max)}.`}
             onChange={(event) => {
                 // A press while the round is saving is let go, as every key's is.
@@ -207,14 +227,15 @@ const OutRows = ({
 }) => {
     // The way to skip each player opens from one button, so the keys keep their place on a phone.
     const [open, setOpen] = useState(false);
+    const focusAfterDraw = useFocusAfterDraw();
     const skip = async (one: string) => {
         if (await onSkip(one)) setOpen(false);
-        else document.getElementById('skip-player')?.focus();
+        else focusAfterDraw('skip-player');
     };
     return (
         <>
             {skippable || extra !== undefined ? (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     {extra}
                     {skippable ? (
                         <>
@@ -247,7 +268,7 @@ const OutRows = ({
                 </p>
             ) : null}
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(out.map((one) => nameIn(names, one)))}</span>
                     {out.map((one) => (
                         <Button
@@ -341,7 +362,7 @@ const HandView = ({
     readonly dealer: string | null;
     readonly countOf: (player: string) => number | null;
 }) => (
-    <section className="gtt-keys" aria-labelledby="hand-title">
+    <section className="dk-stack dk-stack-heading gtt-keys" aria-labelledby="hand-title">
         <h3 id="hand-title" className="dk-eyebrow">
             The bids, while the hand is played
         </h3>
@@ -353,11 +374,11 @@ const HandView = ({
                         {one === dealer ? (
                             <>
                                 {' '}
-                                <span className="gtt-count-detail">deals</span>
+                                <span className="dk-note">deals</span>
                             </>
                         ) : null}
                     </span>
-                    <span className="gtt-bid">
+                    <span className="dk-numeral">
                         <span className="dk-visually-hidden">, bid </span>
                         {countOf(one) ?? 0}
                     </span>
@@ -382,6 +403,7 @@ const CountsView = ({
     left,
     wrong,
     onText,
+    pressWords,
 }: {
     readonly game: GameWithDraft;
     readonly playing: readonly string[];
@@ -395,6 +417,8 @@ const CountsView = ({
     /** Why a count typed is refused, in words, or an empty string. */
     readonly wrong: string;
     readonly onText: (player: string, text: string) => void;
+    /** The words said after each press's value, the tricks still to enter. */
+    readonly pressWords?: (() => string) | undefined;
 }) => {
     const { draft } = game;
     const dealt = draft.index + 1;
@@ -405,7 +429,10 @@ const CountsView = ({
         return one === dealer ? 'deals' : '';
     };
     return (
-        <section className="gtt-keys" aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}>
+        <section
+            className="dk-stack dk-stack-heading gtt-keys"
+            aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}
+        >
             {what === 'tricks' ? (
                 <p className="dk-field-hint" id="tricks-left" tabIndex={-1}>
                     {left}
@@ -415,9 +442,6 @@ const CountsView = ({
                     The bids come to {given} for {dealt} {dealt === 1 ? 'card' : 'cards'} each.
                 </p>
             )}
-            <span className="dk-visually-hidden" id="counts-limits">
-                Each from 0 to {dealt}.
-            </span>
             {wrong === '' ? null : (
                 <p className="dk-field-hint" id="counts-why">
                     {wrong}
@@ -437,6 +461,7 @@ const CountsView = ({
                         onText={(text) => {
                             onText(one, text);
                         }}
+                        pressWords={pressWords}
                     />
                 ))}
             </div>
@@ -474,7 +499,7 @@ export const WizardRound = ({
     const round = draft.index + 1;
     const dealer = dealerOf(players, draft.round, draft.index);
     const actionsOf = useRound({ play, game, names, summary, lineOf: wizardLines(names) });
-    const { busy, changing, line, say, focusOn } = actionsOf;
+    const { busy, changing, say, focusOn } = actionsOf;
     // The table says the hand is over by asking for the tricks, which is kept for this round only.
     const [over, setOver] = useState<number | null>(null);
     const phase = phaseOf(game, playing, changing || over === draft.index);
@@ -488,21 +513,41 @@ export const WizardRound = ({
             ? ''
             : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
 
-    // The tricks still to enter are said once a run of presses rests, so each press's own value is
-    // heard first, and not where a skip, a put back or the move to the tricks already said them.
-    const lastSaid = useRef(left);
+    // The tricks still to enter, as last said, so the same words are not said again. A press says
+    // them with its value, in the stepper's own message, and a count typed says them once the
+    // typing rests, as the status line lets words settle. Words not yet said by then are let go
+    // where the tricks change again, the round moves to another step or the screen goes, and the
+    // words are marked said only as they are put on the line, so words the line dropped are said
+    // with the next change.
+    const spoken = useRef(left);
+    const leftNow = useRef(left);
+    const tricksNow = useRef(phase === 'tricks');
     useEffect(() => {
-        if (phase !== 'tricks' || lastSaid.current === left) return undefined;
-        const timer = window.setTimeout(() => {
-            lastSaid.current = left;
-            say(left);
-        }, SETTLE);
+        leftNow.current = left;
+        tricksNow.current = phase === 'tricks';
+    });
+    const pressWords = () => {
+        if (!tricksNow.current) return '';
+        spoken.current = leftNow.current;
+        return leftNow.current;
+    };
+    useEffect(() => {
+        if (phase !== 'tricks' || spoken.current === left) return undefined;
+        let live = true;
+        say(
+            () => {
+                if (!live || spoken.current === left) return null;
+                spoken.current = left;
+                return left;
+            },
+            { settle: SETTLE }
+        );
         return () => {
-            window.clearTimeout(timer);
+            live = false;
         };
     }, [left, phase, say]);
     const sayInstead = (words: string, after: string) => {
-        lastSaid.current = after;
+        spoken.current = after;
         say(words);
     };
 
@@ -528,7 +573,8 @@ export const WizardRound = ({
         if (values === null) return;
         const done = await actionsOf.run(
             () => play.enterAll(id, values),
-            'The bids could not be saved.'
+            'The bids could not be saved.',
+            { moves: true }
         );
         if (!done) return;
         const bids = playing.map((one) => `${nameOf(one)} ${String(counts.countOf(one) ?? 0)}`);
@@ -540,7 +586,8 @@ export const WizardRound = ({
         if (values === null || given !== dealt) return;
         await actionsOf.run(
             () => actionsOf.saveRound(wizardRefusalWords, undefined, { values }),
-            'The round could not be saved.'
+            'The round could not be saved.',
+            { moves: true }
         );
     };
 
@@ -573,7 +620,8 @@ export const WizardRound = ({
 
     // A player put back has no bid, so the round goes back to the bids, which are kept as set.
     const back = async (one: string) => {
-        await actionsOf.back('', one, { focus: false });
+        // The round's own words for a put back are left unsaid, since these say the bid to set.
+        await actionsOf.back('', one, { focus: false, quiet: true });
         const step = keptOf(play, id)?.draft?.step;
         if (step?.part === 'tricks') await actionsOf.goTo({ part: 'bid', player: one });
         setOver(null);
@@ -616,7 +664,7 @@ export const WizardRound = ({
 
     return (
         <div className="gtt-game gtt-wizard">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <RoundTitle
                     index={draft.index}
@@ -637,15 +685,16 @@ export const WizardRound = ({
                     left={left}
                     wrong={wrong}
                     onText={change}
+                    pressWords={pressWords}
                 />
             )}
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={refused}
                 why={wrong === '' ? 'tricks-left' : 'counts-why'}
                 label={labelOf(phase, changing, draft.index)}

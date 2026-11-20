@@ -4,7 +4,16 @@ import { THEME_KEY } from '@jasonsdevspace/design-kit/theme';
 import { newGameOf } from '../src/app/PlayStart.js';
 import { hrefOf } from '../src/routes.js';
 import type { SavedPlayer } from '../src/store/format.js';
-import { audit, doubleTheText, expect, type Page, seed, smallTargets, test } from './support.js';
+import {
+    appLine,
+    audit,
+    doubleTheText,
+    expect,
+    type Page,
+    seed,
+    smallTargets,
+    test,
+} from './support.js';
 
 /*
  * The new game screen, as deployed: a game of each kind started from the start screen's link, the
@@ -100,9 +109,11 @@ test('reorders the seats by keyboard, keeping focus on the button and saying eac
     await expect(down).toBeFocused();
     await page.keyboard.press('Space');
     await expect(seated(page)).toHaveText(['Ben', 'Cat', 'Ann']);
-    await expect(down).toBeFocused();
+    // Ann is last, so Move Ann down is off, and focus goes to the way back up rather than leave
+    // the seat.
     await expect(down).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.getByRole('main').getByRole('status')).toHaveText('Ann moves to seat 3.');
+    await expect(page.getByRole('button', { name: 'Move Ann up' })).toBeFocused();
+    await expect(appLine(page)).toHaveText('Ann moves to seat 3.');
 });
 
 test("draws a seat button's icon at the kit's icon-only size, growing with the text", async ({
@@ -182,6 +193,8 @@ test('moves focus to the name field when the Add button is refused, the field de
     await expect(nameField(page)).toBeFocused();
     await expect(nameField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(nameField(page)).toHaveAccessibleDescription(/Ann has a seat already\./);
+    // The kit says the field's name and its error, since a screen reader may read the error late.
+    await expect(appLine(page)).toHaveText("A new player's name: Error: Ann has a seat already.");
     await audit(page);
 });
 
@@ -197,7 +210,7 @@ test('puts a removed seat back in the seat it left, from the toast', async ({ pa
     await audit(page);
     await page.locator('.dk-app-toast').getByRole('button', { name: 'Undo' }).click();
     await expect(seated(page)).toHaveText(['Ann', 'Ben', 'Cat']);
-    await expect(page.getByRole('main').getByRole('status')).toHaveText('Ben takes seat 2 again.');
+    await expect(appLine(page)).toHaveText('Ben takes seat 2 again.');
 });
 
 test('reorders the seats by touch', async ({ page }, info) => {

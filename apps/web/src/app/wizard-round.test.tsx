@@ -1,4 +1,3 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -6,6 +5,7 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
+import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard } from './status.testing.js';
 import { bidNote, countIn, countsOf, dealerOf, tricksLeftWords } from './wizard-round.js';
 
@@ -70,7 +70,7 @@ const draw = async (game: SavedGame) => {
 const dockButton = (name: string) =>
     within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name });
 const toast = () => document.querySelector('.dk-app-toast [role="status"]');
-const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+const screenLine = appLine;
 const count = (id: string): HTMLInputElement | null => {
     const element = document.getElementById(id);
     return element instanceof HTMLInputElement ? element : null;
@@ -151,6 +151,56 @@ describe('a round of Wizard', () => {
         });
     });
 
+    it('says the tricks still to enter with the value a press sets, in one message', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        fireEvent.click(screen.getByRole('button', { name: "Lower Ben's tricks" }));
+        await heard(screenLine(), tricksLeftWords(1, 2));
+    });
+
+    it('lets go of the tricks still to enter, not yet said, once the round is saved', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    {
+                        entries: { ann: { bid: 1 }, ben: { bid: 1 }, cat: { bid: 0 } },
+                    },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        await heard(screenLine(), 'Enter the tricks for round 2.');
+        const said: string[] = [];
+        const watch = new MutationObserver(() => {
+            said.push(screenLine().textContent);
+        });
+        watch.observe(screenLine(), { childList: true, characterData: true, subtree: true });
+        // Typed over and back, then saved before the typing has rested.
+        setCount('tricks-ben', 0);
+        setCount('tricks-ben', 1);
+        fireEvent.click(dockButton('Save the round'));
+        await waitFor(() => {
+            expect(toast()?.textContent).toContain('Round 2 saved.');
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+        watch.disconnect();
+        expect(said.filter((words) => words.includes('trick'))).toEqual([]);
+    });
+
     it('starts the tricks at the bids, and saves only once they add up, saying why', async () => {
         await draw(
             wizard(
@@ -170,7 +220,7 @@ describe('a round of Wizard', () => {
         expect(screen.getByText('Every trick is in, 2 of 2.')).toBeTruthy();
         setCount('tricks-ben', 2);
         await heard(
-            screenLine() ?? document.body,
+            screenLine(),
             'The tricks come to 3, 1 more than the 2 in the hand. Take 1 off.'
         );
         const save = dockButton('Save the round');
@@ -265,7 +315,7 @@ describe('a round of Wizard', () => {
         await draw(wizard(at({ part: 'bid', player: 'ann' })));
         expect(
             screen.getByRole('spinbutton', { name: 'Ann deals, bid' })
-        ).toHaveAccessibleDescription('Each from 0 to 1.');
+        ).toHaveAccessibleDescription('From 0 to 1.');
         expect(screen.getByRole('spinbutton', { name: 'Ben, bid' })).toBeTruthy();
     });
 
@@ -283,12 +333,22 @@ describe('a round of Wizard', () => {
                 [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
             )
         );
+        const said: string[] = [];
+        const watch = new MutationObserver(() => {
+            said.push(screenLine().textContent);
+        });
+        watch.observe(screenLine(), { childList: true, characterData: true, subtree: true });
         fireEvent.click(await screen.findByRole('button', { name: 'Put Ben back' }));
         await waitFor(() => {
             expect(count('bid-ben')).not.toBeNull();
         });
         expect(count('bid-ann')?.value).toBe('1');
-        await heard(screenLine() ?? document.body, "Ben is back in round 2. Set Ben's bid.");
+        await heard(screenLine(), "Ben is back in round 2. Set Ben's bid.");
+        watch.disconnect();
+        // Said once, in the round's own words, and never in the words every game says.
+        expect(said.filter((words) => words.includes('is back'))).toEqual([
+            "Ben is back in round 2. Set Ben's bid.",
+        ]);
         expect(document.activeElement?.id).toBe('counts-line');
     });
 
@@ -307,10 +367,7 @@ describe('a round of Wizard', () => {
         );
         fireEvent.click(dockButton('Enter the tricks'));
         expect(await screen.findByText('Every trick is in, 2 of 2.')).toBeTruthy();
-        await heard(
-            screenLine() ?? document.body,
-            'Enter the tricks for round 2. Every trick is in, 2 of 2.'
-        );
+        await heard(screenLine(), 'Enter the tricks for round 2. Every trick is in, 2 of 2.');
         fireEvent.click(screen.getByRole('button', { name: 'Change the bids' }));
         await waitFor(() => {
             expect(document.activeElement?.id).toBe('counts-line');
@@ -351,6 +408,6 @@ describe('a round of Wizard', () => {
         await new Promise((resolve) => {
             setTimeout(resolve, 300);
         });
-        expect(screenLine()?.textContent).toBe('');
+        expect(screenLine().textContent).toBe('');
     });
 });

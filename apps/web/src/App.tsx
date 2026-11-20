@@ -1,3 +1,4 @@
+import { StatusProvider } from '@jasonsdevspace/design-kit/react';
 import { Component, type ReactNode, useEffect, useRef } from 'react';
 
 import { AppFrame, SECTION_OF } from './app/AppFrame.js';
@@ -63,21 +64,27 @@ export const App = () => {
 
     // A screen for keeping score sits in the app's frame, which is kept as the visitor moves
     // between such screens, so a toast survives the move. Only the screen inside is drawn afresh.
+    // One status line for the whole app, kept as the visitor moves, so what a screen says as it
+    // arrives or as it leaves is heard.
     if (route && Object.hasOwn(SECTION_OF, route.name))
         return (
-            <AppFrame screen={route.name} title={titleAt(route, search)}>
-                <Boundary key={place} title={titleAt(route, search)} failed={<ScreenFailed />}>
-                    <AppScreen route={route} />
-                </Boundary>
-            </AppFrame>
+            <StatusProvider>
+                <AppFrame screen={route.name} title={titleAt(route, search)}>
+                    <Boundary key={place} title={titleAt(route, search)} failed={<ScreenFailed />}>
+                        <AppScreen route={route} />
+                    </Boundary>
+                </AppFrame>
+            </StatusProvider>
         );
     return (
-        <Boundary
-            key={place}
-            title={route?.title ?? 'Nothing at this address'}
-            failed={<ErrorPage />}
-        >
-            {route ? <Screen route={route} /> : <NotFound />}
-        </Boundary>
+        <StatusProvider>
+            <Boundary
+                key={place}
+                title={route?.title ?? 'Nothing at this address'}
+                failed={<ErrorPage />}
+            >
+                {route ? <Screen route={route} /> : <NotFound />}
+            </Boundary>
+        </StatusProvider>
     );
 };

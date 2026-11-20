@@ -1,6 +1,11 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+    Button,
+    ChoiceField,
+    useFocusAfterDraw,
+    useRoving,
+} from '@jasonsdevspace/design-kit/react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
@@ -19,7 +24,6 @@ import {
     useRound,
 } from './round.js';
 import type { RoundLine } from './round-summary.js';
-import { useRoving } from './roving.js';
 import { drawnOf, ScoreHeader, spokenOf } from './ScoreHeader.js';
 import type { Summary } from './summary.js';
 
@@ -194,17 +198,18 @@ interface PadParts {
  * minus sign and Backspace typed on a keyboard.
  */
 const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
-    const pad = useRoving(fresh);
+    const pad = useRoving<HTMLDivElement>();
     return (
+        // Drawn afresh for each player, so the pad's stop starts at its first key.
         <div
+            key={fresh}
+            ref={pad}
             className="dk-button-grid gtt-pad"
             role="group"
             aria-label="Number pad"
             aria-describedby={describedBy}
-            onFocus={pad.onFocus}
-            onClick={pad.onClick}
             onKeyDown={(event) => {
-                pad.onKeyDown(event);
+                // The arrow keys, Home and End are the kit's, which it marks as handled.
                 const key =
                     event.altKey || event.ctrlKey || event.metaKey ? null : padKeyOf(event.key);
                 if (key === null || event.defaultPrevented) return;
@@ -212,10 +217,9 @@ const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
                 set({ ...input, typed: pressed(input.typed, key) });
             }}
         >
-            {PAD.map((key, at) => (
+            {PAD.map((key) => (
                 <Button
                     key={key}
-                    tabIndex={pad.tabIndexOf(at)}
                     {...(key === 'minus' ? { pressed: input.typed.startsWith('-') } : {})}
                     off={off || (key === 'delete' && input.typed === '')}
                     onClick={() => {
@@ -238,44 +242,60 @@ const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
  */
 const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const { cards } = input;
-    const pad = useRoving(fresh);
-    const strip = useRoving(`${fresh}|strip`, cards.length);
+    const pad = useRoving<HTMLDivElement>();
+    const strip = useRoving<HTMLDivElement>();
     const full = cards.length >= MOST_CARDS;
     const stripRef = useRef<HTMLDivElement>(null);
     const padRef = useRef<HTMLDivElement>(null);
-    // Where focus goes once a card taken out is drawn, by its place in the strip. Each is an object
-    // of its own, so the same place asked for twice is focused twice.
-    const [focus, setFocus] = useState<{ readonly at: number } | null>(null);
-    useEffect(() => {
-        if (focus === null) return;
-        const chips = stripRef.current?.querySelectorAll<HTMLElement>(':scope > button');
-        const chip = chips?.[Math.min(focus.at, chips.length - 1)];
-        (chip ?? padRef.current?.querySelector<HTMLElement>('[tabindex="0"]'))?.focus();
-    }, [focus]);
+    // Each grid's ref holds it for the focus below and attaches it to the kit's keys, the same
+    // across renders, so a press that draws the grid again keeps its stop where it is.
+    const stripAt = useCallback(
+        (element: HTMLDivElement | null) => {
+            stripRef.current = element;
+            return strip(element);
+        },
+        [strip]
+    );
+    const padAt = useCallback(
+        (element: HTMLDivElement | null) => {
+            padRef.current = element;
+            return pad(element);
+        },
+        [pad]
+    );
+    // Where focus goes once a card taken out is drawn, by its place in the strip, or the pad's stop
+    // once the strip is empty.
+    const focusAfterDraw = useFocusAfterDraw();
+    const focusAt = (at: number) => {
+        focusAfterDraw(
+            () => {
+                const chips = stripRef.current?.querySelectorAll(':scope > button');
+                return chips?.[Math.min(at, chips.length - 1)] ?? null;
+            },
+            { fallbacks: [() => padRef.current?.querySelector('[tabindex="0"]') ?? null] }
+        );
+    };
     const hints = [describedBy, full ? 'cards-full' : null].filter(Boolean).join(' ');
     return (
         <>
             {cards.length === 0 ? null : (
                 <div
-                    ref={stripRef}
+                    key={`strip|${fresh}`}
+                    ref={stripAt}
                     className="dk-button-grid gtt-strip"
                     role="group"
                     aria-label={`Cards tapped in, ${spokenOf(sumOf(cards))} in all`}
-                    onFocus={strip.onFocus}
-                    onClick={strip.onClick}
-                    onKeyDown={strip.onKeyDown}
                 >
                     {cards.map((card, at) => (
                         <Button
                             // Known by place, so the card that takes a taken card's place keeps
                             // its key, and focus with it.
                             key={at}
-                            tabIndex={strip.tabIndexOf(at)}
                             off={off}
                             onClick={() => {
                                 if (off) return;
                                 set({ ...input, cards: cards.filter((_, place) => place !== at) });
-                                setFocus({ at });
+                                focusAt(at);
                             }}
                         >
                             <span aria-hidden="true">{drawnOf(card)}</span>
@@ -291,19 +311,16 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
                 <p className="dk-field-hint">Tap each card your hand holds.</p>
             ) : null}
             <div
-                ref={padRef}
+                key={`cards|${fresh}`}
+                ref={padAt}
                 className="dk-button-grid gtt-cards"
                 role="group"
                 aria-label="Cards"
                 aria-describedby={hints === '' ? undefined : hints}
-                onFocus={pad.onFocus}
-                onClick={pad.onClick}
-                onKeyDown={pad.onKeyDown}
             >
-                {CARDS.map((card, at) => (
+                {CARDS.map((card) => (
                     <Button
                         key={card}
-                        tabIndex={pad.tabIndexOf(at)}
                         off={full || off}
                         onClick={() => {
                             if (!full && !off) set({ ...input, cards: [...cards, card] });
@@ -350,7 +367,7 @@ export const SkyjoKeys = ({
     readonly onChange: (input: SkyjoInput) => void;
     readonly onMode: (mode: SkyjoInput['mode']) => void;
 }) => {
-    const tabs = useRoving(name);
+    const tabs = useRoving<HTMLDivElement>();
     const empty = entryOf(input) === undefined;
     const ids = [why === '' ? null : 'hand-why', empty ? 'entry-hint' : null].filter(Boolean);
     const describedBy = ids.length === 0 ? undefined : ids.join(' ');
@@ -362,23 +379,20 @@ export const SkyjoKeys = ({
     };
     const parts = { input, off, describedBy, fresh: name, set };
     return (
-        <section className="gtt-keys" aria-label={`${name}'s total`}>
+        <section className="dk-stack dk-stack-heading gtt-keys" aria-label={`${name}'s total`}>
             <div
                 className="dk-tabs gtt-modes"
                 role="tablist"
+                ref={tabs}
                 aria-label={`How to enter ${name}'s total`}
-                onFocus={tabs.onFocus}
-                onClick={tabs.onClick}
-                onKeyDown={tabs.onKeyDown}
             >
-                {MODES.map(({ mode, label }, at) => (
+                {MODES.map(({ mode, label }) => (
                     <button
                         key={mode}
                         type="button"
                         role="tab"
                         id={`mode-${mode}`}
                         className="dk-tab"
-                        tabIndex={tabs.tabIndexOf(at)}
                         aria-selected={input.mode === mode}
                         aria-controls="skyjo-entry"
                         aria-disabled={off || undefined}
@@ -395,7 +409,7 @@ export const SkyjoKeys = ({
                 ))}
             </div>
             <div
-                className="gtt-keys"
+                className="dk-stack dk-stack-heading gtt-keys"
                 role="tabpanel"
                 id="skyjo-entry"
                 aria-labelledby={`mode-${input.mode}`}
@@ -489,14 +503,15 @@ export const SkyjoRound = ({
     // With nothing entered, the step after is read as if a total were, so the label names it.
     const following = stepAfter(game, entry ?? { total: 0 });
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
+    const focusAfterDraw = useFocusAfterDraw();
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
     // Come back from who ended the round, focus goes to the player's keys, with why it is there.
     useEffect(() => {
         if (!arrived) return;
-        document.querySelector<HTMLElement>('#skyjo-entry [tabindex="0"]')?.focus();
+        focusAfterDraw(() => document.querySelector('#skyjo-entry [tabindex="0"]'));
         const held = heldOf(draft.round.entries[player]);
         say(
             held === undefined
@@ -523,7 +538,7 @@ export const SkyjoRound = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -550,13 +565,13 @@ export const SkyjoRound = ({
                 onChange={change}
                 onMode={choose}
             />
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={refused}
                 why={why === '' ? 'entry-hint' : 'hand-why'}
                 label={nextLabel(following, names, draft.index, changing)}
@@ -615,7 +630,8 @@ export const SkyjoEnder = ({
         typeof kept === 'string' && playing.includes(kept) ? kept : null
     );
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
+    const focusAfterDraw = useFocusAfterDraw();
     const heldBy = (one: string) => heldOf(draft.round.entries[one]) ?? 0;
 
     /** What naming a player comes to, by the rules over the round with them named. */
@@ -631,9 +647,10 @@ export const SkyjoEnder = ({
     // is out of the round is said, since a skip that brought the round here was said nowhere else.
     const field = useRef<HTMLFieldSetElement>(null);
     useEffect(() => {
-        const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-        const first = [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0];
-        first?.focus();
+        focusAfterDraw(() => {
+            const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+            return [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0] ?? null;
+        });
         if (out.length > 0) say(outWords(out.map(nameOf)));
         // Said once, as the question is reached.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
@@ -653,7 +670,7 @@ export const SkyjoEnder = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">{changing ? null : actions}</div>
+            <div className="dk-stack dk-stack-heading">{changing ? null : actions}</div>
             <ChoiceField
                 ref={field}
                 label="Who ended the round?"
@@ -678,7 +695,7 @@ export const SkyjoEnder = ({
                 <p id="ender-outcome">{outcomeOf(chosen)}</p>
             )}
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(out.map(nameOf))}</span>
                     {out.map((one) => (
                         <Button
@@ -706,13 +723,13 @@ export const SkyjoEnder = ({
                     </Button>
                 </p>
             )}
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
                 index={draft.index}
                 changing={changing}
                 off={busy}
+                moving={actionsOf.moving}
                 refused={chosen === null}
                 why="ender-hint"
                 described={chosen === null ? undefined : 'ender-outcome'}
