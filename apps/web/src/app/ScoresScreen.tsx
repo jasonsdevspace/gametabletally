@@ -1,6 +1,6 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
 import { attachTable } from '@jasonsdevspace/design-kit/controls';
-import { Button, useFocusAfterDraw, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useArrivalFocus, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useRef } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -194,14 +194,14 @@ export const GameTables = ({
     // heading.
     const columns = columnsOf(game);
     const drawn = columns.length > 0;
-    const focusAfterDraw = useFocusAfterDraw();
     useEffect(() => {
         const element = frame.current;
         if (!drawn || element === null) return undefined;
-        const detach = attachTable(element);
-        if (arrivedFrom !== null) focusAfterDraw(`round-${String(arrivedFrom)}`);
-        return detach;
-    }, [arrivedFrom, drawn, focusAfterDraw]);
+        return attachTable(element);
+    }, [drawn]);
+    // The round's heading takes focus on arriving from a change to it, as the kit's arrival does
+    // for the press that saved or let go of the change.
+    const arrival = useArrivalFocus<HTMLButtonElement>(arrivedFrom);
 
     /**
      * Opens a saved round on its entry screen, filled with what was entered, to change it, in this
@@ -315,6 +315,11 @@ export const GameTables = ({
                                                     <Button
                                                         text
                                                         id={`round-${String(column.index + 1)}`}
+                                                        ref={
+                                                            column.index + 1 === arrivedFrom
+                                                                ? arrival
+                                                                : undefined
+                                                        }
                                                         onClick={() => void change(column.index)}
                                                     >
                                                         <span className="dk-visually-hidden">
