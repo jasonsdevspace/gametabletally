@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -158,6 +158,7 @@ export const NewGame = ({
     const show = useToast();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
+    const startButton = useBusy<HTMLButtonElement>();
     const focus = useRef<Focus | null>(null);
     const screen = useRef<HTMLDivElement>(null);
     const nameField = useRef<HTMLInputElement>(null);
@@ -255,7 +256,7 @@ export const NewGame = ({
     };
 
     const start = async () => {
-        if (!game || why !== null || busy) return;
+        if (!game || why !== null) return;
         setBusy(true);
         setRefused('');
         const id = newId();
@@ -346,9 +347,11 @@ export const NewGame = ({
                     </p>
                 )}
                 <Button
+                    ref={startButton}
                     accent
                     tall
-                    off={why !== null || busy}
+                    off={why !== null}
+                    busy={busy ? 'Starting the game.' : false}
                     aria-describedby={why === null ? undefined : 'start-why'}
                     onClick={() => void start()}
                 >

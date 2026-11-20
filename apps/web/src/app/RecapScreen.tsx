@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useState } from 'react';
 
 import { Link, navigate } from '../navigation.js';
@@ -127,6 +127,7 @@ const Recap = ({
     const say = useStatus();
     const summary = useSummary(play);
     const [busy, setBusy] = useState(false);
+    const againButton = useBusy<HTMLButtonElement>();
     if (!game) return <p>This game is not on this phone.</p>;
     const { result, saved } = game;
     const standing = standingOf(game);
@@ -137,7 +138,6 @@ const Recap = ({
      * others.
      */
     const again = async () => {
-        if (busy) return;
         summary.clear();
         const fresh = againOf(saved, present, newId());
         const least = GAMES.find((one) => one.id === saved.game)?.minPlayers ?? 0;
@@ -179,7 +179,13 @@ const Recap = ({
             />
             {standing.kind === 'over' ? (
                 <Dock>
-                    <Button accent tall off={busy} onClick={() => void again()}>
+                    <Button
+                        ref={againButton}
+                        accent
+                        tall
+                        busy={busy ? 'Starting the game.' : false}
+                        onClick={() => void again()}
+                    >
                         Play again <span className="dk-visually-hidden">with the same players</span>
                     </Button>
                 </Dock>

@@ -1,4 +1,4 @@
-import { Button } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy } from '@jasonsdevspace/design-kit/react';
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
 import { readFile } from '../store/format.js';
@@ -60,7 +60,9 @@ export const Backup = ({
 }: BackupProps) => {
     const [ready, setReady] = useState<Ready | null>(null);
     const [said, setSaid] = useState('');
-    const [busy, setBusy] = useState(false);
+    const [busy, setBusy] = useState<'save' | 'restore' | null>(null);
+    const saveButton = useBusy<HTMLButtonElement>();
+    const restoreButton = useBusy<HTMLButtonElement>();
     const picker = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -83,10 +85,16 @@ export const Backup = ({
         };
     }, [open, kept]);
 
-    /** Runs one save or restore at a time, and says what it did or why it could not. */
-    const run = async (work: (store: Store) => Promise<string>, failed: string) => {
-        if (busy) return;
-        setBusy(true);
+    /**
+     * Runs a save or a restore, with its button busy and the other off, so one runs at a time, and
+     * says what it did or why it could not.
+     */
+    const run = async (
+        doing: 'save' | 'restore',
+        work: (store: Store) => Promise<string>,
+        failed: string
+    ) => {
+        setBusy(doing);
         // Emptied first, so the same sentence said twice is heard twice.
         setSaid('');
         try {
@@ -94,29 +102,37 @@ export const Backup = ({
         } catch (error) {
             setSaid(refusalOf(error) ?? failed);
         } finally {
-            setBusy(false);
+            setBusy(null);
         }
     };
 
     const saveAll = () =>
-        run(async (store) => {
-            const when = now();
-            const file = await store.exportFile(when.toISOString());
-            const name = fileNameOf(when);
-            save(name, JSON.stringify(file, null, 2));
-            return savedOf(file.games.length, name);
-        }, 'Your games could not be saved to a file. Try again.');
+        run(
+            'save',
+            async (store) => {
+                const when = now();
+                const file = await store.exportFile(when.toISOString());
+                const name = fileNameOf(when);
+                save(name, JSON.stringify(file, null, 2));
+                return savedOf(file.games.length, name);
+            },
+            'Your games could not be saved to a file. Try again.'
+        );
 
     const restore = (event: ChangeEvent<HTMLInputElement>) => {
         const chosen = event.currentTarget.files?.[0];
         // Emptied, so the same file can be chosen again.
         event.currentTarget.value = '';
         if (!chosen) return;
-        void run(async (store) => {
-            const file = readFile(await chosen.text());
-            if ('code' in file) return file.message;
-            return restoredOf(await store.importFile(file));
-        }, 'The file could not be restored, so nothing changed. Try again.');
+        void run(
+            'restore',
+            async (store) => {
+                const file = readFile(await chosen.text());
+                if ('code' in file) return file.message;
+                return restoredOf(await store.importFile(file));
+            },
+            'The file could not be restored, so nothing changed. Try again.'
+        );
     };
 
     return (
@@ -131,11 +147,18 @@ export const Backup = ({
                     <p>{keptOf(ready.kept)}</p>
                     {ready.damaged > 0 ? <p>{damagedOf(ready.damaged)}</p> : null}
                     <p className="dk-actions">
-                        <Button off={busy} onClick={() => void saveAll()}>
+                        <Button
+                            ref={saveButton}
+                            off={busy === 'restore'}
+                            busy={busy === 'save' ? 'Saving your games to a file.' : false}
+                            onClick={() => void saveAll()}
+                        >
                             Save to a file
                         </Button>
                         <Button
-                            off={busy}
+                            ref={restoreButton}
+                            off={busy === 'save'}
+                            busy={busy === 'restore' ? 'Restoring your games.' : false}
                             onClick={() => {
                                 picker.current?.click();
                             }}

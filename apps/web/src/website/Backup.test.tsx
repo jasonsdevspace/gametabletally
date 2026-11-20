@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '../app/render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -40,7 +40,7 @@ const pick = (text: string) => {
     fireEvent.change(input, { target: { files: [new File([text], 'games.json')] } });
 };
 
-const said = () => screen.getByRole('status');
+const said = () => within(screen.getByRole('region', { name: 'Your games' })).getByRole('status');
 
 describe('saving and restoring the games', () => {
     it('says whether the browser will keep the games, and offers both once the games are open', async () => {

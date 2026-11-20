@@ -5,7 +5,7 @@ import {
     type Flip7Modifier,
     type Problem,
 } from '@gametabletally/scoring';
-import { Button, useRoving, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useRoving, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -353,7 +353,8 @@ const GameActions = ({
     readonly gameName: string;
 }) => {
     const say = useStatus();
-    const discardGame = useDiscard(play);
+    const [discardGame, discarding] = useDiscard(play);
+    const discardButton = useBusy<HTMLButtonElement>();
     const discard = async () => {
         const done = await discardGame(id, gameName);
         if (done === true) navigate(hrefOf('play'));
@@ -365,7 +366,12 @@ const GameActions = ({
                 <Link className="dk-button dk-button-text" href={hrefOf('play')}>
                     Leave for now
                 </Link>
-                <Button text onClick={() => void discard()}>
+                <Button
+                    ref={discardButton}
+                    text
+                    busy={discarding === null ? false : 'Discarding the game.'}
+                    onClick={() => void discard()}
+                >
                     Discard the game
                 </Button>
             </p>

@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -158,7 +158,9 @@ export const SkipRows = ({
 
 /**
  * A round's dock: the button that moves the round on, last, nearest the thumb, and beside it the
- * way to the scores, or, for a saved round opened again, the way to let the change go.
+ * way to the scores, or, for a saved round opened again, the way to let the change go. The button
+ * that moves the round on is the kit's busy button while what it started runs, so a second press
+ * is let go.
  */
 export const RoundDock = ({
     id,
@@ -175,6 +177,7 @@ export const RoundDock = ({
     readonly id: string;
     readonly index: number;
     readonly changing: boolean;
+    /** Whether a change to the round is under way, which the button that moves it on says. */
     readonly off: boolean;
     /** Whether the round cannot move on, which the element named by `why` says why. */
     readonly refused: boolean;
@@ -185,31 +188,36 @@ export const RoundDock = ({
     readonly label: string;
     readonly onNext: () => void;
     readonly onCancel: () => void;
-}) => (
-    <Dock>
-        <div className="gtt-dock-row">
-            {changing ? (
-                <Button tall off={off} onClick={onCancel}>
-                    Cancel
-                    <span className="dk-visually-hidden"> the change to round {index + 1}</span>
+}) => {
+    const next = useBusy<HTMLButtonElement>();
+    return (
+        <Dock>
+            <div className="gtt-dock-row">
+                {changing ? (
+                    <Button tall off={off} onClick={onCancel}>
+                        Cancel
+                        <span className="dk-visually-hidden"> the change to round {index + 1}</span>
+                    </Button>
+                ) : (
+                    <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
+                        Scores
+                    </Link>
+                )}
+                <Button
+                    ref={next}
+                    accent
+                    tall
+                    off={refused}
+                    busy={off}
+                    aria-describedby={refused ? why : described}
+                    onClick={onNext}
+                >
+                    {label}
                 </Button>
-            ) : (
-                <Link className="dk-button dk-button-tall" href={hrefOf('scores', id)}>
-                    Scores
-                </Link>
-            )}
-            <Button
-                accent
-                tall
-                off={refused || off}
-                aria-describedby={refused ? why : described}
-                onClick={onNext}
-            >
-                {label}
-            </Button>
-        </div>
-    </Dock>
-);
+            </div>
+        </Dock>
+    );
+};
 
 /**
  * The label of the button that moves a round on: the next player, the question of who ended it,
@@ -334,7 +342,8 @@ export const useRound = ({
      * with no step, which would take the round's view off the page.
      */
     const next = async (value: unknown, refusal: (problem: Problem) => string) => {
-        if (held()) return;
+        // A second press while this one runs is let go by the dock's busy button.
+        if (summary.undoing()) return;
         // Moving on begins the next entry, so the last summary and its Undo go before it does.
         summary.clear();
         setBusy(true);
