@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -75,7 +75,7 @@ const key = (name: string) => within(pad()).getByRole('button', { name });
 const dockButton = (name: string | RegExp) =>
     within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name });
 const toast = () => document.querySelector('.dk-app-toast [role="status"]');
-const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+const screenLine = appLine;
 
 /** Waits for a line to say its words, which the kit's line puts in a moment after it is told. */
 const said = async (line: HTMLElement | null, words: string) => {

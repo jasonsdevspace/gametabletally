@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -70,7 +70,7 @@ const draw = async (game: SavedGame) => {
 const dockButton = (name: string) =>
     within(screen.getByRole('region', { name: 'Actions' })).getByRole('button', { name });
 const toast = () => document.querySelector('.dk-app-toast [role="status"]');
-const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+const screenLine = appLine;
 const count = (id: string): HTMLInputElement | null => {
     const element = document.getElementById(id);
     return element instanceof HTMLInputElement ? element : null;
@@ -265,7 +265,7 @@ describe('a round of Wizard', () => {
         await draw(wizard(at({ part: 'bid', player: 'ann' })));
         expect(
             screen.getByRole('spinbutton', { name: 'Ann deals, bid' })
-        ).toHaveAccessibleDescription('Each from 0 to 1.');
+        ).toHaveAccessibleDescription('From 0 to 1.');
         expect(screen.getByRole('spinbutton', { name: 'Ben, bid' })).toBeTruthy();
     });
 

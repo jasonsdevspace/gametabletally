@@ -1,4 +1,4 @@
-import { Button, InputField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, InputField, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -10,7 +10,6 @@ import { Failure } from './failure.js';
 import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
 import { gamesOf, nameRefusal, playersChanged } from './players.js';
 import { cleanName } from './seats.js';
-import { useStatus } from './status.js';
 
 /**
  * A player's own page, named by `?id=`: their name, how many games they have played, the field
@@ -100,7 +99,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     const running = useRunning();
     const show = useToast();
     const { read, setRead, unread } = usePlayersRead(open, UNREAD);
-    const [line, say] = useStatus();
+    const say = useStatus();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;
     const player = read?.players.find((one) => one.id === id && !one.removed);
@@ -216,7 +215,6 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
                 onRename={rename}
                 say={say}
             />
-            <StatusLine ref={line} />
             <div className="dk-actions">
                 <Button onClick={() => void remove()}>Remove {player.name}</Button>
             </div>

@@ -1,5 +1,5 @@
 import base from '@jasonsdevspace/design-kit/base.css?raw';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from './render.testing.js';
 import axe from 'axe-core';
 import { describe, expect, it } from 'vitest';
 

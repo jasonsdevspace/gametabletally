@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { expect, it } from 'vitest';
 

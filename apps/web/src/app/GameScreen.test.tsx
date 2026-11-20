@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 
@@ -66,8 +66,8 @@ const press = (name: string) => {
 const digits = () => document.querySelector('.gtt-digits');
 
 /** The score header's status line, and the screen's own, each saying what changed. */
-const headerLine = () => document.querySelector<HTMLElement>('.gtt-score [role="status"]');
-const screenLine = () => document.querySelector<HTMLElement>('.gtt-game > [role="status"]');
+const headerLine = appLine;
+const screenLine = appLine;
 
 /**
  * Waits for a line to say its words. The kit's line puts them in a moment after it is told, so a

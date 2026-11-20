@@ -1,6 +1,6 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
 import { attachTable } from '@jasonsdevspace/design-kit/controls';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useRef } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -10,7 +10,6 @@ import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
-import { useStatus } from './status.js';
 import { useSummary } from './summary.js';
 
 /*
@@ -185,7 +184,7 @@ export const GameTables = ({
     readonly from: ChangedFrom;
     readonly lead?: boolean;
 }) => {
-    const [line, say] = useStatus();
+    const say = useStatus();
     const summary = useSummary(play);
     const { search } = usePlace();
     const arrivedFrom = roundIn(search);
@@ -364,7 +363,6 @@ export const GameTables = ({
                     </>
                 )}
             </section>
-            <StatusLine ref={line} />
         </>
     );
 };

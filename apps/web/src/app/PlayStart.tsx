@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useSyncExternalStore } from 'react';
 
 import { Link } from '../navigation.js';
@@ -10,7 +10,6 @@ import { cardOf, playersOf } from '../website/games.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
 import { type Continuing, inPlayOf } from './in-play.js';
 import { WithGames } from './opened-game.js';
-import { useStatus } from './status.js';
 import { useDiscard } from './summary.js';
 
 /**
@@ -96,7 +95,7 @@ const InPlay = ({
 }) => {
     const games = useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot).games;
     const discard = useDiscard(play);
-    const [line, say] = useStatus();
+    const say = useStatus();
     const shown = inPlayOf(games, names);
 
     const discardGame = async (game: Continuing) => {
@@ -133,7 +132,6 @@ const InPlay = ({
                     </ul>
                 </section>
             )}
-            <StatusLine ref={line} />
         </>
     );
 };

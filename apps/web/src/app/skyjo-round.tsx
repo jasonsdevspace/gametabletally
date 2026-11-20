@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
@@ -489,7 +489,7 @@ export const SkyjoRound = ({
     // With nothing entered, the step after is read as if a total were, so the label names it.
     const following = stepAfter(game, entry ?? { total: 0 });
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
@@ -550,7 +550,6 @@ export const SkyjoRound = ({
                 onChange={change}
                 onMode={choose}
             />
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
@@ -615,7 +614,7 @@ export const SkyjoEnder = ({
         typeof kept === 'string' && playing.includes(kept) ? kept : null
     );
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
     const heldBy = (one: string) => heldOf(draft.round.entries[one]) ?? 0;
 
     /** What naming a player comes to, by the rules over the round with them named. */
@@ -706,7 +705,6 @@ export const SkyjoEnder = ({
                     </Button>
                 </p>
             )}
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}

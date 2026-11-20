@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, ChoiceField, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -13,7 +13,6 @@ import { Failure } from './failure.js';
 import { Icon } from './icon.js';
 import { AddByName, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
-import { useStatus } from './status.js';
 
 /**
  * The new game screen: the game, the players and their seats, and the button that starts it. The
@@ -155,7 +154,7 @@ export const NewGame = ({
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
-    const [line, say] = useStatus();
+    const say = useStatus();
     const show = useToast();
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
@@ -338,7 +337,6 @@ export const NewGame = ({
                 )}
                 <AddByName field={nameField} onAdd={addByName} say={say} />
             </section>
-            <StatusLine ref={line} />
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
                 <Failure words={refused} />

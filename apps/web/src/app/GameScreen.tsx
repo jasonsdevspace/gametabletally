@@ -5,7 +5,7 @@ import {
     type Flip7Modifier,
     type Problem,
 } from '@gametabletally/scoring';
-import { Button, StatusLine } from '@jasonsdevspace/design-kit/react';
+import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -30,7 +30,6 @@ import { flip7Note, type RoundLine } from './round-summary.js';
 import { useRoving } from './roving.js';
 import { ScoreHeader } from './ScoreHeader.js';
 import { SkyjoEnder, SkyjoRound } from './skyjo-round.js';
-import { useStatus } from './status.js';
 import { type Summary, useDiscard, useSummary } from './summary.js';
 import { WizardRound } from './wizard-round.js';
 
@@ -289,7 +288,7 @@ const Flip7Round = ({
         lineOf: (one, kept, score, out) =>
             flip7Line(nameOf(one), handOf(kept.entries[one]), score, out),
     });
-    const { busy, changing, line, say } = actionsOf;
+    const { busy, changing, say } = actionsOf;
     // A refusal is said once as it appears, since focus is on the key that caused it.
     useEffect(() => {
         if (why !== '') say(why);
@@ -328,7 +327,6 @@ const Flip7Round = ({
                 />
             </div>
             <Flip7Keys name={name} hand={hand} why={why} off={busy} onChange={change} />
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}
@@ -360,7 +358,7 @@ const GameActions = ({
     readonly id: string;
     readonly gameName: string;
 }) => {
-    const [line, say] = useStatus();
+    const say = useStatus();
     const discardGame = useDiscard(play);
     const discard = async () => {
         const done = await discardGame(id, gameName);
@@ -377,7 +375,6 @@ const GameActions = ({
                     Discard the game
                 </Button>
             </p>
-            <StatusLine ref={line} />
         </>
     );
 };

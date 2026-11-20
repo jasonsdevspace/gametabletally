@@ -1,6 +1,6 @@
 import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
-import { Button, StatusLine, StepperField } from '@jasonsdevspace/design-kit/react';
+import { Button, StepperField, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
@@ -145,7 +145,12 @@ const Count = ({
     readonly onText: (text: string) => void;
 }) => {
     const field = useRef<HTMLInputElement>(null);
-    useEffect(() => (field.current === null ? undefined : attachStepper(field.current)), []);
+    // The stepper says its presses on the screen's status line, and describes its own range.
+    const say = useStatus();
+    useEffect(
+        () => (field.current === null ? undefined : attachStepper(field.current, { say })),
+        [say]
+    );
     return (
         <StepperField
             ref={field}
@@ -170,7 +175,6 @@ const Count = ({
             min={0}
             max={max}
             value={text}
-            aria-describedby="counts-limits"
             rangeError={`${name}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(max)}.`}
             onChange={(event) => {
                 // A press while the round is saving is let go, as every key's is.
@@ -415,9 +419,6 @@ const CountsView = ({
                     The bids come to {given} for {dealt} {dealt === 1 ? 'card' : 'cards'} each.
                 </p>
             )}
-            <span className="dk-visually-hidden" id="counts-limits">
-                Each from 0 to {dealt}.
-            </span>
             {wrong === '' ? null : (
                 <p className="dk-field-hint" id="counts-why">
                     {wrong}
@@ -474,7 +475,7 @@ export const WizardRound = ({
     const round = draft.index + 1;
     const dealer = dealerOf(players, draft.round, draft.index);
     const actionsOf = useRound({ play, game, names, summary, lineOf: wizardLines(names) });
-    const { busy, changing, line, say, focusOn } = actionsOf;
+    const { busy, changing, say, focusOn } = actionsOf;
     // The table says the hand is over by asking for the tricks, which is kept for this round only.
     const [over, setOver] = useState<number | null>(null);
     const phase = phaseOf(game, playing, changing || over === draft.index);
@@ -488,18 +489,14 @@ export const WizardRound = ({
             ? ''
             : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
 
-    // The tricks still to enter are said once a run of presses rests, so each press's own value is
-    // heard first, and not where a skip, a put back or the move to the tricks already said them.
+    // The tricks still to enter are said once a run of presses rests, as the status line lets words
+    // settle, so each press's own value is heard first, and not where a skip, a put back or the move
+    // to the tricks already said them.
     const lastSaid = useRef(left);
     useEffect(() => {
-        if (phase !== 'tricks' || lastSaid.current === left) return undefined;
-        const timer = window.setTimeout(() => {
-            lastSaid.current = left;
-            say(left);
-        }, SETTLE);
-        return () => {
-            window.clearTimeout(timer);
-        };
+        if (phase !== 'tricks' || lastSaid.current === left) return;
+        lastSaid.current = left;
+        say(left, { settle: SETTLE });
     }, [left, phase, say]);
     const sayInstead = (words: string, after: string) => {
         lastSaid.current = after;
@@ -639,7 +636,6 @@ export const WizardRound = ({
                     onText={change}
                 />
             )}
-            <StatusLine ref={line} />
             <Failure words={game.error} />
             <RoundDock
                 id={id}

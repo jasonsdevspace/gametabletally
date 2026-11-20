@@ -1,5 +1,5 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button } from '@jasonsdevspace/design-kit/react';
+import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -12,7 +12,6 @@ import { Dock } from './AppFrame.js';
 import { nameIn } from './opened-game.js';
 import { entrySummary, type RoundLine, roundSummary } from './round-summary.js';
 import { spokenOf } from './ScoreHeader.js';
-import { useStatus } from './status.js';
 import type { Summary } from './summary.js';
 
 /*
@@ -255,7 +254,7 @@ export const useRound = ({
     const id = game.saved.id;
     const nameOf = (one: string) => nameIn(names, one);
     const [busy, setBusy] = useState(false);
-    const [line, say] = useStatus();
+    const say = useStatus();
 
     // A saved round opened again from the scores, which its address and so the bar name, and
     // which goes back to its heading there once it is saved or let go.
@@ -469,7 +468,6 @@ export const useRound = ({
         draft,
         changing,
         busy,
-        line,
         say,
         held,
         cancel,

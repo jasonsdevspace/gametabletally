@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within, appLine } from './render.testing.js';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -65,7 +65,7 @@ const players = async (open: () => ReturnType<typeof openStore>) => {
 };
 
 const nameField = () => screen.getByRole('textbox', { name: 'Name' });
-const line = () => within(screen.getByRole('main')).getByRole('status');
+const line = appLine;
 
 /** The frame's toast, which shows its message and its Undo. */
 const toast = () => within(document.querySelector<HTMLElement>('.dk-toast') ?? document.body);
