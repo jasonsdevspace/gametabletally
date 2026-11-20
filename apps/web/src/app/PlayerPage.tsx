@@ -1,4 +1,10 @@
-import { Button, InputField, useFormRefusal, useStatus } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    InputField,
+    useBusy,
+    useFormRefusal,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -97,13 +103,13 @@ const goInPlace = (href: string) => {
     navigate(href, { replace: true });
 };
 
-const UNREAD = 'This player could not be opened in this browser. Reload the page to try again.';
+const UNREAD = 'This player could not be opened in this browser.';
 
 export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps) => {
     const { search } = usePlace();
     const running = useRunning();
     const show = useToast();
-    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD);
     const say = useStatus();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;
@@ -112,14 +118,16 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     const current = useRef(player);
     // Each save waits for the one before it, so a rename and a removal land in the order made.
     const queue = useRef<Promise<unknown>>(Promise.resolve());
-    // Set once a removal starts, so a second press does not remove the player twice.
-    const removing = useRef(false);
+    // Set once a removal starts, while Remove is the kit's busy button, so a second press does not
+    // remove the player twice.
+    const [removing, setRemoving] = useState(false);
+    const removeButton = useBusy<HTMLButtonElement>();
 
     useEffect(() => {
         current.current = player;
     }, [player]);
 
-    if (unread !== '') return <Failure words={unread} />;
+    if (unread !== '') return <Failure words={unread} onTryAgain={tryAgain} />;
     if (read === null || !running) return null;
     if (!player)
         return (
@@ -181,8 +189,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     };
 
     const remove = async () => {
-        if (removing.current) return;
-        removing.current = true;
+        setRemoving(true);
         setFailed('');
         let was: SavedPlayer | undefined;
         try {
@@ -192,7 +199,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
                 return last;
             });
         } catch (error) {
-            removing.current = false;
+            setRemoving(false);
             setFailed(refusalOf(error) ?? `${player.name} could not be removed. Try again.`);
             return;
         }
@@ -215,10 +222,16 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
             <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
             <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
             <div className="dk-actions">
-                <Button onClick={() => void remove()}>Remove {player.name}</Button>
+                <Button
+                    ref={removeButton}
+                    busy={removing ? `Removing ${player.name}.` : false}
+                    onClick={() => void remove()}
+                >
+                    Remove {player.name}
+                </Button>
             </div>
             <Failure words={failed} />
-            <p className="gtt-fine">
+            <p className="dk-note">
                 {played === 0
                     ? 'Removing a player who has played no game deletes them.'
                     : 'Removing a player keeps them in the games they played, but no longer offers them for a new game.'}

@@ -28,6 +28,8 @@ export const NAME_LENGTH = 30;
 export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) => {
     const [read, setRead] = useState<PlayersRead | null>(null);
     const [unread, setUnread] = useState('');
+    // Each Try again reads afresh.
+    const [attempts, setAttempts] = useState(0);
     useEffect(() => {
         let latest = 0;
         let left = false;
@@ -51,8 +53,12 @@ export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) 
             left = true;
             window.removeEventListener(PLAYERS_CHANGED, again);
         };
-    }, [open, unreadWords]);
-    return { read, setRead, unread };
+    }, [open, unreadWords, attempts]);
+    const tryAgain = () => {
+        setUnread('');
+        setAttempts((count) => count + 1);
+    };
+    return { read, setRead, unread, tryAgain };
 };
 
 const subscribeToNothing = () => () => undefined;

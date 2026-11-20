@@ -152,6 +152,24 @@ describe('the players screen', () => {
         });
     });
 
+    it('reads the players afresh from Try again, which the alert never reads', async () => {
+        const { open } = await database(SAVED);
+        let failing = true;
+        render(
+            <PlayersList
+                open={() => (failing ? Promise.reject(new Error(BLOCKED_DATABASE)) : open())}
+            />
+        );
+        const again = await screen.findByRole('button', { name: 'Try again' });
+        expect(screen.getByRole('alert')).not.toHaveTextContent('Try again');
+        failing = false;
+        fireEvent.click(again);
+        await waitFor(() => {
+            expect(rows().map(([name]) => name)).toEqual(['Ann', 'Ben']);
+        });
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('lists a removed player brought back by name in their place, by the day they were added', async () => {
         await draw([
             player('ann', 'Ann', '2026-11-01T10:00:00Z', true),

@@ -256,7 +256,9 @@ export const WithOpenedGame = ({
     const running = useRunning();
     const { search } = usePlace();
     const id = running ? new URLSearchParams(search).get('id') : null;
-    const read = useLent(id, open, now);
+    // Each Try again reads the game afresh.
+    const [attempts, setAttempts] = useState(0);
+    const read = useLent(id === null ? null : `${id} ${String(attempts)}`, open, now);
     if (!running) return null;
     if (id === null)
         return (
@@ -265,7 +267,15 @@ export const WithOpenedGame = ({
             </p>
         );
     if (read === null) return null;
-    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
+    if ('failed' in read.lent)
+        return (
+            <Failure
+                words={read.lent.failed}
+                onTryAgain={() => {
+                    setAttempts((count) => count + 1);
+                }}
+            />
+        );
     return children({ id, ...read.lent });
 };
 
@@ -298,6 +308,14 @@ export const WithGames = ({
     }, []);
     const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
     if (read === null) return null;
-    if ('failed' in read.lent) return <Failure words={read.lent.failed} />;
+    if ('failed' in read.lent)
+        return (
+            <Failure
+                words={read.lent.failed}
+                onTryAgain={() => {
+                    setArrivals((count) => count + 1);
+                }}
+            />
+        );
     return children(read.lent);
 };

@@ -42,9 +42,9 @@ const GamePanel = ({
     const discardButton = useBusy<HTMLButtonElement>();
     return (
         <li className="dk-panel dk-panel-raised gtt-continue">
-            <p className="gtt-continue-game">
+            <p className="dk-split gtt-continue-game">
                 <strong>{game.name}</strong>
-                <span>Round {game.round}</span>
+                <span className="dk-note gtt-continue-round">Round {game.round}</span>
             </p>
             <p>
                 {game.changing === null
@@ -129,11 +129,14 @@ const InPlay = ({
     return (
         <>
             {shown.length === 0 ? null : (
-                <section className="gtt-in-play" aria-labelledby="in-play">
+                <section
+                    className="dk-stack dk-stack-heading gtt-in-play"
+                    aria-labelledby="in-play"
+                >
                     <h2 className="dk-eyebrow" id="in-play">
                         {shown.length === 1 ? 'Game in play' : 'Games in play'}
                     </h2>
-                    <ul className="gtt-in-play-list" role="list">
+                    <ul className="dk-stack" role="list">
                         {shown.map((game) => (
                             <GamePanel
                                 key={game.id}
@@ -155,7 +158,7 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
         <WithGames open={open}>
             {({ play, names }) => <InPlay play={play} names={names} />}
         </WithGames>
-        <div className="gtt-start">
+        <div className="dk-stack dk-stack-heading">
             <h2 className="dk-eyebrow" id="start">
                 Start a new game
             </h2>
@@ -182,6 +185,6 @@ export const PlayStart = ({ open = openStore }: { readonly open?: () => Promise<
                 ))}
             </ul>
         </div>
-        <p className="gtt-fine">{NOT_AFFILIATED}</p>
+        <p className="dk-note">{NOT_AFFILIATED}</p>
     </>
 );

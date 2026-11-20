@@ -134,7 +134,7 @@ export const SkipRows = ({
     // place above the dock on a phone.
     if (!skippable)
         return (
-            <p className="dk-actions gtt-fine">
+            <p className="dk-actions dk-note">
                 <span>{floorWords(names)}</span>
                 {backs}
             </p>
@@ -147,7 +147,7 @@ export const SkipRows = ({
                 </Button>
             </p>
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(names)}</span>
                     {backs}
                 </p>
@@ -192,7 +192,7 @@ export const RoundDock = ({
     const next = useBusy<HTMLButtonElement>();
     return (
         <Dock>
-            <div className="gtt-dock-row">
+            <div className="dk-app-dock-inline">
                 {changing ? (
                     <Button tall off={off} onClick={onCancel}>
                         Cancel

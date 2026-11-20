@@ -97,9 +97,9 @@ export const ScoreHeader = ({ name, total, line, round, next }: ScoreHeaderProps
     const cards = cardsOf(total);
     const keys = keysOf(name, cards);
     return (
-        <div className="gtt-score">
+        <div className="dk-stack dk-stack-pair gtt-score">
             <p className="dk-eyebrow">Now scoring</p>
-            <div className="gtt-score-who">
+            <div className="dk-split">
                 <p className="gtt-score-name">{name}</p>
                 <span className="gtt-digits" role="img" aria-label={spokenOf(total)}>
                     {cards.map((card, at) => {

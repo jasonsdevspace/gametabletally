@@ -124,6 +124,8 @@ const usePlayers = (open: () => Promise<Store>) => {
     const [players, setPlayers] = useState<readonly SavedPlayer[]>([]);
     const [loaded, setLoaded] = useState(false);
     const [unread, setUnread] = useState('');
+    // Each Try again reads afresh.
+    const [attempts, setAttempts] = useState(0);
     useEffect(() => {
         let left = false;
         withStore(open, (store) => store.players()).then(
@@ -136,15 +138,19 @@ const usePlayers = (open: () => Promise<Store>) => {
                 if (!left)
                     setUnread(
                         refusalOf(error) ??
-                            'Your saved players could not be opened in this browser. Reload the page to try again.'
+                            'Your saved players could not be opened in this browser.'
                     );
             }
         );
         return () => {
             left = true;
         };
-    }, [open]);
-    return { players, setPlayers, loaded, unread };
+    }, [open, attempts]);
+    const tryAgain = () => {
+        setUnread('');
+        setAttempts((count) => count + 1);
+    };
+    return { players, setPlayers, loaded, unread, tryAgain };
 };
 
 export const NewGame = ({
@@ -156,7 +162,7 @@ export const NewGame = ({
 }: NewGameProps) => {
     const { search } = usePlace();
     const running = useRunning();
-    const { players, setPlayers, loaded, unread } = usePlayers(open);
+    const { players, setPlayers, loaded, unread, tryAgain } = usePlayers(open);
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
@@ -289,8 +295,8 @@ export const NewGame = ({
     };
 
     return (
-        <div className="gtt-new" ref={screen}>
-            <Failure words={unread} />
+        <div className="dk-stack" ref={screen}>
+            <Failure words={unread} onTryAgain={tryAgain} />
             <ChoiceField
                 label="Game"
                 name="game"
@@ -304,10 +310,12 @@ export const NewGame = ({
                     },
                 }))}
             />
-            <section className="gtt-seats" aria-labelledby="seats">
+            <section className="dk-stack dk-stack-heading" aria-labelledby="seats">
                 <h2 id="seats">Players, in seat order</h2>
                 {seats.length === 0 ? (
-                    <p>No one is seated yet. Add the players in the order they sit.</p>
+                    <div className="dk-empty">
+                        <p>No one is seated yet. Add the players in the order they sit.</p>
+                    </div>
                 ) : (
                     <ol className="dk-rows" role="list" aria-labelledby="seats">
                         {seats.map((id, at) => (
@@ -324,7 +332,7 @@ export const NewGame = ({
                     </ol>
                 )}
             </section>
-            <section className="gtt-add" aria-labelledby="add">
+            <section className="dk-stack dk-stack-heading" aria-labelledby="add">
                 <h2 id="add">Add a player</h2>
                 {offered.length === 0 ? null : (
                     <div className="dk-actions" role="group" aria-label="Saved players">

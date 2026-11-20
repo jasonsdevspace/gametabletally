@@ -135,7 +135,7 @@ export const Flip7Keys = ({
     const numbers = useRoving<HTMLDivElement>();
     const modifiers = useRoving<HTMLDivElement>();
     return (
-        <section className="gtt-keys" aria-label={`${name}'s cards`}>
+        <section className="dk-stack dk-stack-heading gtt-keys" aria-label={`${name}'s cards`}>
             <div className="dk-button-grid gtt-bust" role="group" aria-label="Bust">
                 <Button
                     pressed={hand.bust}
@@ -303,7 +303,7 @@ const Flip7Round = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading gtt-game-top">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -494,7 +494,9 @@ const RoundFor = ({
     if (screen === 'flip-7' && player !== null) return <Flip7Round {...parts} player={player} />;
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">{isChanging(game, draft) ? null : actions}</div>
+            <div className="dk-stack dk-stack-heading gtt-game-top">
+                {isChanging(game, draft) ? null : actions}
+            </div>
             <p>
                 {player === null
                     ? 'Every score of the round is in.'

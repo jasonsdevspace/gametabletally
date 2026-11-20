@@ -82,10 +82,8 @@
     stroke-linecap: round;
 }
 
+/* The opening is the kit's hero, its words beside the photo, with the website's own room. */
 .gtt-hero {
-    display: grid;
-    align-items: center;
-    gap: var(--dk-space-6);
     padding-block: var(--dk-space-7);
 }
 
@@ -98,14 +96,13 @@
     color: var(--dk-muted);
 }
 
+/* The ticks under the opening, the kit's note, in a row that wraps. */
 .gtt-ticks {
     display: flex;
     flex-wrap: wrap;
     gap: var(--dk-space-2) var(--dk-space-5);
     padding: 0;
     list-style: none;
-    color: var(--dk-muted);
-    font-size: var(--dk-text-small);
 }
 
 .gtt-ticks li::before {
@@ -113,26 +110,15 @@
     content: '✓\00a0' / '';
 }
 
-/* The photo stands beside the text, or under it on a phone, by the grid's gap alone. */
+/* The photo keeps the cards in frame as the kit's hero crops it, with the website's corners. */
 .gtt-hero-photo {
-    display: block;
-    margin-block-start: 0;
-    width: 100%;
-    height: auto;
-    max-height: 28rem;
-    object-fit: cover;
     object-position: 30% center;
     border-radius: var(--dk-radius-large);
 }
 
 @media (min-width: 48rem) {
     .gtt-hero {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 28rem);
         padding-block: var(--dk-space-8);
-    }
-
-    .gtt-hero-photo {
-        max-height: none;
     }
 }
 
@@ -213,13 +199,12 @@
     list-style: none;
 }
 
+/* Each point is the kit's stack at a pair's step, its heading over its words. */
 .gtt-points h3 {
-    margin: 0;
     font-size: var(--dk-text-lead);
 }
 
 .gtt-points p {
-    margin-block: var(--dk-space-2) 0;
     color: var(--dk-muted);
 }
 

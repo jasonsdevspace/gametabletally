@@ -366,7 +366,7 @@ export const SkyjoKeys = ({
     };
     const parts = { input, off, describedBy, fresh: name, set };
     return (
-        <section className="gtt-keys" aria-label={`${name}'s total`}>
+        <section className="dk-stack dk-stack-heading gtt-keys" aria-label={`${name}'s total`}>
             <div
                 className="dk-tabs gtt-modes"
                 role="tablist"
@@ -396,7 +396,7 @@ export const SkyjoKeys = ({
                 ))}
             </div>
             <div
-                className="gtt-keys"
+                className="dk-stack dk-stack-heading gtt-keys"
                 role="tabpanel"
                 id="skyjo-entry"
                 aria-labelledby={`mode-${input.mode}`}
@@ -525,7 +525,7 @@ export const SkyjoRound = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading gtt-game-top">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -656,7 +656,9 @@ export const SkyjoEnder = ({
 
     return (
         <div className="gtt-game">
-            <div className="gtt-game-top">{changing ? null : actions}</div>
+            <div className="dk-stack dk-stack-heading gtt-game-top">
+                {changing ? null : actions}
+            </div>
             <ChoiceField
                 ref={field}
                 label="Who ended the round?"
@@ -681,7 +683,7 @@ export const SkyjoEnder = ({
                 <p id="ender-outcome">{outcomeOf(chosen)}</p>
             )}
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(out.map(nameOf))}</span>
                     {out.map((one) => (
                         <Button

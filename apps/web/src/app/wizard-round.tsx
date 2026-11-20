@@ -112,7 +112,7 @@ const RoundTitle = ({
     readonly rounds: number;
     readonly dealer: string | null;
 }) => (
-    <div className="gtt-wizard-title">
+    <div className="dk-stack dk-stack-pair gtt-wizard-title">
         <p className="dk-eyebrow">
             {index + 1} {index === 0 ? 'card' : 'cards'} each
             {dealer === null ? null : `, ${dealer} deals`}
@@ -168,7 +168,7 @@ const Count = ({
                     {detail === '' ? null : (
                         <>
                             {' '}
-                            <span className="gtt-count-detail">{detail}</span>
+                            <span className="dk-note gtt-count-detail">{detail}</span>
                         </>
                     )}
                     <span className="dk-visually-hidden">
@@ -224,7 +224,7 @@ const OutRows = ({
     return (
         <>
             {skippable || extra !== undefined ? (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     {extra}
                     {skippable ? (
                         <>
@@ -257,7 +257,7 @@ const OutRows = ({
                 </p>
             ) : null}
             {out.length === 0 ? null : (
-                <p className="dk-actions gtt-fine">
+                <p className="dk-actions dk-note">
                     <span>{outWords(out.map((one) => nameIn(names, one)))}</span>
                     {out.map((one) => (
                         <Button
@@ -351,7 +351,7 @@ const HandView = ({
     readonly dealer: string | null;
     readonly countOf: (player: string) => number | null;
 }) => (
-    <section className="gtt-keys" aria-labelledby="hand-title">
+    <section className="dk-stack dk-stack-heading gtt-keys" aria-labelledby="hand-title">
         <h3 id="hand-title" className="dk-eyebrow">
             The bids, while the hand is played
         </h3>
@@ -363,11 +363,11 @@ const HandView = ({
                         {one === dealer ? (
                             <>
                                 {' '}
-                                <span className="gtt-count-detail">deals</span>
+                                <span className="dk-note gtt-count-detail">deals</span>
                             </>
                         ) : null}
                     </span>
-                    <span className="gtt-bid">
+                    <span className="dk-numeral">
                         <span className="dk-visually-hidden">, bid </span>
                         {countOf(one) ?? 0}
                     </span>
@@ -415,7 +415,10 @@ const CountsView = ({
         return one === dealer ? 'deals' : '';
     };
     return (
-        <section className="gtt-keys" aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}>
+        <section
+            className="dk-stack dk-stack-heading gtt-keys"
+            aria-label={what === 'bid' ? 'Bids' : 'Tricks taken'}
+        >
             {what === 'tricks' ? (
                 <p className="dk-field-hint" id="tricks-left" tabIndex={-1}>
                     {left}
@@ -619,7 +622,7 @@ export const WizardRound = ({
 
     return (
         <div className="gtt-game gtt-wizard">
-            <div className="gtt-game-top">
+            <div className="dk-stack dk-stack-heading gtt-game-top">
                 {changing ? null : actions}
                 <RoundTitle
                     index={draft.index}

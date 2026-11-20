@@ -1,77 +1,27 @@
 /*
  * The screens for keeping score, inside the design kit's app frame. The frame, the tab bar, the
- * buttons, the toast, the raised panel and the tiles are the kit's, so this sheet lays out only
- * what a screen holds of its own: the line of the start screen's game in play, its small print,
- * and the new game screen's parts. Its colors are the kit's roles, and it names no kit class.
+ * buttons, the toast, the raised panel, the tiles, the stacks, the split rows, the notes and the
+ * numerals are the kit's, so this sheet draws only what a screen holds of its own: the flip
+ * digits, the keys' columns, the scores and the Wizard round's parts. Its colors are the kit's
+ * roles, and it names no kit class.
  */
-
-/* The games in play, one raised panel each, a step apart, in a list with no marker of its own. */
-.gtt-in-play-list {
-    display: grid;
-    gap: var(--dk-space-4);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
 
 /*
  * The game in play is the kit's raised panel, which spaces what it holds, and its lip is set in
  * app.css. It is a grid with no gap of its own, so the button to continue spans the panel and the
- * kit's step is the only space between its parts. The game's name and its round share a line.
+ * kit's step is the only space between its parts. The game's name and its round share the kit's
+ * split row, the round in figures of one width.
  */
 .gtt-continue {
     display: grid;
-}
-
-.gtt-continue-game {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--dk-space-2);
 }
 
 .gtt-continue-game strong {
     font-size: var(--dk-text-title);
 }
 
-.gtt-continue-game span {
-    color: var(--dk-muted);
-    font-size: var(--dk-text-small);
+.gtt-continue-round {
     font-variant-numeric: tabular-nums;
-}
-
-.gtt-start,
-.gtt-in-play {
-    display: grid;
-    gap: var(--dk-space-3);
-}
-
-.gtt-start h2,
-.gtt-in-play h2 {
-    margin: 0;
-}
-
-.gtt-fine {
-    color: var(--dk-muted);
-    font-size: var(--dk-text-small);
-}
-
-/* The new game screen: the game, the seats and the way to add a player, a step apart. */
-.gtt-new,
-.gtt-seats,
-.gtt-add {
-    display: grid;
-    gap: var(--dk-space-4);
-}
-
-.gtt-seats,
-.gtt-add {
-    gap: var(--dk-space-3);
-}
-
-:is(.gtt-new, .gtt-seats, .gtt-add) > :is(h2, p, fieldset, form, ol) {
-    margin: 0;
 }
 
 /* The seat's place under the name, in figures of one width, so a column of seats lines up. */
@@ -86,30 +36,13 @@
     overflow-wrap: anywhere;
 }
 
-/* The score header: whose turn it is, their total in flip digits, and how it adds up. */
-.gtt-score {
-    display: grid;
-    gap: var(--dk-space-2);
-}
-
-.gtt-score > p {
-    margin: 0;
-}
-
-.gtt-score-who {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--dk-space-3);
-}
-
+/*
+ * The score header, the kit's stack at a pair's step: whose turn it is beside their total in flip
+ * digits, on the kit's split row, and how it adds up.
+ */
 .gtt-score-name {
-    min-width: 0;
-    margin: 0;
     font-size: var(--dk-text-display);
     font-weight: var(--dk-weight-strong);
-    overflow-wrap: anywhere;
 }
 
 .gtt-score-line {
@@ -179,16 +112,12 @@
     min-height: 100%;
 }
 
-/* The top of the round's screen: the ways out of the game, then the score header. */
-.gtt-game-top {
-    display: grid;
-    gap: var(--dk-space-3);
-}
-
+/*
+ * The keys stand at the foot of the body. They and the top of the round's screen, the ways out of
+ * the game then the score header, are the kit's stacks at a heading's step.
+ */
 .gtt-keys {
-    display: grid;
     align-self: end;
-    gap: var(--dk-space-3);
 }
 
 .gtt-bust {
@@ -222,26 +151,6 @@
 .gtt-take-out {
     margin-inline-start: var(--dk-space-1);
     color: var(--dk-muted);
-}
-
-/*
- * The round's dock: the way to the scores beside the button that moves the round on, on one row at
- * any text size, so the dock never takes a second row from the keys on every hand. The way to the
- * scores keeps its own width, and the button that moves on takes the rest, its words wrapping
- * inside it where they have to.
- */
-.gtt-dock-row {
-    display: flex;
-    gap: var(--dk-space-2);
-}
-
-.gtt-dock-row > :first-child {
-    flex: none;
-}
-
-.gtt-dock-row > :last-child {
-    flex: 1 1 0;
-    min-width: 0;
 }
 
 /* The scores: a player's total under their name in the pinned cell, and a round not yet counted. */
@@ -295,19 +204,9 @@
 }
 
 /*
- * A round of Wizard holds a stepper for each of up to six players above the dock, so its paragraphs
- * take the grid's gaps alone and none of their own margins.
+ * A round of Wizard's heading, the kit's stack at a pair's step: the cards each holds and who
+ * deals, then which round of how many.
  */
-.gtt-wizard :where(p, h2) {
-    margin: 0;
-}
-
-/* A round of Wizard's heading: the cards each holds, which round of how many, and who deals. */
-.gtt-wizard-title {
-    display: grid;
-    gap: var(--dk-space-1);
-}
-
 .gtt-wizard-round {
     font-size: var(--dk-text-title);
     font-weight: 700;
@@ -319,11 +218,12 @@
     gap: var(--dk-space-2);
 }
 
-/* What sits after a player's name beside their stepper, such as their bid beside their tricks. */
+/*
+ * What sits after a player's name beside their stepper, such as their bid beside their tricks, the
+ * kit's note at the normal weight inside the label.
+ */
 .gtt-count-detail {
-    color: var(--dk-muted);
-    font-size: var(--dk-text-small);
-    font-weight: 400;
+    font-weight: var(--dk-weight-normal);
 }
 
 /*
@@ -348,10 +248,4 @@
 
 .gtt-bid-name {
     overflow-wrap: anywhere;
-}
-
-.gtt-bid {
-    font-size: var(--dk-text-numeral);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
 }

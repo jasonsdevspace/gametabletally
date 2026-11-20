@@ -36,7 +36,7 @@ const POINTS = [
 
 export const Start = () => (
     <Website current="start">
-        <section className="dk-page gtt-hero">
+        <section className="dk-page dk-band-hero gtt-hero">
             <section className="gtt-hero-text">
                 <p className="dk-eyebrow">For game night</p>
                 <h1 className="gtt-display gtt-display-hero">{ROUTES[0].title}</h1>
@@ -56,7 +56,7 @@ export const Start = () => (
                         Install the app
                     </Link>
                 </p>
-                <ul className="gtt-ticks" role="list">
+                <ul className="dk-note gtt-ticks" role="list">
                     <li>Free</li>
                     <li>No account</li>
                     <li>Made for phones</li>
@@ -100,7 +100,7 @@ export const Start = () => (
             </h2>
             <ul className="gtt-points" role="list">
                 {POINTS.map(({ title, text }) => (
-                    <li key={title}>
+                    <li key={title} className="dk-stack dk-stack-pair">
                         <h3>{title}</h3>
                         <p>{text}</p>
                     </li>

@@ -25,14 +25,14 @@ export interface PlayersListProps {
 const today = () => new Date();
 const randomId = () => crypto.randomUUID();
 
-const UNREAD = 'Your players could not be opened in this browser. Reload the page to try again.';
+const UNREAD = 'Your players could not be opened in this browser.';
 
 export const PlayersList = ({
     open = openStore,
     newId = randomId,
     now = today,
 }: PlayersListProps) => {
-    const { read, setRead, unread } = usePlayersRead(open, UNREAD);
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD);
     const say = useStatus();
 
     const add = async (typed: string): Promise<string | null> => {
@@ -65,12 +65,15 @@ export const PlayersList = ({
     const listed = read?.players.filter(({ removed }) => !removed) ?? [];
     return (
         <>
-            <Failure words={unread} />
+            <Failure words={unread} onTryAgain={tryAgain} />
             {read === null ? null : listed.length === 0 ? (
-                <p>
-                    No players yet. A player is saved the first time they sit down to a game, and
-                    each one is listed here. Add one below, or start a game.
-                </p>
+                // The way to add a player is in view under it, so it offers no button of its own.
+                <div className="dk-empty">
+                    <p>
+                        No players yet. A player is saved the first time they sit down to a game,
+                        and each one is listed here. Add one below, or start a game.
+                    </p>
+                </div>
             ) : (
                 <ul className="dk-rows" role="list" aria-label="Players">
                     {listed.map((player) => (
