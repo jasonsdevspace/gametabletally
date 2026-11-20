@@ -241,7 +241,10 @@ const useLent = (
             shown.release?.();
         };
     }, [key, open, now, lend]);
-    return read?.key === key || keep ? read : null;
+    // A read kept in view while a later one is read is one that worked, so a failure goes as it is
+    // tried again and comes back, heard again, where it fails again.
+    if (read?.key === key) return read;
+    return keep && read !== null && !('failed' in read.lent) ? read : null;
 };
 
 /**

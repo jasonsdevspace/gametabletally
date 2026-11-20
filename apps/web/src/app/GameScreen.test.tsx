@@ -78,6 +78,39 @@ const said = async (line: HTMLElement | null, words: string) => {
     await heard(line, words);
 };
 
+describe('a game that could not be read', () => {
+    it('reads it afresh from Try again, with focus on the screen once the callout goes', async () => {
+        window.history.replaceState(null, '', '/game/?id=g-1');
+        const factory = new IDBFactory();
+        const store = await openStore(factory);
+        for (const one of [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')])
+            await store.savePlayer(one);
+        await store.saveGame(flip7(AT_ANN));
+        store.close();
+        let failing = true;
+        render(
+            <AppFrame screen="game" title="Game in play">
+                <GameScreen
+                    open={() =>
+                        failing
+                            ? Promise.reject(new Error('No database here.'))
+                            : openStore(factory)
+                    }
+                    now={() => new Date('2026-11-15T09:00:00Z')}
+                />
+            </AppFrame>
+        );
+        const again = await screen.findByRole('button', { name: 'Try again' });
+        again.focus();
+        failing = false;
+        fireEvent.click(again);
+        await screen.findByRole('button', { name: 'Bust' });
+        await waitFor(() => {
+            expect(screen.getByRole('main')).toHaveFocus();
+        });
+    });
+});
+
 describe('the words the game screen draws', () => {
     it('words a hand of too many numbers from its code and data', () => {
         const problem: Problem = {

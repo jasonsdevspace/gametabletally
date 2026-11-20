@@ -525,7 +525,7 @@ export const SkyjoRound = ({
 
     return (
         <div className="gtt-game">
-            <div className="dk-stack dk-stack-heading gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -656,9 +656,7 @@ export const SkyjoEnder = ({
 
     return (
         <div className="gtt-game">
-            <div className="dk-stack dk-stack-heading gtt-game-top">
-                {changing ? null : actions}
-            </div>
+            <div className="dk-stack dk-stack-heading">{changing ? null : actions}</div>
             <ChoiceField
                 ref={field}
                 label="Who ended the round?"

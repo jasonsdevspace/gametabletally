@@ -68,11 +68,15 @@ export const useSummary = (play: Play): Summary => {
     return useMemo(() => ({ offer, clear, undoing: state.undoing }), [offer, clear, state]);
 };
 
+/** Whether a discard is running anywhere in the app, so a second one waits for none. */
+let discardRunning = false;
+
 /**
  * Discards a game at once, with the frame's toast offering Undo, as the app does in place of asking
  * first, and resolves to whether it did, or to the words that say why not, beside the id of the
- * game being discarded, or null. A tap while an Undo is under way is ignored, and the button that
- * discards is the kit's busy button while its discard runs, so a double tap discards once.
+ * game being discarded, or null. A tap while an Undo or any discard is under way is ignored, so a
+ * discard of another game never runs beside one, and the button that discards is the kit's busy
+ * button while its discard runs, so a double tap discards once.
  */
 export const useDiscard = (
     play: Play
@@ -81,7 +85,8 @@ export const useDiscard = (
     const [discarding, setDiscarding] = useState<string | null>(null);
     const discard = useCallback(
         async (id: string, gameName: string) => {
-            if (summary.undoing()) return null;
+            if (discardRunning || summary.undoing()) return null;
+            discardRunning = true;
             setDiscarding(id);
             summary.clear();
             try {
@@ -89,6 +94,7 @@ export const useDiscard = (
             } catch (error: unknown) {
                 return refusalOf(error) ?? 'The game could not be discarded. Try again.';
             } finally {
+                discardRunning = false;
                 setDiscarding(null);
             }
             summary.offer(`The game of ${gameName} is discarded.`);

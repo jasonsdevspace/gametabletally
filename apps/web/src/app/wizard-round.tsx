@@ -622,7 +622,7 @@ export const WizardRound = ({
 
     return (
         <div className="gtt-game gtt-wizard">
-            <div className="dk-stack dk-stack-heading gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <RoundTitle
                     index={draft.index}

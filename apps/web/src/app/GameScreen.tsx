@@ -303,7 +303,7 @@ const Flip7Round = ({
 
     return (
         <div className="gtt-game">
-            <div className="dk-stack dk-stack-heading gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {changing ? null : actions}
                 <ScoreHeader
                     name={name}
@@ -494,7 +494,7 @@ const RoundFor = ({
     if (screen === 'flip-7' && player !== null) return <Flip7Round {...parts} player={player} />;
     return (
         <div className="gtt-game">
-            <div className="dk-stack dk-stack-heading gtt-game-top">
+            <div className="dk-stack dk-stack-heading">
                 {isChanging(game, draft) ? null : actions}
             </div>
             <p>

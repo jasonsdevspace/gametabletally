@@ -161,6 +161,44 @@ describe('the start screen', () => {
         expect(screen.queryByRole('alert')).toBeNull();
     });
 
+    it('empties a failure as Try again reads afresh, and says it again where the read fails again', async () => {
+        render(<PlayStart open={() => Promise.reject(new Error(BLOCKED_DATABASE))} />);
+        fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
+    });
+
+    it('discards one game at a time, letting a second discard go while the first runs', async () => {
+        const { open, factory } = await database(true);
+        const other = await openStore(factory);
+        await openPlay(other, undefined, () => Promise.resolve()).start({
+            id: 'g-2',
+            game: 'flip-7',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
+        other.close();
+        render(<PlayStart open={open} />);
+        const section = await screen.findByRole('region', { name: 'Games in play' });
+        const skyjo = within(section).getByRole('button', {
+            name: 'Discard the game of Skyjo, round 1',
+        });
+        const flip7 = within(section).getByRole('button', {
+            name: 'Discard the game of Flip 7, round 1',
+        });
+        fireEvent.click(skyjo);
+        expect(skyjo).toHaveAttribute('data-busy');
+        expect(flip7).not.toHaveAttribute('data-busy');
+        fireEvent.click(flip7);
+        await waitFor(() => {
+            expect(screen.queryByText('Skyjo', { selector: 'strong' })).toBeNull();
+        });
+        // Long enough for a second discard, had it run, to be drawn.
+        await act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+        expect(screen.getByText('Flip 7', { selector: 'strong' })).toBeVisible();
+    });
+
     it('offers a round being changed to continue or let go, never to discard its game', async () => {
         const { open, factory } = await database(false);
         const other = await openStore(factory);
