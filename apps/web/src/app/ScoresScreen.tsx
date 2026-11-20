@@ -315,9 +315,6 @@ export const GameTables = ({
                                                     <Button
                                                         text
                                                         id={`round-${String(column.index + 1)}`}
-                                                        // Kept in the Tab order, which the kit's
-                                                        // arrival would take it out of.
-                                                        tabIndex={0}
                                                         ref={
                                                             column.index + 1 === arrivedFrom
                                                                 ? arrival

@@ -1,5 +1,5 @@
 import { useStatus } from '@jasonsdevspace/design-kit/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { render, screen, waitFor } from './render.testing.js';
 
@@ -50,4 +50,18 @@ describe("the screens' fields and status lines", () => {
             expect(line).toHaveTextContent('Ann added.');
         });
     });
+
+    it('leaves no timer running once a screen that spoke is taken away', async () => {
+        vi.useFakeTimers();
+        const { unmount } = render(<Speaker words="Ann added." />);
+        screen.getByRole('button', { name: 'Say' }).click();
+        vi.advanceTimersByTime(150);
+        unmount();
+        await Promise.resolve();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });

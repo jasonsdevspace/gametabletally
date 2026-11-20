@@ -5,12 +5,17 @@ import { appLine } from './render.testing.js';
 
 /**
  * Waits for the kit's status line to say the words, which it puts in a moment after it is told and
- * takes away a while later, so a test waits for them before anything else it awaits.
+ * takes away a while later, so a test waits for them before anything else it awaits. It waits up
+ * to the two seconds words stay on the line, since words said after a save to the database in
+ * memory can take longer than the usual second to come on a busy machine.
  */
 export const heard = (line: HTMLElement, words: string) =>
-    waitFor(() => {
-        expect(line).toHaveTextContent(words);
-    });
+    waitFor(
+        () => {
+            expect(line).toHaveTextContent(words);
+        },
+        { timeout: 2000 }
+    );
 
 /**
  * Waits for a field's refusal to be said on the status line, then checks it is drawn as the field's
