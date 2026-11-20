@@ -1,6 +1,6 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
-import { useEffect, useState } from 'react';
+import { Button, useBusy, useFocusAfterDraw, useStatus } from '@jasonsdevspace/design-kit/react';
+import { useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import { type GameInPlay, type Play, stepAfter, type StepValue } from '../play/play.js';
@@ -330,11 +330,7 @@ export const useRound = ({
     };
 
     // Where focus goes once a skip or a put back is drawn, by the id of the button it lands on.
-    // Each is an object of its own, so the same button asked for twice is focused twice.
-    const [focus, setFocus] = useState<{ readonly id: string } | null>(null);
-    useEffect(() => {
-        if (focus !== null) document.getElementById(focus.id)?.focus();
-    }, [focus]);
+    const focusAfterDraw = useFocusAfterDraw();
 
     /**
      * Moves the round on with the value given for the step it is at: to the next step, or, after
@@ -403,7 +399,7 @@ export const useRound = ({
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
-                setFocus({ id: `put-back-${player}` });
+                focusAfterDraw(`put-back-${player}`);
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be skipped.');
         } finally {
@@ -440,7 +436,7 @@ export const useRound = ({
             say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
             const stillOut = rest[0];
             if (move)
-                setFocus({ id: stillOut === undefined ? 'skip-player' : `put-back-${stillOut}` });
+                focusAfterDraw(stillOut === undefined ? 'skip-player' : `put-back-${stillOut}`);
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be put back.');
         } finally {
@@ -488,7 +484,7 @@ export const useRound = ({
         run,
         /** Moves focus to the element with the id given, once the change that draws it is drawn. */
         focusOn: (to: string) => {
-            setFocus({ id: to });
+            focusAfterDraw(to);
         },
     };
 };

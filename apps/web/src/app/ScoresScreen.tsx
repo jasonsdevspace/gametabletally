@@ -1,6 +1,6 @@
 import { GAMES, type RoundResult } from '@gametabletally/scoring';
 import { attachTable } from '@jasonsdevspace/design-kit/controls';
-import { Button, useStatus } from '@jasonsdevspace/design-kit/react';
+import { Button, useFocusAfterDraw, useStatus } from '@jasonsdevspace/design-kit/react';
 import { useEffect, useRef } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
@@ -194,13 +194,14 @@ export const GameTables = ({
     // heading.
     const columns = columnsOf(game);
     const drawn = columns.length > 0;
+    const focusAfterDraw = useFocusAfterDraw();
     useEffect(() => {
         const element = frame.current;
         if (!drawn || element === null) return undefined;
         const detach = attachTable(element);
-        if (arrivedFrom !== null) document.getElementById(`round-${String(arrivedFrom)}`)?.focus();
+        if (arrivedFrom !== null) focusAfterDraw(`round-${String(arrivedFrom)}`);
         return detach;
-    }, [arrivedFrom, drawn]);
+    }, [arrivedFrom, drawn, focusAfterDraw]);
 
     /**
      * Opens a saved round on its entry screen, filled with what was entered, to change it, in this

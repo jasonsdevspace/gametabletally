@@ -160,6 +160,11 @@ describe('the new game screen', () => {
         await refusedInPlace(field, "Enter the player's name.");
         expect(field).toHaveAccessibleDescription(/^Error: ?Enter the player's name\.$/);
         fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        // Seating the last saved player sends focus to the field, and the Add button is pressed.
+        await waitFor(() => {
+            expect(field).toHaveFocus();
+        });
+        screen.getByRole('button', { name: 'Add' }).focus();
         addByName('ANN');
         await refusedInPlace(field, 'Ann has a seat already.');
         expect(seated()).toEqual(['Ann']);
@@ -219,7 +224,9 @@ describe('the new game screen', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Remove Ben' }));
         expect(screen.queryByRole('list', { name: 'Players, in seat order' })).toBeNull();
         expect(screen.getByText(/No one is seated yet/)).toBeVisible();
-        expect(screen.getByRole('textbox', { name: "A new player's name" })).toHaveFocus();
+        await waitFor(() => {
+            expect(screen.getByRole('textbox', { name: "A new player's name" })).toHaveFocus();
+        });
     });
 
     it('puts a removed seat back in the seat it left from the toast', async () => {

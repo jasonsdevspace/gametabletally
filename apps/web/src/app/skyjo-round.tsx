@@ -1,5 +1,10 @@
 import type { Problem } from '@gametabletally/scoring';
-import { Button, ChoiceField, useRoving } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    ChoiceField,
+    useFocusAfterDraw,
+    useRoving,
+} from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
@@ -241,15 +246,18 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const full = cards.length >= MOST_CARDS;
     const stripRef = useRef<HTMLDivElement>(null);
     const padRef = useRef<HTMLDivElement>(null);
-    // Where focus goes once a card taken out is drawn, by its place in the strip. Each is an object
-    // of its own, so the same place asked for twice is focused twice.
-    const [focus, setFocus] = useState<{ readonly at: number } | null>(null);
-    useEffect(() => {
-        if (focus === null) return;
-        const chips = stripRef.current?.querySelectorAll<HTMLElement>(':scope > button');
-        const chip = chips?.[Math.min(focus.at, chips.length - 1)];
-        (chip ?? padRef.current?.querySelector<HTMLElement>('[tabindex="0"]'))?.focus();
-    }, [focus]);
+    // Where focus goes once a card taken out is drawn, by its place in the strip, or the pad's stop
+    // once the strip is empty.
+    const focusAfterDraw = useFocusAfterDraw();
+    const focusAt = (at: number) => {
+        focusAfterDraw(
+            () => {
+                const chips = stripRef.current?.querySelectorAll(':scope > button');
+                return chips?.[Math.min(at, chips.length - 1)] ?? null;
+            },
+            { fallbacks: [() => padRef.current?.querySelector('[tabindex="0"]') ?? null] }
+        );
+    };
     const hints = [describedBy, full ? 'cards-full' : null].filter(Boolean).join(' ');
     return (
         <>
@@ -272,7 +280,7 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
                             onClick={() => {
                                 if (off) return;
                                 set({ ...input, cards: cards.filter((_, place) => place !== at) });
-                                setFocus({ at });
+                                focusAt(at);
                             }}
                         >
                             <span aria-hidden="true">{drawnOf(card)}</span>
@@ -483,13 +491,14 @@ export const SkyjoRound = ({
     const following = stepAfter(game, entry ?? { total: 0 });
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
     const { busy, changing, say } = actionsOf;
+    const focusAfterDraw = useFocusAfterDraw();
     useEffect(() => {
         if (why !== '') say(why);
     }, [why, say]);
     // Come back from who ended the round, focus goes to the player's keys, with why it is there.
     useEffect(() => {
         if (!arrived) return;
-        document.querySelector<HTMLElement>('#skyjo-entry [tabindex="0"]')?.focus();
+        focusAfterDraw(() => document.querySelector('#skyjo-entry [tabindex="0"]'));
         const held = heldOf(draft.round.entries[player]);
         say(
             held === undefined
@@ -608,6 +617,7 @@ export const SkyjoEnder = ({
     );
     const actionsOf = useRound({ play, game, names, summary, lineOf: skyjoLines(names) });
     const { busy, changing, say } = actionsOf;
+    const focusAfterDraw = useFocusAfterDraw();
     const heldBy = (one: string) => heldOf(draft.round.entries[one]) ?? 0;
 
     /** What naming a player comes to, by the rules over the round with them named. */
@@ -623,9 +633,10 @@ export const SkyjoEnder = ({
     // is out of the round is said, since a skip that brought the round here was said nowhere else.
     const field = useRef<HTMLFieldSetElement>(null);
     useEffect(() => {
-        const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-        const first = [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0];
-        first?.focus();
+        focusAfterDraw(() => {
+            const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+            return [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0] ?? null;
+        });
         if (out.length > 0) say(outWords(out.map(nameOf)));
         // Said once, as the question is reached.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- see above

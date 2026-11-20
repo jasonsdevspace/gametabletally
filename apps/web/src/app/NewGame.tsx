@@ -1,5 +1,11 @@
 import { GAMES } from '@gametabletally/scoring';
-import { Button, ChoiceField, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    ChoiceField,
+    useBusy,
+    useFocusAfterDraw,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
@@ -159,7 +165,7 @@ export const NewGame = ({
     const [refused, setRefused] = useState('');
     const [busy, setBusy] = useState(false);
     const startButton = useBusy<HTMLButtonElement>();
-    const focus = useRef<Focus | null>(null);
+    const focusAfterDraw = useFocusAfterDraw();
     const screen = useRef<HTMLDivElement>(null);
     const nameField = useRef<HTMLInputElement>(null);
     // The seats and players as last drawn, for a name whose save is answered after they change.
@@ -171,14 +177,13 @@ export const NewGame = ({
 
     // After a press redraws the seats or the saved players, focus goes to the control the press
     // chose, which may be the one pressed or its neighbor, or to the name field when none is left.
-    useLayoutEffect(() => {
-        const wanted = focus.current;
-        focus.current = null;
-        if (wanted === null) return;
+    const focusOn = (wanted: Focus) => {
         const selector = selectorOf(wanted);
-        const element = selector ? screen.current?.querySelector<HTMLElement>(selector) : null;
-        (element ?? nameField.current)?.focus();
-    }, [seats, players]);
+        focusAfterDraw(
+            () => (selector ? (screen.current?.querySelector(selector) ?? null) : null),
+            { fallbacks: [() => nameField.current] }
+        );
+    };
 
     // The link's game is read only once the screen is running, so the prerendered page, which
     // has no query, and the browser's first draw are the same.
@@ -198,7 +203,7 @@ export const NewGame = ({
     const move = (id: string, action: 'up' | 'down') => {
         const moved = moveSeat(seats, id, action === 'up' ? -1 : 1);
         if (moved === seats) return;
-        focus.current = { seat: id, action };
+        focusOn({ seat: id, action });
         setSeats(moved);
         say(`${nameOf(id)} moves to seat ${moved.indexOf(id) + 1}.`);
     };
@@ -207,7 +212,7 @@ export const NewGame = ({
         const at = seats.indexOf(id);
         const left = seats.filter((other) => other !== id);
         const next = left[at] ?? left[at - 1];
-        focus.current = next === undefined ? 'name' : { seat: next, action: 'remove' };
+        focusOn(next === undefined ? 'name' : { seat: next, action: 'remove' });
         setSeats(left);
         // The frame's toast says it and offers Undo, so a double tap that removes two seats can be
         // put right, and Undo puts the player back in the seat they left.
@@ -227,7 +232,7 @@ export const NewGame = ({
     const seatSaved = (player: SavedPlayer) => {
         const at = offered.indexOf(player);
         const next = offered[at + 1] ?? offered[at - 1];
-        focus.current = next === undefined ? 'name' : { saved: next.id };
+        focusOn(next === undefined ? 'name' : { saved: next.id });
         seat(player);
     };
 

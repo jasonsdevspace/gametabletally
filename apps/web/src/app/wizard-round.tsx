@@ -1,6 +1,11 @@
 import { type Problem, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
-import { Button, StepperField, useStatus } from '@jasonsdevspace/design-kit/react';
+import {
+    Button,
+    StepperField,
+    useFocusAfterDraw,
+    useStatus,
+} from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
@@ -211,9 +216,10 @@ const OutRows = ({
 }) => {
     // The way to skip each player opens from one button, so the keys keep their place on a phone.
     const [open, setOpen] = useState(false);
+    const focusAfterDraw = useFocusAfterDraw();
     const skip = async (one: string) => {
         if (await onSkip(one)) setOpen(false);
-        else document.getElementById('skip-player')?.focus();
+        else focusAfterDraw('skip-player');
     };
     return (
         <>
