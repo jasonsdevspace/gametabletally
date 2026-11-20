@@ -415,6 +415,9 @@ describe('skipping a player for a round', () => {
         press('Put Ann back');
         await heard(appLine(), 'Ann is back in round 1, and is asked after Cat.');
         expect(skipButton()).toHaveTextContent('Skip Ben this round');
+        await waitFor(() => {
+            expect(skipButton()).toHaveFocus();
+        });
     });
 
     it('says from the start of a game of two that no one can sit a round out', async () => {

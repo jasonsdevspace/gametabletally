@@ -7,7 +7,7 @@ import { BLOCKED_DATABASE, openStore } from '../store/store.js';
 import { playersChanged } from './players.js';
 import { PlayersList } from './PlayersList.js';
 import { act, fireEvent, render, screen, waitFor, within } from './render.testing.js';
-import { heard, refused, refusedInPlace } from './status.testing.js';
+import { heard, refusedInPlace } from './status.testing.js';
 
 /* The players screen over a database in memory. */
 
@@ -121,11 +121,7 @@ describe('the players screen', () => {
         await refusedInPlace(field, 'A player is already named Ben.');
         field.focus();
         fireEvent.submit(field);
-        await refused(
-            field,
-            screen.getByRole('status', { hidden: true }),
-            'A player is already named Ben.'
-        );
+        await refusedInPlace(field, 'A player is already named Ben.');
         const store = await open();
         expect(await store.players()).toHaveLength(SAVED.length);
         store.close();

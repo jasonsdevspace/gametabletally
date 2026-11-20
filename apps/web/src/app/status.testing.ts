@@ -1,6 +1,8 @@
 import { waitFor } from '@testing-library/react';
 import { expect } from 'vitest';
 
+import { appLine } from './render.testing.js';
+
 /**
  * Waits for the kit's status line to say the words, which it puts in a moment after it is told and
  * takes away a while later, so a test waits for them before anything else it awaits.
@@ -23,13 +25,16 @@ export const refused = async (field: HTMLElement, line: HTMLElement, words: stri
 };
 
 /**
- * Waits for a name refused from its Add button to move focus to the field, which is then drawn
- * invalid and described by the refusal, so a screen reader says them together.
+ * Waits for a name refused through the kit's form to move focus to the field, or find it there,
+ * which is then drawn invalid and described by the refusal, and for the status line to say the
+ * field's name and its error, as the kit's refusal does.
  */
 export const refusedInPlace = async (field: HTMLElement, words: string) => {
     await waitFor(() => {
         expect(field).toHaveFocus();
     });
+    const name = document.querySelector(`label[for="${field.id}"]`)?.textContent ?? '';
+    await heard(appLine(), `${name}: Error: ${words}`);
     const error = document.getElementById(`${field.id}-error`);
     expect(error).toBeVisible();
     expect(error).toHaveTextContent(words);

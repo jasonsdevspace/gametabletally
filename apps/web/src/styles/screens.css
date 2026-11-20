@@ -219,14 +219,6 @@
 }
 
 /*
- * What sits after a player's name beside their stepper, such as their bid beside their tricks, the
- * kit's note at the normal weight inside the label.
- */
-.gtt-count-detail {
-    font-weight: var(--dk-weight-normal);
-}
-
-/*
  * The bids shown through the hand, two to a row so six fit above the dock, each a name over its
  * bid, large enough to read from across the table.
  */

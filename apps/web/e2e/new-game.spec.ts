@@ -193,6 +193,8 @@ test('moves focus to the name field when the Add button is refused, the field de
     await expect(nameField(page)).toBeFocused();
     await expect(nameField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(nameField(page)).toHaveAccessibleDescription(/Ann has a seat already\./);
+    // The kit says the field's name and its error, since a screen reader may read the error late.
+    await expect(appLine(page)).toHaveText("A new player's name: Error: Ann has a seat already.");
     await audit(page);
 });
 

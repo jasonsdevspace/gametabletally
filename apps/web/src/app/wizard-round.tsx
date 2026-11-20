@@ -179,7 +179,7 @@ const Count = ({
                     {detail === '' ? null : (
                         <>
                             {' '}
-                            <span className="dk-note gtt-count-detail">{detail}</span>
+                            <span className="dk-note">{detail}</span>
                         </>
                     )}
                     <span className="dk-visually-hidden">
@@ -374,7 +374,7 @@ const HandView = ({
                         {one === dealer ? (
                             <>
                                 {' '}
-                                <span className="dk-note gtt-count-detail">deals</span>
+                                <span className="dk-note">deals</span>
                             </>
                         ) : null}
                     </span>

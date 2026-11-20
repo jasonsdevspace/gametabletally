@@ -7,7 +7,7 @@ import { BLOCKED_DATABASE, openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { NewGame } from './NewGame.js';
 import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
-import { heard, refused, refusedInPlace } from './status.testing.js';
+import { heard, refusedInPlace } from './status.testing.js';
 
 /* The new game screen in the app's frame, over a database in memory. */
 
@@ -171,7 +171,7 @@ describe('the new game screen', () => {
         // Refused by Enter in the field, where focus already is, the refusal is said instead.
         field.focus();
         fireEvent.submit(field);
-        await refused(field, status(), 'Ann has a seat already.');
+        await refusedInPlace(field, 'Ann has a seat already.');
     });
 
     it('moves a seat up and down, says its new place and keeps focus on the button', async () => {

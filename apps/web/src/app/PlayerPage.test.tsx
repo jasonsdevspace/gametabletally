@@ -8,7 +8,7 @@ import { AppFrame } from './AppFrame.js';
 import { PlayerPage } from './PlayerPage.js';
 import { PLAYERS_CHANGED } from './players.js';
 import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
-import { heard, refused } from './status.testing.js';
+import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* A player's own page in the app's frame, over a database in memory. */
 
@@ -103,7 +103,7 @@ describe("a player's page", () => {
         // Enter is pressed in the field, where focus is.
         nameField().focus();
         fireEvent.submit(nameField());
-        await refused(nameField(), line(), 'A player is already named Ben.');
+        await refusedInPlace(nameField(), 'A player is already named Ben.');
         expect((await players(open)).find(({ id }) => id === 'ann')?.name).toBe('Ann');
     });
 
