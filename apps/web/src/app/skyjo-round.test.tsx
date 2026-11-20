@@ -271,6 +271,19 @@ describe('a round of Skyjo', () => {
         expect(await screen.findByRole('button', { name: 'Next: Cat' })).toBeTruthy();
     });
 
+    it("keeps the card pad's stop on the card last tapped in, as the strip above it grows", async () => {
+        await draw(skyjo(at({ part: 'entry', player: 'ann' })));
+        fireEvent.click(await screen.findByRole('tab', { name: 'Add it up for me' }));
+        const cards = screen.getByRole('toolbar', { name: 'Cards' });
+        fireEvent.click(within(cards).getByRole('button', { name: '7' }));
+        fireEvent.click(within(cards).getByRole('button', { name: '5' }));
+        expect(within(cards).getByRole('button', { name: '5' })).toHaveAttribute('tabindex', '0');
+        expect(within(cards).getByRole('button', { name: 'minus 2' })).toHaveAttribute(
+            'tabindex',
+            '-1'
+        );
+    });
+
     it("leaves focus on the card that takes a taken card's place, or the one before it, or the pad", async () => {
         await draw(skyjo(at({ part: 'entry', player: 'ann' })));
         fireEvent.click(await screen.findByRole('tab', { name: 'Add it up for me' }));

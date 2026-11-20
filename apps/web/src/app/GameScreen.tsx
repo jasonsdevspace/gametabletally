@@ -159,6 +159,7 @@ export const Flip7Keys = ({
                 key={`numbers|${name}`}
                 ref={numbers}
                 className="dk-button-grid gtt-numbers"
+                role="group"
                 aria-label="Number cards"
                 aria-describedby={why === '' ? undefined : 'hand-why'}
             >
@@ -185,6 +186,7 @@ export const Flip7Keys = ({
                 key={`modifiers|${name}`}
                 ref={modifiers}
                 className="dk-button-grid gtt-modifiers"
+                role="group"
                 aria-label="Modifier cards"
             >
                 {FLIP_7_MODIFIERS.map((card) => (

@@ -5,7 +5,7 @@ import {
     useFocusAfterDraw,
     useRoving,
 } from '@jasonsdevspace/design-kit/react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
@@ -205,6 +205,7 @@ const NumberPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
             key={fresh}
             ref={pad}
             className="dk-button-grid gtt-pad"
+            role="group"
             aria-label="Number pad"
             aria-describedby={describedBy}
             onKeyDown={(event) => {
@@ -246,6 +247,22 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const full = cards.length >= MOST_CARDS;
     const stripRef = useRef<HTMLDivElement>(null);
     const padRef = useRef<HTMLDivElement>(null);
+    // Each grid's ref holds it for the focus below and attaches it to the kit's keys, the same
+    // across renders, so a press that draws the grid again keeps its stop where it is.
+    const stripAt = useCallback(
+        (element: HTMLDivElement | null) => {
+            stripRef.current = element;
+            return strip(element);
+        },
+        [strip]
+    );
+    const padAt = useCallback(
+        (element: HTMLDivElement | null) => {
+            padRef.current = element;
+            return pad(element);
+        },
+        [pad]
+    );
     // Where focus goes once a card taken out is drawn, by its place in the strip, or the pad's stop
     // once the strip is empty.
     const focusAfterDraw = useFocusAfterDraw();
@@ -264,11 +281,9 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
             {cards.length === 0 ? null : (
                 <div
                     key={`strip|${fresh}`}
-                    ref={(element) => {
-                        stripRef.current = element;
-                        return strip(element);
-                    }}
+                    ref={stripAt}
                     className="dk-button-grid gtt-strip"
+                    role="group"
                     aria-label={`Cards tapped in, ${spokenOf(sumOf(cards))} in all`}
                 >
                     {cards.map((card, at) => (
@@ -297,11 +312,9 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
             ) : null}
             <div
                 key={`cards|${fresh}`}
-                ref={(element) => {
-                    padRef.current = element;
-                    return pad(element);
-                }}
+                ref={padAt}
                 className="dk-button-grid gtt-cards"
+                role="group"
                 aria-label="Cards"
                 aria-describedby={hints === '' ? undefined : hints}
             >
