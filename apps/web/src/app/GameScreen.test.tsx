@@ -65,19 +65,6 @@ const press = (name: string) => {
 
 const digits = () => document.querySelector('.gtt-digits');
 
-/** The app's one status line, where the score header and the screen each say what changed. */
-const headerLine = appLine;
-const screenLine = appLine;
-
-/**
- * Waits for a line to say its words. The kit's line puts them in a moment after it is told, so a
- * test waits for them before it ends, or the moment would come after the page is gone.
- */
-const said = async (line: HTMLElement | null, words: string) => {
-    if (line === null) throw new Error('The status line is not on the page.');
-    await heard(line, words);
-};
-
 describe('the words a round says while it moves on', () => {
     it('names the save it makes, the entry it keeps, and nothing where it saves nothing', () => {
         expect(busyWordsOf('Save the round')).toBe('Saving the round.');
@@ -192,7 +179,7 @@ describe('the game screen', () => {
         await waitFor(() => {
             expect(digits()).toHaveAccessibleName('14');
         });
-        await said(headerLine(), "Ann's total is 14.");
+        await heard(appLine(), "Ann's total is 14.");
         expect(screen.getByRole('button', { name: '7' })).toHaveAttribute('aria-pressed', 'true');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
@@ -212,7 +199,7 @@ describe('the game screen', () => {
         );
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByRole('button', { name: '5' })).toHaveAttribute('aria-disabled', 'true');
-        await said(headerLine(), "Ann's total is 0.");
+        await heard(appLine(), "Ann's total is 0.");
         press('Bust');
         expect(bust).toHaveAttribute('aria-pressed', 'false');
     });
@@ -222,7 +209,7 @@ describe('the game screen', () => {
         for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) press(card);
         const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
         expect(await screen.findByText(why)).toBeVisible();
-        await said(screenLine(), why);
+        await heard(appLine(), why);
         expect(screen.getByRole('toolbar', { name: 'Number cards' })).toHaveAccessibleDescription(
             why
         );
@@ -235,7 +222,7 @@ describe('the game screen', () => {
     it('names the next player, and moves to them', async () => {
         await draw();
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
         expect(screen.getByRole('button', { name: 'Next: Cat' })).toBeVisible();
     });
@@ -259,10 +246,10 @@ describe('the game screen as the turn moves on', () => {
     it('ignores a tap made while the hand is entered, so it never lands in the next seat', async () => {
         const { open } = await draw();
         press('3');
-        await said(headerLine(), "Ann's total is 3.");
+        await heard(appLine(), "Ann's total is 3.");
         press('Next: Ben');
         press('9');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
             ann: { numbers: [3], modifiers: [], bust: false },
@@ -273,13 +260,13 @@ describe('the game screen as the turn moves on', () => {
     it('ignores a tap made while Undo puts a hand back, so it never lands in the player it restores', async () => {
         const { open } = await draw();
         press('3');
-        await said(headerLine(), "Ann's total is 3.");
+        await heard(appLine(), "Ann's total is 3.");
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         const undo = await screen.findByRole('button', { name: 'Undo' });
         fireEvent.click(undo);
         press('9');
-        await said(headerLine(), 'Ann is next.');
+        await heard(appLine(), 'Ann is next.');
         const store = await open();
         expect((await store.game('g-1'))?.draft?.round['entries']).toEqual({
             ann: { numbers: [3], modifiers: [], bust: false },
@@ -395,8 +382,8 @@ describe('skipping a player for a round', () => {
         skip.focus();
         fireEvent.click(skip);
         // Said with who is next, since the header's own words are said a moment before.
-        await said(
-            screenLine(),
+        await heard(
+            appLine(),
             "Ann is out of round 1, with no score for it. Ann's total stays at 0. Ben is next."
         );
         expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
@@ -405,7 +392,7 @@ describe('skipping a player for a round', () => {
         expect(skipButton()).toHaveFocus();
         // Put back while Ben enters, Ann is asked after the others still to enter.
         fireEvent.click(screen.getByRole('button', { name: 'Put Ann back' }));
-        await said(screenLine(), 'Ann is back in round 1, and is asked after Dan.');
+        await heard(appLine(), 'Ann is back in round 1, and is asked after Dan.');
         expect(screen.queryByText('Ann is out of this round.')).toBeNull();
         await waitFor(() => {
             expect(skipButton()).toHaveFocus();
@@ -415,8 +402,8 @@ describe('skipping a player for a round', () => {
     it('offers no skip that would leave one player, says why, and still puts a player back', async () => {
         await draw();
         press('Skip Ann this round');
-        await said(
-            screenLine(),
+        await heard(
+            appLine(),
             "Ann is out of round 1, with no score for it. Ann's total stays at 0."
         );
         expect(skipButton()).toBeNull();
@@ -425,7 +412,7 @@ describe('skipping a player for a round', () => {
             expect(screen.getByRole('button', { name: 'Put Ann back' })).toHaveFocus();
         });
         press('Put Ann back');
-        await said(screenLine(), 'Ann is back in round 1, and is asked after Cat.');
+        await heard(appLine(), 'Ann is back in round 1, and is asked after Cat.');
         expect(skipButton()).toHaveTextContent('Skip Ben this round');
     });
 
@@ -442,8 +429,8 @@ describe('skipping a player for a round', () => {
         press('Next: Ben');
         expect(await screen.findByRole('button', { name: 'Undo' })).toBeVisible();
         press('Skip Ben this round');
-        await said(
-            screenLine(),
+        await heard(
+            appLine(),
             "Ben is out of round 1, with no score for it. Ben's total stays at 0."
         );
         expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
@@ -505,7 +492,7 @@ describe('the card grids, one stop each', () => {
         fireEvent.click(screen.getByRole('button', { name: '9' }));
         expect(screen.getByRole('button', { name: '9' })).toHaveAttribute('tabindex', '0');
         press('Next: Ben');
-        await said(headerLine(), 'Ben is next.');
+        await heard(appLine(), 'Ben is next.');
         expect(screen.getByRole('button', { name: '0' })).toHaveAttribute('tabindex', '0');
         expect(stops('Number cards')).toBe(1);
     });

@@ -50,10 +50,6 @@ const key = (page: Page, name: string) => page.getByRole('button', { name, exact
 const total = (page: Page) => page.locator('.gtt-digits');
 const next = (page: Page) => page.getByRole('region', { name: 'Actions' }).getByRole('button');
 
-/** The screen's own status line, and the score header's, each saying what changed. */
-const said = appLine;
-const headerSaid = appLine;
-
 test('enters a round of Flip 7 by tapping cards, player by player, and saves it after the last', async ({
     page,
 }, info) => {
@@ -124,7 +120,7 @@ test('says in words beside the keys why a hand of eight numbers is refused, and 
     for (const card of ['0', '1', '2', '3', '4', '5', '6', '7']) await key(page, card).click();
     const why = 'A round ends at 7 numbers, so a hand holds no more. Take one off.';
     await expect(page.getByText(why)).toBeVisible();
-    await expect(said(page)).toHaveText(why);
+    await expect(appLine(page)).toHaveText(why);
     // The header keeps the last score the rules took, so a refusal never reads as nothing.
     await expect(total(page)).toHaveAccessibleName('36');
     await audit(page);
@@ -212,7 +208,7 @@ test('keeps focus on the button for the next player as the turn moves on, and sa
     await page.keyboard.press('Enter');
     await expect(page.locator('.gtt-score-name')).toHaveText('Ben');
     await expect(page.getByRole('button', { name: 'Next: Cat' })).toBeFocused();
-    await expect(headerSaid(page)).toHaveText('Ben is next.');
+    await expect(appLine(page)).toHaveText('Ben is next.');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: 'Save the round' })).toBeFocused();
     await page.keyboard.press('Enter');
