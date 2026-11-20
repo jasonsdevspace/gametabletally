@@ -376,9 +376,10 @@ describe('skipping a player for a round', () => {
         const skip = await screen.findByRole('button', { name: 'Skip Ann this round' });
         skip.focus();
         fireEvent.click(skip);
+        // Said with who is next, since the header's own words are said a moment before.
         await said(
             screenLine(),
-            "Ann is out of round 1, with no score for it. Ann's total stays at 0."
+            "Ann is out of round 1, with no score for it. Ann's total stays at 0. Ben is next."
         );
         expect(document.querySelector('.gtt-score-name')).toHaveTextContent('Ben');
         expect(screen.getByText('Ann is out of this round.')).toBeVisible();

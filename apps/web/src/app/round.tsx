@@ -372,6 +372,16 @@ export const useRound = ({
     };
 
     /**
+     * Who is next, as a sentence after a skip or a put back, where the turn moved to another player
+     * than `before`, read from the round as kept. The header says who is next as well, a moment
+     * before, so these words carry it, since they take its place on the status line.
+     */
+    const nextWords = (before: string | null): string => {
+        const now = keptOf(play, id)?.draft?.step?.player ?? null;
+        return now === null || now === before ? '' : ` ${nameOf(now)} is next.`;
+    };
+
+    /**
      * Skips the player whose turn it is for the round, or, where `finishes`, skips them and saves
      * the round at once. The summary goes first, so its Undo cannot take back the skip.
      */
@@ -395,7 +405,7 @@ export const useRound = ({
             }
             await play.setOut(id, without);
             if (keptOf(play, id)?.error !== null) return;
-            say(skipWords(name, draft.index, before));
+            say(`${skipWords(name, draft.index, before)}${nextWords(player)}`);
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
             if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
@@ -407,33 +417,43 @@ export const useRound = ({
         }
     };
 
+    /**
+     * What a put back says: the player is back, and, in a round being entered, after whom they are
+     * asked, with `rest` still out of it.
+     */
+    const backWords = (player: string, who: string, rest: readonly string[]): string => {
+        const after = changing
+            ? null
+            : comesAfter(
+                  {
+                      game: game.saved.game,
+                      players: game.saved.players,
+                      round: withOut(draft.round, game.saved.players, rest),
+                  },
+                  player,
+                  who
+              );
+        const where =
+            after === null
+                ? ''
+                : after.now
+                  ? `, and is next after ${nameOf(after.player)}`
+                  : `, and is asked after ${nameOf(after.player)}`;
+        return `${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`;
+    };
+
     /** Puts a skipped player back in the round, to be asked as the turn reaches them. */
     const back = async (player: string, who: string, { focus: move = true } = {}) => {
         if (held()) return;
+        // Whose turn it was, so a put back that moves the turn says who is next.
+        const turn = keptOf(play, id)?.draft?.step?.player ?? null;
         summary.clear();
         setBusy(true);
         try {
             const rest = draft.round.out.filter((one) => one !== who);
             await play.setOut(id, rest);
             if (keptOf(play, id)?.error !== null) return;
-            const after = changing
-                ? null
-                : comesAfter(
-                      {
-                          game: game.saved.game,
-                          players: game.saved.players,
-                          round: withOut(draft.round, game.saved.players, rest),
-                      },
-                      player,
-                      who
-                  );
-            const where =
-                after === null
-                    ? ''
-                    : after.now
-                      ? `, and is next after ${nameOf(after.player)}`
-                      : `, and is asked after ${nameOf(after.player)}`;
-            say(`${nameOf(who)} is back in round ${String(draft.index + 1)}${where}.`);
+            say(`${backWords(player, who, rest)}${nextWords(turn)}`);
             const stillOut = rest[0];
             if (move)
                 focusAfterDraw(stillOut === undefined ? 'skip-player' : `put-back-${stillOut}`);
