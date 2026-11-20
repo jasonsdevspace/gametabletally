@@ -166,6 +166,14 @@ describe('a round of Wizard', () => {
         );
         fireEvent.click(dockButton('Enter the tricks'));
         await heard(screenLine(), 'Enter the tricks for round 2.');
+        // The words leave the line before the page's timers are faked, so no timer the line set
+        // with the real clock is left running unseen.
+        await waitFor(
+            () => {
+                expect(screenLine()).toHaveTextContent('');
+            },
+            { timeout: 3000 }
+        );
         // Only the page's own timers are faked, so the database in memory keeps its own.
         vi.useFakeTimers({
             toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
@@ -173,9 +181,15 @@ describe('a round of Wizard', () => {
         setCount('tricks-ben', 0);
         const line = screenLine();
         unmount();
-        await Promise.resolve();
+        // Microtasks run, as the kit lets the line go in one, and the faked clock stands still, so
+        // a timer still set is counted rather than run out.
+        await act(async () => {
+            await Promise.resolve();
+        });
         expect(vi.getTimerCount()).toBe(0);
-        vi.advanceTimersByTime(1000);
+        act(() => {
+            vi.advanceTimersByTime(1000);
+        });
         expect(line.textContent).toBe('');
     });
 

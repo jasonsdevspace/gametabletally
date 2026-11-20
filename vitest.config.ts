@@ -29,6 +29,9 @@ export default defineConfig({
                     css: { include: [/\.css\?raw$/] },
                     include: ['apps/*/**/*.test.{ts,tsx}'],
                     setupFiles: ['apps/web/vitest.setup.ts'],
+                    // A test waits up to two seconds for each thing the status line says, and some
+                    // wait for several, so a slow one reports the words it missed, not a timeout.
+                    testTimeout: 15_000,
                 },
             },
         ],

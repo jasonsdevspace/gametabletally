@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterAll, afterEach } from 'vitest';
 
 afterEach(() => {
     cleanup();
@@ -37,3 +37,17 @@ if (!('checkVisibility' in Element.prototype))
             return shown(this);
         },
     });
+
+/*
+ * The kit's status line clears its own timers as it is let go, but a focus request the kit lands a
+ * frame later, such as Try again's `moveFocus` or a view's arrival, reads the document as it lands,
+ * and a stepper's and a form's reset run a moment after the event. Each file waits out that frame
+ * before its window goes, so none of them finds the document gone. The toast's own wait before it
+ * leaves, five seconds, is longer than any file waits.
+ */
+afterAll(
+    () =>
+        new Promise((resolve) => {
+            setTimeout(resolve, 50);
+        })
+);
