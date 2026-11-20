@@ -1,11 +1,12 @@
 import type { Problem } from '@gametabletally/scoring';
 import { IDBFactory } from 'fake-indexeddb';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
-import { GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
+import { Flip7Keys, GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
 import { act, appLine, fireEvent, render, screen, waitFor } from './render.testing.js';
 import { busyWordsOf, canSkip, comesAfter, floorWords, outWords } from './round.js';
 import { heard } from './status.testing.js';
@@ -466,6 +467,23 @@ describe('skipping a player for a round', () => {
 describe('the card grids, one stop each', () => {
     const grid = (name: string) => screen.getByRole('toolbar', { name });
     const stops = (name: string) => grid(name).querySelectorAll('[tabindex="0"]').length;
+
+    it('writes each grid as a group, which the kit names a toolbar once it is attached', () => {
+        const markup = renderToStaticMarkup(
+            <Flip7Keys
+                name="Ann"
+                hand={{ numbers: [], modifiers: [], bust: false }}
+                why=""
+                onChange={() => undefined}
+            />
+        );
+        for (const name of ['Number cards', 'Modifier cards'])
+            expect(markup).toMatch(
+                new RegExp(
+                    `role="group" aria-label="${name}"|aria-label="${name}"[^>]*role="group"`
+                )
+            );
+    });
 
     it('gives each grid one stop, and leaves an arrow held with a modifier key to the browser', async () => {
         await draw();
