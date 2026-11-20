@@ -9,7 +9,7 @@ import {
 } from 'react';
 
 import { refusalOf, type Store } from '../store/store.js';
-import { PLAYERS_CHANGED, type PlayersRead, readPlayers } from './players.js';
+import { PLAYERS_CHANGED } from './players.js';
 import { cleanName } from './seats.js';
 
 /*
@@ -21,12 +21,17 @@ import { cleanName } from './seats.js';
 export const NAME_LENGTH = 30;
 
 /**
- * The saved players and how many games each has played, read once the screen is running and again
- * when a player is put back from a toast, and why they could not be read, if so. Only the latest
- * read is drawn, so one that is answered late never draws over a newer one.
+ * The saved players as `readWith` reads them, such as with how many games each has played, read
+ * once the screen is running and again when a player is put back from a toast, and why they could
+ * not be read, if so, with Try again reading them afresh. Only the latest read is drawn, so one
+ * that is answered late never draws over a newer one. `readWith` is the same across renders.
  */
-export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) => {
-    const [read, setRead] = useState<PlayersRead | null>(null);
+export const usePlayersRead = <Read,>(
+    open: () => Promise<Store>,
+    unreadWords: string,
+    readWith: (open: () => Promise<Store>) => Promise<Read>
+) => {
+    const [read, setRead] = useState<Read | null>(null);
     const [unread, setUnread] = useState('');
     // Each Try again reads afresh.
     const [attempts, setAttempts] = useState(0);
@@ -36,7 +41,7 @@ export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) 
         const again = () => {
             latest += 1;
             const asked = latest;
-            readPlayers(open).then(
+            readWith(open).then(
                 (found) => {
                     if (left || asked !== latest) return;
                     setRead(found);
@@ -53,7 +58,7 @@ export const usePlayersRead = (open: () => Promise<Store>, unreadWords: string) 
             left = true;
             window.removeEventListener(PLAYERS_CHANGED, again);
         };
-    }, [open, unreadWords, attempts]);
+    }, [open, unreadWords, readWith, attempts]);
     const tryAgain = () => {
         setUnread('');
         setAttempts((count) => count + 1);

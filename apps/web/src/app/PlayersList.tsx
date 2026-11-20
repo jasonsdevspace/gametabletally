@@ -5,7 +5,7 @@ import { hrefOf } from '../routes.js';
 import { byAdded, openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { Failure } from './failure.js';
 import { AddByName, usePlayersRead } from './player-parts.js';
-import { gamesOf, nameRefusal, newPlayerOf } from './players.js';
+import { gamesOf, nameRefusal, newPlayerOf, readPlayers } from './players.js';
 
 /**
  * The players screen: every player still offered for a new game, in the order they were added,
@@ -32,7 +32,7 @@ export const PlayersList = ({
     newId = randomId,
     now = today,
 }: PlayersListProps) => {
-    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD);
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD, readPlayers);
     const say = useStatus();
 
     const add = async (typed: string): Promise<string | null> => {

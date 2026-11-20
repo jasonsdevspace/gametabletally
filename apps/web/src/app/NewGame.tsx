@@ -116,6 +116,12 @@ const goInPlace = (href: string) => {
     navigate(href, { replace: true });
 };
 
+/**
+ * The saved players alone, since a new game counts no games played, so a games read that fails
+ * never keeps a player from being added.
+ */
+const savedPlayers = (open: () => Promise<Store>) => withStore(open, (store) => store.players());
+
 /** No players, the same each time, so the seats' effects do not run again for nothing. */
 const NONE: readonly SavedPlayer[] = [];
 
@@ -126,15 +132,16 @@ const NONE: readonly SavedPlayer[] = [];
 const usePlayers = (open: () => Promise<Store>) => {
     const { read, setRead, unread, tryAgain } = usePlayersRead(
         open,
-        'Your saved players could not be opened in this browser.'
+        'Your saved players could not be opened in this browser.',
+        savedPlayers
     );
     const setPlayers = useCallback(
         (change: (before: readonly SavedPlayer[]) => readonly SavedPlayer[]) => {
-            setRead((now) => (now === null ? now : { ...now, players: change(now.players) }));
+            setRead((now) => (now === null ? now : change(now)));
         },
         [setRead]
     );
-    return { players: read?.players ?? NONE, setPlayers, loaded: read !== null, unread, tryAgain };
+    return { players: read ?? NONE, setPlayers, loaded: read !== null, unread, tryAgain };
 };
 
 export const NewGame = ({

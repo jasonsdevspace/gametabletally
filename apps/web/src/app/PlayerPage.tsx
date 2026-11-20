@@ -14,7 +14,7 @@ import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
-import { gamesOf, nameRefusal, playersChanged } from './players.js';
+import { gamesOf, nameRefusal, playersChanged, readPlayers } from './players.js';
 import { cleanName } from './seats.js';
 
 /**
@@ -109,7 +109,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     const { search } = usePlace();
     const running = useRunning();
     const show = useToast();
-    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD);
+    const { read, setRead, unread, tryAgain } = usePlayersRead(open, UNREAD, readPlayers);
     const say = useStatus();
     const [failed, setFailed] = useState('');
     const id = running ? new URLSearchParams(search).get('id') : null;

@@ -153,6 +153,26 @@ describe('the new game screen', () => {
         store.close();
     });
 
+    it('reads the saved players alone, so a games read that fails keeps no one from a seat', async () => {
+        window.history.replaceState(null, '', '/new/?game=skyjo');
+        const { open } = await database([player('ann', 'Ann')]);
+        const noGames = async () => {
+            const opened = await open();
+            return {
+                ...opened,
+                games: () => Promise.reject(new Error('The games could not be read.')),
+            };
+        };
+        render(
+            <AppFrame screen="new" title="New game">
+                <NewGame open={noGames} />
+            </AppFrame>
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Add Ann' }));
+        expect(seated()).toEqual(['Ann']);
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('says why a name is not added, beside the field', async () => {
         await draw();
         const field = screen.getByRole('textbox', { name: "A new player's name" });
