@@ -195,7 +195,7 @@ const useLent = (
     open: () => Promise<Store>,
     now: () => Date,
     /** Whether what was read for an earlier key is kept in view while a later one is read. */
-    keep = false
+    keep: (earlier: { readonly key: string; readonly lent: Lent }) => boolean = () => false
 ): { readonly key: string; readonly lent: Lent } | null => {
     // What was read, and for which key, so a move to another game never draws the last one.
     const [read, setRead] = useState<{ readonly key: string; readonly lent: Lent } | null>(null);
@@ -241,10 +241,8 @@ const useLent = (
             shown.release?.();
         };
     }, [key, open, now, lend]);
-    // A read kept in view while a later one is read is one that worked, so a failure goes as it is
-    // tried again and comes back, heard again, where it fails again.
     if (read?.key === key) return read;
-    return keep && read !== null && !('failed' in read.lent) ? read : null;
+    return read !== null && keep(read) ? read : null;
 };
 
 /**
@@ -309,14 +307,24 @@ export const WithGames = ({
             window.removeEventListener('pageshow', again);
         };
     }, []);
-    const read = useLent(running ? `all ${String(arrivals)}` : null, open, now, true);
+    // Each Try again reads afresh too, and only a Try again takes a failure out of view while the
+    // games are read again, so it comes back and is heard again where the read fails again. A read
+    // as the app comes back to the front keeps what was read in view, a failure as well, so the
+    // alert is not said again each time the visitor returns.
+    const [retries, setRetries] = useState(0);
+    const read = useLent(
+        running ? `all|${String(arrivals)}|${String(retries)}` : null,
+        open,
+        now,
+        (earlier) => !('failed' in earlier.lent) || earlier.key.endsWith(`|${String(retries)}`)
+    );
     if (read === null) return null;
     if ('failed' in read.lent)
         return (
             <Failure
                 words={read.lent.failed}
                 onTryAgain={() => {
-                    setArrivals((count) => count + 1);
+                    setRetries((count) => count + 1);
                 }}
             />
         );

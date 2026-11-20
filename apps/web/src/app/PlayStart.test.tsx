@@ -168,6 +168,37 @@ describe('the start screen', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent(BLOCKED_DATABASE);
     });
 
+    it('keeps a failure on the page as the app comes back to the front, so it is not said again', async () => {
+        const { open, nextRead } = await database(true);
+        let tries = 0;
+        render(
+            <PlayStart
+                open={() => {
+                    tries += 1;
+                    return tries <= 2 ? Promise.reject(new Error(BLOCKED_DATABASE)) : open();
+                }}
+            />
+        );
+        const alert = await screen.findByRole('alert');
+        act(() => {
+            window.dispatchEvent(new Event('pageshow'));
+        });
+        expect(screen.getByRole('alert')).toBe(alert);
+        await waitFor(() => {
+            expect(tries).toBe(2);
+        });
+        await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(screen.getByRole('alert')).toBe(alert);
+        // A read that works takes the failure's place.
+        const read = nextRead();
+        act(() => {
+            window.dispatchEvent(new Event('pageshow'));
+        });
+        await act(() => read);
+        expect(await screen.findByRole('region', { name: 'Game in play' })).toBeTruthy();
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('discards one game at a time, letting a second discard go while the first runs', async () => {
         const { open, factory } = await database(true);
         const other = await openStore(factory);
