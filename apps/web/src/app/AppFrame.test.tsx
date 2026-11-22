@@ -83,7 +83,10 @@ describe("the app's frame", () => {
     });
 
     it('leaves no timer running once a frame showing a toast is taken away', async () => {
-        vi.useFakeTimers();
+        // Only the page's timers are faked, so the frame each test waits for once it is done runs.
+        vi.useFakeTimers({
+            toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+        });
         const Saver = () => {
             const show = useToast();
             return (

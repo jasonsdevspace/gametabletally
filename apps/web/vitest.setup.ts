@@ -4,10 +4,11 @@ import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 /*
- * A focus request a screen asks for as it is taken away still lands, a frame later, on the main
- * region of whatever page is drawn then, and a focus the page moves before a request lands keeps
- * that request from landing. Each test waits out that frame once its screens are gone, so a
- * request its last press asked for never lands in the next test's page.
+ * A focus request still waiting as a screen is taken away is made then, and the kit lands it on
+ * the next frame, on the main region of whatever page is drawn by then where its target has gone.
+ * A focus the page moves before a request lands keeps that request from landing. Each test waits
+ * out that frame once its screens are gone, so a request its last press asked for never lands in
+ * the next test's page.
  */
 afterEach(async () => {
     cleanup();
