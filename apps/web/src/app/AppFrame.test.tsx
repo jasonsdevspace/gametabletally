@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppFrame, currentOf, Dock, useToast } from './AppFrame.js';
 
@@ -82,6 +82,37 @@ describe("the app's frame", () => {
         });
     });
 
+    it('leaves no timer running once a frame showing a toast is taken away', async () => {
+        vi.useFakeTimers();
+        const Saver = () => {
+            const show = useToast();
+            return (
+                <button type="button" onClick={() => show('Round 3 saved.')}>
+                    Save
+                </button>
+            );
+        };
+        const { unmount } = render(
+            <AppFrame screen="game" title="Game in play">
+                <Saver />
+            </AppFrame>
+        );
+        act(() => {
+            screen.getByRole('button', { name: 'Save' }).click();
+        });
+        act(() => {
+            vi.advanceTimersByTime(150);
+        });
+        expect(screen.getByRole('status')).toHaveTextContent('Round 3 saved.');
+        unmount();
+        // Microtasks run, as the kit takes the toast down in one, and the faked clock stands still,
+        // so the toast's wait before it leaves, still set, is counted rather than run out.
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
     it("draws a screen's dock in the frame, after the body, and none for a screen with no dock", () => {
         const { rerender } = render(<AppFrame screen="play" title="Play" />);
         expect(screen.queryByRole('region', { name: 'Actions' })).toBeNull();
@@ -99,4 +130,8 @@ describe("the app's frame", () => {
         rerender(<AppFrame screen="play" title="Play" />);
         expect(screen.queryByRole('region', { name: 'Actions' })).toBeNull();
     });
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });
