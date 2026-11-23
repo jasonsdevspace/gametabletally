@@ -182,9 +182,15 @@ export const AppFrame = ({
     const place = useMemo(() => ({ element: dock, hold }), [dock, hold]);
 
     // Attached as the toast is drawn, before any screen's effect runs, so a screen can show a
-    // toast as it arrives.
-    const attach = useCallback((element: HTMLDivElement | null) => {
-        shown.current = element ? attachToast(element) : null;
+    // toast as it arrives, and taken down by its signal as the frame goes, so its message, its
+    // timer and its listeners go with it.
+    const attach = useCallback((element: HTMLDivElement) => {
+        const controller = new AbortController();
+        shown.current = attachToast(element, { signal: controller.signal });
+        return () => {
+            controller.abort();
+            shown.current = null;
+        };
     }, []);
 
     // The same function for the frame's life, which reaches the toast once it is attached.

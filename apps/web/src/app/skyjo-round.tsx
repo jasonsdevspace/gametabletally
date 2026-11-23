@@ -5,7 +5,7 @@ import {
     useFocusAfterDraw,
     useRoving,
 } from '@jasonsdevspace/design-kit/react';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Play, previewWith, stepAfter } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
@@ -247,22 +247,17 @@ const CardPad = ({ input, off, describedBy, fresh, set }: PadParts) => {
     const full = cards.length >= MOST_CARDS;
     const stripRef = useRef<HTMLDivElement>(null);
     const padRef = useRef<HTMLDivElement>(null);
-    // Each grid's ref holds it for the focus below and attaches it to the kit's keys, the same
-    // across renders, so a press that draws the grid again keeps its stop where it is.
-    const stripAt = useCallback(
-        (element: HTMLDivElement | null) => {
-            stripRef.current = element;
-            return strip(element);
-        },
-        [strip]
-    );
-    const padAt = useCallback(
-        (element: HTMLDivElement | null) => {
-            padRef.current = element;
-            return pad(element);
-        },
-        [pad]
-    );
+    // Each grid's ref holds it for the focus below and attaches it to the kit's keys. The kit keeps
+    // a grid's control through a ref made afresh as a press draws the grid again, so its stop stays
+    // where it is.
+    const stripAt = (element: HTMLDivElement) => {
+        stripRef.current = element;
+        return strip(element);
+    };
+    const padAt = (element: HTMLDivElement) => {
+        padRef.current = element;
+        return pad(element);
+    };
     // Where focus goes once a card taken out is drawn, by its place in the strip, or the pad's stop
     // once the strip is empty.
     const focusAfterDraw = useFocusAfterDraw();
@@ -509,15 +504,17 @@ export const SkyjoRound = ({
         if (why !== '') say(why);
     }, [why, say]);
     // Come back from who ended the round, focus goes to the player's keys, with why it is there.
+    // The request is called off where the keys go before it lands, so it never lands elsewhere.
     useEffect(() => {
-        if (!arrived) return;
-        focusAfterDraw(() => document.querySelector('#skyjo-entry [tabindex="0"]'));
+        if (!arrived) return undefined;
+        const off = focusAfterDraw(() => document.querySelector('#skyjo-entry [tabindex="0"]'));
         const held = heldOf(draft.round.entries[player]);
         say(
             held === undefined
                 ? `Change ${name}'s total.`
                 : `Change ${name}'s total. It is ${spokenOf(held)}.`
         );
+        return off;
         // Said once, as the player is come back to.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
     }, []);
@@ -645,13 +642,16 @@ export const SkyjoEnder = ({
 
     // Focus moves into the question as it is drawn, at the choice made or the first one, and who
     // is out of the round is said, since a skip that brought the round here was said nowhere else.
+    // The request is called off where the question goes before it lands, as on a press that goes
+    // back to the last total, so it never sends focus to the screen's main region in its place.
     const field = useRef<HTMLFieldSetElement>(null);
     useEffect(() => {
-        focusAfterDraw(() => {
+        const off = focusAfterDraw(() => {
             const radios = field.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
             return [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0] ?? null;
         });
         if (out.length > 0) say(outWords(out.map(nameOf)));
+        return off;
         // Said once, as the question is reached.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
     }, []);
