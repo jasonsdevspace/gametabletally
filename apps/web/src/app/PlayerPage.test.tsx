@@ -75,11 +75,27 @@ afterEach(() => {
 });
 
 describe("a player's page", () => {
-    it('names the player and how many games they have played', async () => {
+    it('names the player, and counts a game they have in play in no record', async () => {
         await draw('ann');
         expect(await screen.findByRole('heading', { name: 'Ann' })).toBeVisible();
-        expect(screen.getByText('1 game played.')).toBeVisible();
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(screen.getByText(/^No finished games yet\./)).toHaveTextContent(
+            'A game in play counts once it ends.'
+        );
         expect(nameField()).toHaveValue('Ann');
+    });
+
+    it('says what will appear for a player who has played nothing, and how to start a game', async () => {
+        await draw('cat');
+        await screen.findByRole('heading', { name: 'Cat' });
+        expect(screen.getByText(/^No finished games yet\./)).toHaveTextContent(
+            'Once Cat finishes a game, its games played and won, best total and average show here.'
+        );
+        expect(screen.getByText(/^No finished games yet\./)).not.toHaveTextContent('in play');
+        expect(screen.getByRole('link', { name: 'Start a game' })).toHaveAttribute(
+            'href',
+            '/play/'
+        );
     });
 
     it('renames the player as the field is left, and says so', async () => {
