@@ -74,10 +74,14 @@ paint and layout shift, and a budget for the script and style each carries.
 
 A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
 passed, and a merge that fails one is not deployed. The live address counts page views with
-[Plausible](https://plausible.io/), with no cookie, nothing stored on the phone and no count for a
-browser that sends Global Privacy Control. A page is sent by its path alone, so the id of a game or
-a player never leaves the phone, and no other address, a local build or a test among them, is
-counted.
+[Plausible](https://plausible.io/), with no cookie and no count for a browser that sends Global
+Privacy Control. A page is sent by its path alone, so the id of a game or a player never leaves the
+phone, and no other address, a local build or a test among them, is counted. Beside page views it
+counts a game started and a game finished, each with the game's name and nothing else, and an
+install where the browser reports one. An event made with no connection is kept in local storage,
+up to a limit past which the newest are dropped, and sent once the connection returns. That list is
+the only thing counting stores on the phone. Marking the events as goals in Plausible is done by
+hand in its dashboard.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the

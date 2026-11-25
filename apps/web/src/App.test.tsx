@@ -199,6 +199,21 @@ describe("the website's pages", () => {
         expect(screen.getByRole('button', { name: 'Install the app' })).toBeVisible();
     });
 
+    it('says on the about page what is counted, and that games and players never leave the phone', () => {
+        at('/about/');
+        const privacy = screen.getByRole('region', { name: 'Privacy' }).textContent;
+        for (const words of [
+            'a game is started',
+            'a game is finished',
+            'the app is installed',
+            "the game's name",
+            'never leave the phone',
+            'sets no cookies',
+            'Global Privacy Control',
+        ])
+            expect(privacy).toContain(words);
+    });
+
     it('holds the theme switch on the about page, shown once the page runs', () => {
         at('/about/');
         const group = screen.getByRole('radiogroup', { name: 'Theme' });

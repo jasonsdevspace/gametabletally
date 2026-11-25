@@ -1,21 +1,71 @@
+import type { PlausibleEventOptions } from '@plausible-analytics/tracker';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { counts, countVisits, DOMAIN, pathsOnly, stopCounting } from './analytics.js';
+import {
+    countEvent,
+    counts,
+    countVisits,
+    DOMAIN,
+    KEPT,
+    MOST_KEPT,
+    pathsOnly,
+    stopCounting,
+} from './analytics.js';
 import { navigate } from './navigation.js';
 
-/* Page views counted on the live address only, by path alone, and never in the way of the app. */
+/*
+ * Page views and the three events counted on the live address only, by path alone, with the game's
+ * name the only thing an event carries, events made with no connection kept and sent later, and
+ * never in the way of the app.
+ */
 
 const live = { hostname: DOMAIN };
 
 /** A tracker that records what it was started with and each page view it was asked to send. */
 const tracker = () => {
     const init = vi.fn();
-    const track = vi.fn();
+    const track = vi.fn<(name: string, options: PlausibleEventOptions) => void>();
     return { init, track, load: () => Promise.resolve({ init, track }) };
 };
 
+/**
+ * A tracker over a connection the test turns off and on, which records each event that gets
+ * through by its name and what it carries, and answers each send as Plausible or a lost
+ * connection would.
+ */
+const network = () => {
+    const sent: { name: string; props: unknown }[] = [];
+    let connected = true;
+    const track = vi.fn((name: string, options: PlausibleEventOptions) => {
+        if (connected && name !== 'pageview') sent.push({ name, props: options.props });
+        options.callback?.(
+            connected ? { status: 202 } : { error: new TypeError('Failed to fetch') }
+        );
+    });
+    return {
+        sent,
+        load: () => Promise.resolve({ init: vi.fn(), track }),
+        lose: () => {
+            connected = false;
+        },
+        /** Gets the connection back without the browser saying so. */
+        recover: () => {
+            connected = true;
+        },
+        /** Gets the connection back, as the browser says when it does. */
+        reconnect: () => {
+            connected = true;
+            window.dispatchEvent(new Event('online'));
+        },
+    };
+};
+
+/** The events kept on the phone, as stored. */
+const kept = (): unknown => JSON.parse(localStorage.getItem(KEPT) ?? '[]');
+
 afterEach(() => {
     stopCounting();
+    localStorage.clear();
     window.history.replaceState(null, '', '/');
 });
 
@@ -43,8 +93,9 @@ describe('starting the count', () => {
             bindToWindow: false,
             logging: false,
         });
-        expect(track).toHaveBeenCalledTimes(1);
-        expect(track).toHaveBeenCalledWith('pageview', {});
+        expect(track.mock.calls.map(([name, options]) => [name, Object.keys(options)])).toEqual([
+            ['pageview', ['callback']],
+        ]);
     });
 
     it('never loads the tracker where a visit does not count', async () => {
@@ -154,5 +205,119 @@ describe('what a page view sends', () => {
 
     it('sends nothing for a page whose address cannot be read', () => {
         expect(pathsOnly({ n: 'pageview', u: 'nowhere', d: DOMAIN, r: null })).toBeNull();
+    });
+});
+
+describe('the events counted', () => {
+    it("counts a game started and a game finished with the game's name and nothing else", async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'flip-7', live, {});
+        countEvent('Game finished', 'skyjo', live, {});
+        expect(sent).toEqual([
+            { name: 'Game started', props: { game: 'Flip 7' } },
+            { name: 'Game finished', props: { game: 'Skyjo' } },
+        ]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('counts an install with nothing beside it', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Install', undefined, live, {});
+        expect(sent).toEqual([{ name: 'Install', props: undefined }]);
+    });
+
+    it('counts nothing for a game the app does not know, so nothing typed is ever sent', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'Alice', live, {});
+        expect(sent).toEqual([]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('keeps nothing and sends nothing where a visit does not count', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'flip-7', { hostname: 'localhost' }, {});
+        countEvent('Install', undefined, live, { globalPrivacyControl: true });
+        expect(sent).toEqual([]);
+        expect(localStorage.getItem(KEPT)).toBeNull();
+    });
+});
+
+describe('events made with no connection', () => {
+    it('are kept on the phone and sent when the connection returns', async () => {
+        const { sent, load, lose, reconnect } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Game started', 'wizard', live, {});
+        countEvent('Game finished', 'wizard', live, {});
+        expect(sent).toEqual([]);
+        expect(kept()).toEqual([
+            ['Game started', 'Wizard'],
+            ['Game finished', 'Wizard'],
+        ]);
+        reconnect();
+        expect(sent).toEqual([
+            { name: 'Game started', props: { game: 'Wizard' } },
+            { name: 'Game finished', props: { game: 'Wizard' } },
+        ]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('are sent once a page view gets through, where the browser never said the connection was lost', async () => {
+        const { sent, load, lose, recover } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Install', undefined, live, {});
+        recover();
+        navigate('/play/');
+        expect(sent).toEqual([{ name: 'Install', props: undefined }]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('are sent by the next visit, made before the tracker starts', async () => {
+        countEvent('Game started', 'skyjo', live, {});
+        expect(kept()).toEqual([['Game started', 'Skyjo']]);
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        expect(sent).toEqual([{ name: 'Game started', props: { game: 'Skyjo' } }]);
+    });
+
+    it('are kept up to the limit, and past it the newest are dropped', async () => {
+        const { sent, load, lose, reconnect } = network();
+        await countVisits(live, {}, load);
+        lose();
+        for (let at = 0; at < MOST_KEPT; at += 1) countEvent('Game started', 'flip-7', live, {});
+        countEvent('Game finished', 'flip-7', live, {});
+        countEvent('Install', undefined, live, {});
+        expect(kept()).toHaveLength(MOST_KEPT);
+        reconnect();
+        expect(sent).toHaveLength(MOST_KEPT);
+        expect(sent.every(({ name }) => name === 'Game started')).toBe(true);
+    });
+
+    it('send nothing from a kept list changed on the phone but the three events, each with a game the app knows', async () => {
+        localStorage.setItem(
+            KEPT,
+            JSON.stringify([
+                ['Game started', 'Alice'],
+                ['Score', 229],
+                ['Install', 'g-7d1e'],
+                'Game started',
+                ['Game finished', 'Wizard'],
+            ])
+        );
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        expect(sent).toEqual([{ name: 'Game finished', props: { game: 'Wizard' } }]);
+    });
+
+    it('send nothing from a kept list that is not one', async () => {
+        localStorage.setItem(KEPT, '{not a list');
+        const { sent, load } = network();
+        expect(await countVisits(live, {}, load)).toBe(true);
+        expect(sent).toEqual([]);
     });
 });

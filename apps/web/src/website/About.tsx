@@ -10,8 +10,8 @@ import { listOf } from './games.js';
 import { NOT_AFFILIATED, Website } from './Website.js';
 
 /**
- * What the app is, whose games it names and does not own, the games saved on the phone, and the
- * switch for light and dark.
+ * What the app is, whose games it names and does not own, the games saved on the phone, what is
+ * counted and what never leaves the phone, and the switch for light and dark.
  */
 export const About = () => {
     const theme = useRef<HTMLDivElement>(null);
@@ -53,6 +53,26 @@ export const About = () => {
                     </p>
                 </section>
                 <Backup />
+                <section aria-labelledby="privacy">
+                    <h2 id="privacy">Privacy</h2>
+                    <p>
+                        Your games and your players never leave the phone. Names and scores are kept
+                        on the phone they were entered on and are not sent anywhere.
+                    </p>
+                    <p>
+                        The app counts how many people use it, with Plausible, which sets no cookies
+                        and does not follow you to other sites. It counts the pages opened, and each
+                        time a game is started, a game is finished and the app is installed. A game
+                        started or finished is counted with the game&apos;s name, such as Skyjo, and
+                        nothing else. No count holds a name, a score or anything that says who you
+                        are.
+                    </p>
+                    <p>
+                        With no connection, these counts are kept on the phone and sent once it is
+                        back. If too many pile up, the newest are dropped. A browser set to send
+                        Global Privacy Control is not counted at all.
+                    </p>
+                </section>
                 <section aria-labelledby="look">
                     <h2 id="look">Light and dark</h2>
                     <div ref={theme}>
