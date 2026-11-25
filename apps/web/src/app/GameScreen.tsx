@@ -13,6 +13,7 @@ import { type Play, stepAfter } from '../play/play.js';
 import { changedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { isRecord, type SavedStep } from '../store/format.js';
 import { Dock } from './AppFrame.js';
+import { useKeepAwake } from './awake.js';
 import { Failure } from './failure.js';
 import { gameNameOf } from './in-play.js';
 import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
@@ -394,6 +395,8 @@ const Entry = ({
 }) => {
     const summary = useSummary(play);
     const game = useGame(play, id);
+    // The screen stays lit while the game is in play, and not once it is over.
+    useKeepAwake(game !== undefined && game.draft !== null);
     // The address names a round being changed, so the bar and the page's title do. One arrived at
     // another way, such as Back to the game, is put right in place, as is one that names a round
     // no longer opened.

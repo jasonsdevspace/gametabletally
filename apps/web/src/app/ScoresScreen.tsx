@@ -8,6 +8,7 @@ import type { GameInPlay, Play } from '../play/play.js';
 import { type ChangedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
+import { useKeepAwake } from './awake.js';
 import { canEnter, gameNameOf } from './in-play.js';
 import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { useSummary } from './summary.js';
@@ -384,6 +385,8 @@ const Scores = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const game = useGame(play, id);
+    // The screen stays lit while the game is in play, and not once it is over.
+    useKeepAwake(game !== undefined && game.draft !== null);
     if (!game) return <GameGone />;
     const { result, draft } = game;
     const back =
