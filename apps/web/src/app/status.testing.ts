@@ -6,8 +6,9 @@ import { appLine } from './render.testing.js';
 /**
  * Waits for the kit's status line to say the words, which it puts in a moment after it is told and
  * takes away a while later, so a test waits for them before anything else it awaits. It waits up
- * to the two seconds words stay on the line, since words said after a save to the database in
- * memory can take longer than the usual second to come on a busy machine.
+ * to the two seconds words stay on the line, which gives a slow run room to reach them. Words that
+ * never come are not a matter of time: a press made while its button is marked off is dropped and
+ * says nothing, so a test waits for the button to be live before it presses it.
  */
 export const heard = (line: HTMLElement, words: string) =>
     waitFor(
