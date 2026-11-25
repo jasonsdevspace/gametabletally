@@ -146,3 +146,19 @@ describe("the browser's offer to install", () => {
         expect(result.current.kind).toBe('none');
     });
 });
+
+describe('the count of installs', () => {
+    it('counts an install where the browser reports one, and nothing for an offer', () => {
+        openAs(false);
+        const count = vi.fn();
+        stop = listenForInstall(count);
+        act(() => {
+            window.dispatchEvent(offerOf('accepted').event);
+        });
+        expect(count).not.toHaveBeenCalled();
+        act(() => {
+            window.dispatchEvent(new Event('appinstalled'));
+        });
+        expect(count.mock.calls).toEqual([['Install']]);
+    });
+});

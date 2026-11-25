@@ -668,6 +668,53 @@ describe('leaving a game', () => {
     });
 });
 
+describe('the events counted', () => {
+    /** A model that hands each event it counts to a spy, in place of the count of visits. */
+    const counted = async () => {
+        const count = vi.fn();
+        const store = await openStore(new IDBFactory(), 'play');
+        return { count, play: openPlay(store, clock(), undefined, count) };
+    };
+
+    it('counts a game started by the game it is, and nothing about its players', async () => {
+        const { count, play } = await counted();
+        await play.start(newGame('flip-7'));
+        expect(count.mock.calls).toEqual([['Game started', 'flip-7']]);
+    });
+
+    it('counts a game finished once, however often it is put back in play and ended again', async () => {
+        const { count, play } = await counted();
+        await play.start(newGame('skyjo', 'g-1', ['ann', 'ben']));
+        await play.enter('g-1', { total: 50 });
+        await play.enter('g-1', { total: 0 });
+        await play.enter('g-1', 'ben');
+        await play.saveRound('g-1');
+        await play.reopen('g-1', 0);
+        await play.goTo('g-1', { part: 'entry', player: 'ann' });
+        await play.enter('g-1', { total: 100 });
+        expect(await play.saveRound('g-1')).toEqual({ saved: true, outcome: 'ended' });
+        await play.undo();
+        await play.reopen('g-1', 0);
+        await play.goTo('g-1', { part: 'entry', player: 'ann' });
+        await play.enter('g-1', { total: 100 });
+        expect(await play.saveRound('g-1')).toEqual({ saved: true, outcome: 'ended' });
+        expect(count.mock.calls).toEqual([
+            ['Game started', 'skyjo'],
+            ['Game finished', 'skyjo'],
+        ]);
+    });
+
+    it('counts nothing for a round that does not end the game', async () => {
+        const { count, play } = await counted();
+        await play.start(newGame('flip-7'));
+        await play.enter('g-1', hand([4]));
+        await play.enter('g-1', hand([5]));
+        await play.enter('g-1', hand([6]));
+        await play.saveRound('g-1');
+        expect(count.mock.calls).toEqual([['Game started', 'flip-7']]);
+    });
+});
+
 describe('the module', () => {
     it("keeps one snapshot until something changes, and tells each listener when it does, as React's hook for an outside store needs", async () => {
         const { play } = await setUp();

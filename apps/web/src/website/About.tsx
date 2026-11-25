@@ -10,8 +10,8 @@ import { listOf } from './games.js';
 import { NOT_AFFILIATED, Website } from './Website.js';
 
 /**
- * What the app is, whose games it names and does not own, the games saved on the phone, and the
- * switch for light and dark.
+ * What the app is, whose games it names and does not own, the games saved on the phone, what is
+ * counted and what never leaves the phone, and the switch for light and dark.
  */
 export const About = () => {
     const theme = useRef<HTMLDivElement>(null);
@@ -53,6 +53,33 @@ export const About = () => {
                     </p>
                 </section>
                 <Backup />
+                <section aria-labelledby="privacy">
+                    <h2 id="privacy">Privacy</h2>
+                    <p>
+                        The app never sends your games or your players anywhere. Names and scores
+                        stay on the phone they were entered on, and leave it only in a file you save
+                        yourself.
+                    </p>
+                    <p>
+                        To see how many people use it, the app counts visits with a service called
+                        Plausible. Plausible sets no cookies and does not follow you to other sites.
+                    </p>
+                    <p>
+                        It counts the pages you open, each game started, each game finished and each
+                        install. A game started or finished is counted with the game&apos;s name,
+                        such as Skyjo, and nothing else. No count holds a name, a score or anything
+                        that says who you are. With each page, Plausible also notes how long it
+                        stayed open and how far it was scrolled, and works out the country, browser
+                        and kind of device from the request without keeping the connection&apos;s
+                        address.
+                    </p>
+                    <p>
+                        With no connection, a game started, a game finished or an install is kept on
+                        the phone and sent once the connection is back. If too many are waiting, new
+                        ones are dropped. If your browser sends Global Privacy Control, a setting
+                        that asks sites not to track you, nothing is counted at all.
+                    </p>
+                </section>
                 <section aria-labelledby="look">
                     <h2 id="look">Light and dark</h2>
                     <div ref={theme}>

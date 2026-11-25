@@ -199,6 +199,23 @@ describe("the website's pages", () => {
         expect(screen.getByRole('button', { name: 'Install the app' })).toBeVisible();
     });
 
+    it('says on the about page what is counted, and that games and players are never sent', () => {
+        at('/about/');
+        const privacy = screen.getByRole('region', { name: 'Privacy' }).textContent;
+        for (const words of [
+            'never sends your games or your players anywhere',
+            'each game started',
+            'each game finished',
+            'each install',
+            "the game's name",
+            'sets no cookies',
+            'how long',
+            'how far it was scrolled',
+            'Global Privacy Control',
+        ])
+            expect(privacy).toContain(words);
+    });
+
     it('holds the theme switch on the about page, shown once the page runs', () => {
         at('/about/');
         const group = screen.getByRole('radiogroup', { name: 'Theme' });
