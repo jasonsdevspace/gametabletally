@@ -34,9 +34,10 @@ const LAYOUT_SHIFT = 0.1;
 /**
  * The most script and style a page may carry, in bytes sent over the network. Every screen ships
  * in the one script, so its budget leaves room above what the build sends for the screens that
- * keep score, and was raised with the player's record to keep that room.
+ * keep score. It was raised with the player's record, and again with the rule options and the count
+ * of games, and holds until each screen loads its own code, when it is set from the first load.
  */
-const BUDGET = { Script: 125_000, Stylesheet: 30_000 };
+const BUDGET = { Script: 126_000, Stylesheet: 30_000 };
 /** How many traces a page that misses is judged on. */
 const TRACES = 3;
 
