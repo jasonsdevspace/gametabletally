@@ -39,6 +39,20 @@ const HASHED = /^\/assets\/[^/]+-[\w-]{8}\.\w+$/;
 export const installCacheOf = (file: string): 'default' | 'reload' =>
     HASHED.test(file) ? 'default' : 'reload';
 
+/**
+ * Fetches a file for the install, as `installCacheOf` says, and a hashed file again from the server
+ * where the browser's cache answered with a failure, such as a 404 it kept from a moment during a
+ * deploy, so the install never fails on a stale refusal.
+ */
+export const fetchForInstall = async (
+    file: string,
+    get: (file: string, cache: 'default' | 'reload') => Promise<Response>
+): Promise<Response> => {
+    const cache = installCacheOf(file);
+    const response = await get(file, cache);
+    return response.ok || cache === 'reload' ? response : get(file, 'reload');
+};
+
 /** The list of files a build's worker caches, and the version that names its cache. */
 export interface Precache {
     readonly version: string;

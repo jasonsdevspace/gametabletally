@@ -14,7 +14,11 @@ import { expect, type Page, test } from './support.js';
 test.use({ serviceWorkers: 'allow' });
 
 /** The cache the build's worker keeps the app in, named for what the build holds. */
-const CACHE = `game-table-tally-${precacheOf(fileURLToPath(new URL('../dist', import.meta.url))).version}`;
+const PRECACHE = precacheOf(fileURLToPath(new URL('../dist', import.meta.url)));
+const CACHE = `game-table-tally-${PRECACHE.version}`;
+
+/** Every file the build's worker caches. */
+const FILES: readonly string[] = PRECACHE.files;
 
 /**
  * The paths the worker itself asks the network for, from now on. Once it is installed it holds
@@ -98,30 +102,40 @@ test('once the worker serves the page, a move to a screen not yet opened draws w
 
 test('installs without downloading again a hashed file the page loaded, and fetches every page and unhashed file afresh', async ({
     page,
+    baseURL,
 }) => {
+    const app = new URL(baseURL ?? '/').origin;
     // The files the page loaded before the worker began to install, which the browser keeps, and
-    // what the worker took from the network rather than the browser's cache, which sends no body.
+    // the body each file the worker fetched came with, which a copy from the browser's cache lacks.
     const loaded = new Set<string>();
-    const downloaded: string[] = [];
+    const bodies = new Map<string, Promise<number>>();
     let installing = false;
     page.context().on('requestfinished', (request) => {
-        const path = new URL(request.url()).pathname;
-        if (!request.serviceWorker()) {
-            if (!installing && path.startsWith('/assets/')) loaded.add(path);
-            return;
-        }
-        installing = true;
-        void request.sizes().then(({ responseBodySize }) => {
-            if (responseBodySize > 0) downloaded.push(path);
-        });
+        const { origin, pathname } = new URL(request.url());
+        if (origin !== app) return;
+        const path = pathname.endsWith('/') ? `${pathname}index.html` : pathname;
+        if (request.serviceWorker()) {
+            installing = true;
+            bodies.set(
+                path,
+                request.sizes().then(({ responseBodySize }) => responseBodySize)
+            );
+        } else if (!installing) loaded.add(path);
     });
     await visitOnce(page);
-    // The install is over once the worker is ready, and what it read is counted as each finishes.
-    await expect
-        .poll(() => downloaded)
-        .toEqual(expect.arrayContaining(['/index.html', '/404.html', '/manifest.webmanifest']));
-    expect(loaded.size).toBeGreaterThan(0);
-    expect(downloaded.filter((path) => loaded.has(path))).toEqual([]);
+    await expect.poll(() => FILES.filter((file) => !bodies.has(file))).toEqual([]);
+    const body = new Map(
+        await Promise.all([...bodies].map(async ([path, size]) => [path, await size] as const))
+    );
+    const kept = [...loaded].filter((path) => FILES.includes(path));
+    // The build names every file under /assets/ by its content's hash, and nothing else.
+    const hashed = kept.filter((path) => path.startsWith('/assets/'));
+    const fresh = kept.filter((path) => !path.startsWith('/assets/'));
+    // The page loaded both kinds, its scripts and its fonts among them, so both halves are held.
+    expect(hashed.length).toBeGreaterThan(0);
+    expect(fresh.filter((path) => path.startsWith('/fonts/')).length).toBeGreaterThan(0);
+    expect(hashed.filter((path) => (body.get(path) ?? 1) > 0)).toEqual([]);
+    expect(fresh.filter((path) => (body.get(path) ?? 0) <= 0)).toEqual([]);
 });
 
 test('a navigation is answered by the worker and never reaches the network', async ({ page }) => {

@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { answerFor, installCacheOf, readPrecache } from './answer.js';
+import { answerFor, fetchForInstall, readPrecache } from './answer.js';
 
 /**
  * The service worker: the whole app, cached on the first visit, so every page opens again with no
@@ -25,15 +25,21 @@ const FILES = new Set(PRECACHE.files);
 self.addEventListener('install', (event) => {
     // Each page and unhashed file straight from the server, past the browser's own cache, which
     // could still hold a page of the build before and leave this worker caching two builds at once.
-    // A hashed file can only be this build's, so the copy the page just loaded is used.
+    // A hashed file can only be this build's, so the copy the page just loaded is used. Every file
+    // is fetched before any is kept, so an install that fails keeps none of them.
     event.waitUntil(
-        caches
-            .open(CACHE)
-            .then((cache) =>
-                cache.addAll(
-                    PRECACHE.files.map((file) => new Request(file, { cache: installCacheOf(file) }))
-                )
-            )
+        Promise.all(
+            PRECACHE.files.map(async (file) => {
+                const response = await fetchForInstall(file, (path, cache) =>
+                    fetch(new Request(path, { cache }))
+                );
+                if (!response.ok) throw new Error(`${file} answered ${String(response.status)}.`);
+                return [file, response] as const;
+            })
+        ).then(async (fetched) => {
+            const cache = await caches.open(CACHE);
+            await Promise.all(fetched.map(([file, response]) => cache.put(file, response)));
+        })
     );
 });
 
