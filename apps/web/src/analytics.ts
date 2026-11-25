@@ -20,9 +20,11 @@ import { NOT_FOUND_FILE, routeAt } from './routes.js';
  * Beside page views, three events are counted and no others: a game started and a game finished,
  * each with the game's name from the app's own list and nothing else, and an install. An event is
  * kept on the phone until it is sent, and taken off the list as it is sent, so it is never sent
- * twice. One that fails while the browser says it is offline goes back on the list and is sent once
- * the connection returns. One that fails while the browser says it is online, as a blocker makes
- * it, is dropped, so the list never holds what can never be sent. One page at a time sends.
+ * twice. One that fails with the connection lost at any point while it was on its way goes back on
+ * the list and is sent once the connection returns, even when its failure arrives after it has. One
+ * that fails with the browser online throughout, as a blocker makes it, is dropped, so the list
+ * never holds what can never be sent. One page at a time sends, and every change to the list is
+ * made under a lock, so two pages never write over each other.
  *
  * The list is kept in local storage, the smallest place that outlasts the page: a short list under
  * one key, read and written at once, with no database to open or upgrade and no worker to wake.
@@ -159,13 +161,45 @@ const done = (result: Parameters<NonNullable<PlausibleEventOptions['callback']>>
     !(result && 'error' in result);
 
 /**
- * What became of a send: it got through, or failed while the browser said it was offline, so it is
- * kept, or failed while the browser said it was online, so it is dropped.
+ * What became of a send: it got through, or failed with the connection lost at some point while it
+ * was on its way, so it is kept, or failed with the browser online throughout, so it is dropped.
  */
 type Outcome = 'through' | 'offline' | 'online';
 
-/** What became of a send that did not get through, by what the browser says at that moment. */
-const failed = (): Outcome => (navigator.onLine ? 'online' : 'offline');
+/** How many times the browser has said the connection went, so a send can tell it went meanwhile. */
+let losses = 0;
+
+/** Counts a lost connection. */
+const lost = (): void => {
+    losses += 1;
+};
+
+/**
+ * Starts watching a send, and gives what became of it should it fail. A send made with no
+ * connection, or one the connection was lost under, is kept even when its failure arrives after the
+ * connection is back, so only a send refused with the browser online throughout, as a blocker
+ * refuses it, is dropped.
+ */
+const watch = (): (() => Outcome) => {
+    const offline = !navigator.onLine;
+    const before = losses;
+    return () => (offline || losses !== before || !navigator.onLine ? 'offline' : 'online');
+};
+
+/** The browser's locks, or nothing where it has none. */
+const lockManager = (): LockManager | null =>
+    typeof navigator.locks === 'object' ? navigator.locks : null;
+
+/**
+ * Makes a change to the list under a lock of its own, where the browser has one, so two pages that
+ * change it at once never write over each other. The lock is held only for the change, never for a
+ * send, so a page counting an event never waits on the network.
+ */
+const changing = <T>(change: () => T): Promise<T> => {
+    const locks = lockManager();
+    if (locks === null) return Promise.resolve(change());
+    return locks.request(`${KEPT}-list`, change);
+};
 
 /** Sends an event, and resolves to what became of it, once counting has started. */
 let send: ((event: Kept) => Promise<Outcome>) | null = null;
@@ -179,9 +213,9 @@ let again = false;
 /**
  * Sends the events waiting, oldest first. Each is taken off the list by its id before it is sent,
  * so a page that closes with a send on its way, or another page sending at the same time, never
- * sends it again. One that fails while the browser says it is offline is put back at the head of
- * the list, to send when the connection returns. One that fails while the browser is online, as a
- * blocker makes it, is dropped, so the list never holds events that can never be sent. One page at
+ * sends it again. One that fails with the connection lost while it was on its way is put back at
+ * the head of the list, to send when the connection returns. One that fails with the browser online
+ * throughout, as a blocker makes it, is dropped, so the list never holds events that can never be sent. One page at
  * a time sends, under a lock where the browser has one.
  */
 const sendKept = (): void => {
@@ -193,15 +227,21 @@ const sendKept = (): void => {
     const sendOne = send;
     sending = true;
     const round = async () => {
-        for (let [first] = kept(); first !== undefined; [first] = kept()) {
-            const event = first;
-            keep(kept().filter(({ i }) => i !== event.i));
+        for (;;) {
+            const event = await changing(() => {
+                const [first, ...rest] = kept();
+                if (first !== undefined) keep(rest);
+                return first;
+            });
+            if (event === undefined) return;
             if ((await sendOne(event)) !== 'offline') continue;
-            keep([event, ...kept()].slice(0, MOST_KEPT));
+            await changing(() => {
+                keep([event, ...kept()].slice(0, MOST_KEPT));
+            });
             return;
         }
     };
-    const locks = typeof navigator.locks === 'object' ? navigator.locks : null;
+    const locks = lockManager();
     void (
         locks === null
             ? round()
@@ -233,11 +273,14 @@ export const countEvent = (
     }
     const named = GAMES.find(({ id }) => id === game)?.name;
     if (game !== undefined && named === undefined) return;
-    const events = kept();
-    if (events.length >= MOST_KEPT) return;
     const i = Math.random().toString(36).slice(2);
-    keep([...events, named === undefined ? { i, n: name } : { i, n: name, g: named }]);
-    sendKept();
+    void changing(() => {
+        const events = kept();
+        if (events.length >= MOST_KEPT) return;
+        keep([...events, named === undefined ? { i, n: name } : { i, n: name, g: named }]);
+    })
+        .then(sendKept)
+        .catch(() => undefined);
 };
 
 /** Sends a page view for the address as it is, once counting has started. */
@@ -289,6 +332,7 @@ export const countVisits = async (
         };
         send = ({ n, g }) =>
             new Promise<Outcome>((sent) => {
+                const failed = watch();
                 const late = setTimeout(() => {
                     sent(failed());
                 }, SEND_LIMIT_MS);
@@ -302,6 +346,7 @@ export const countVisits = async (
             });
         window.addEventListener('popstate', countMove);
         window.addEventListener('online', sendKept);
+        window.addEventListener('offline', lost);
         countMove();
         sendKept();
         return true;
@@ -322,4 +367,6 @@ export const stopCounting = (): void => {
     stored = true;
     window.removeEventListener('popstate', countMove);
     window.removeEventListener('online', sendKept);
+    window.removeEventListener('offline', lost);
+    losses = 0;
 };

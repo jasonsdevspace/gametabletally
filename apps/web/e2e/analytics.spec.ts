@@ -46,7 +46,7 @@ interface Sent {
  * Serves the build at the live address, and answers Plausible, or refuses as a lost connection
  * would while the connection is off. Returns every request made to Plausible, every event that
  * reached it, and a switch for the connection, which turns the browser's connection off and on as
- * well, so the page hears that it went and came back.
+ * well, and waits until every open page says so.
  */
 const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
     const requests: Sent[] = [];
@@ -95,6 +95,10 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
         connect: async (on: boolean) => {
             connected = on;
             await context.setOffline(!on);
+            // Each open page hears the change in its own time, so the test goes on once every
+            // page says it, as a phone's pages have by the time anyone acts.
+            for (const each of context.pages())
+                await expect.poll(() => each.evaluate(() => navigator.onLine)).toBe(on);
         },
     };
 };

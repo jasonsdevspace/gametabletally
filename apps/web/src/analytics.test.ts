@@ -39,13 +39,15 @@ const network = () => {
     let connected = true;
     let online = true;
     let holding = false;
+    let late: (() => void)[] | null = null;
     vi.spyOn(navigator, 'onLine', 'get').mockImplementation(() => online);
     const track = vi.fn((name: string, options: PlausibleEventOptions) => {
         if (holding) return;
         if (connected && name !== 'pageview') sent.push({ name, props: options.props });
-        options.callback?.(
-            connected ? { status: 202 } : { error: new TypeError('Failed to fetch') }
-        );
+        const result = connected ? { status: 202 } : { error: new TypeError('Failed to fetch') };
+        const reply = () => options.callback?.(result);
+        if (late === null) reply();
+        else late.push(reply);
     });
     return {
         sent,
@@ -62,6 +64,16 @@ const network = () => {
         /** Leaves every send unanswered, as a page that closes leaves the one on its way. */
         hold: () => {
             holding = true;
+        },
+        /** Holds each answer back until `answer`, as a slow connection does. */
+        slow: () => {
+            late = [];
+        },
+        /** Gives every answer held back, each as it would have been when its send was made. */
+        answer: () => {
+            const replies = late ?? [];
+            late = null;
+            for (const reply of replies) reply();
         },
         /** Gets the connection back without the browser firing its event. */
         recover: () => {
@@ -383,6 +395,21 @@ describe('events made with no connection', () => {
             expect(kept()).toEqual([]);
         });
         expect(sent).toHaveLength(MOST_KEPT);
+    });
+
+    it('are kept when a send made with no connection fails only once the connection is back', async () => {
+        const { sent, load, lose, slow, answer, reconnect } = network();
+        await countVisits(live, {}, load);
+        await settle();
+        lose();
+        slow();
+        countEvent('Install', undefined, live, {});
+        reconnect();
+        answer();
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Install', props: undefined }]);
+        });
+        expect(kept()).toEqual([]);
     });
 
     it('are dropped when a send fails while the browser is online, as a blocker makes it', async () => {
