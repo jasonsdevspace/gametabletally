@@ -15,8 +15,10 @@ import { createPortal } from 'react-dom';
 import { Link } from '../navigation.js';
 import { fromHistory, hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
+import { AwakeProvider, useAwakeHolder } from './awake.js';
 import { Icon } from './icon.js';
 import { GamesProvider } from './opened-game.js';
+import { useUpdateOffer } from './update-offer.js';
 
 /**
  * The frame every screen for keeping score sits in: the design kit's app frame, with the screen's
@@ -181,6 +183,9 @@ export const AppFrame = ({
     readonly children?: ReactNode;
 }) => {
     const shown = useRef<ShowToast | null>(null);
+    const [toast, setToast] = useState<HTMLElement | null>(null);
+    // The message the toast was last asked to show, which says whether it still shows the offer.
+    const last = useRef<string | null>(null);
     const [dock, setDock] = useState<HTMLElement | null>(null);
     const [held, setHeld] = useState(0);
     const hold = useCallback(() => {
@@ -197,52 +202,59 @@ export const AppFrame = ({
     const attach = useCallback((element: HTMLDivElement) => {
         const controller = new AbortController();
         shown.current = attachToast(element, { signal: controller.signal });
+        setToast(element);
         return () => {
             controller.abort();
             shown.current = null;
+            setToast(null);
         };
     }, []);
 
     // The same function for the frame's life, which reaches the toast once it is attached.
-    const show = useCallback<ShowToast>(
-        (message, action) => shown.current?.(message, action) ?? (() => undefined),
-        []
-    );
+    const show = useCallback<ShowToast>((message, action) => {
+        last.current = message;
+        return shown.current?.(message, action) ?? (() => undefined);
+    }, []);
+    useUpdateOffer({ screen, search, show, toast, last });
+    // The screen stays lit while a screen about a game in play asks for it.
+    const awake = useAwakeHolder();
     return (
         <ToastContext.Provider value={show}>
             <GamesProvider>
-                <DockContext.Provider value={place}>
-                    <SkipLink target="main" />
-                    <div className="dk-app">
-                        <header className="dk-app-bar">
-                            <TallyMark size={32} />
-                            <h1 className="dk-app-title" id="screen-title">
-                                {title}
-                            </h1>
-                            {actionOf(screen)}
-                        </header>
-                        {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
-                        <main
-                            id="main"
-                            tabIndex={0}
-                            className="dk-app-body"
-                            aria-labelledby="screen-title"
-                        >
-                            {children}
-                        </main>
-                        <div className="dk-app-toast">
-                            <Toast ref={attach} />
+                <AwakeProvider value={awake}>
+                    <DockContext.Provider value={place}>
+                        <SkipLink target="main" />
+                        <div className="dk-app">
+                            <header className="dk-app-bar">
+                                <TallyMark size={32} />
+                                <h1 className="dk-app-title" id="screen-title">
+                                    {title}
+                                </h1>
+                                {actionOf(screen)}
+                            </header>
+                            {/* Named by the bar's heading, so focus arriving here says which screen it is. */}
+                            <main
+                                id="main"
+                                tabIndex={0}
+                                className="dk-app-body"
+                                aria-labelledby="screen-title"
+                            >
+                                {children}
+                            </main>
+                            <div className="dk-app-toast">
+                                <Toast ref={attach} />
+                            </div>
+                            {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
+                            <section
+                                ref={setDock}
+                                className="dk-app-dock"
+                                aria-label="Actions"
+                                hidden={held === 0}
+                            />
+                            <TabBar screen={screen} search={search} />
                         </div>
-                        {/* Hidden while no screen holds it, so its row closes and it is no landmark. */}
-                        <section
-                            ref={setDock}
-                            className="dk-app-dock"
-                            aria-label="Actions"
-                            hidden={held === 0}
-                        />
-                        <TabBar screen={screen} search={search} />
-                    </div>
-                </DockContext.Provider>
+                    </DockContext.Provider>
+                </AwakeProvider>
             </GamesProvider>
         </ToastContext.Provider>
     );

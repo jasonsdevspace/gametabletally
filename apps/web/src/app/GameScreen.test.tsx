@@ -1,11 +1,12 @@
 import type { Problem } from '@gametabletally/scoring';
 import { IDBFactory } from 'fake-indexeddb';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
+import { answered, noWakeLock, wakeLockBrowser } from './awake.testing.js';
 import { Flip7Keys, GameScreen, handOf, lineOf, refusalWords } from './GameScreen.js';
 import { act, appLine, fireEvent, render, screen, waitFor } from './render.testing.js';
 import { busyWordsOf, canSkip, comesAfter, floorWords, outWords } from './round.js';
@@ -286,6 +287,25 @@ describe('the game screen', () => {
         expect(screen.getByRole('link', { name: 'See the recap' }).getAttribute('href')).toBe(
             '/recap/?id=g-1'
         );
+    });
+});
+
+describe('keeping the screen awake through a game', () => {
+    afterEach(noWakeLock);
+
+    it('asks to keep the screen awake while the game is in play', async () => {
+        const { request } = wakeLockBrowser();
+        await draw();
+        await answered();
+        expect(request).toHaveBeenCalledWith('screen');
+    });
+
+    it('asks for nothing once the game is over', async () => {
+        const { request } = wakeLockBrowser();
+        await draw(flip7(null));
+        expect(await screen.findByText('This game of Flip 7 is over.')).toBeVisible();
+        await answered();
+        expect(request).not.toHaveBeenCalled();
     });
 });
 

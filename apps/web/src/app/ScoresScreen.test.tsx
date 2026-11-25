@@ -1,9 +1,10 @@
 import { IDBFactory } from 'fake-indexeddb';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
+import { answered, noWakeLock, wakeLockBrowser } from './awake.testing.js';
 import { render, screen, waitFor, within } from './render.testing.js';
 import { leadWords, placeWords, ScoresScreen, standingsOf } from './ScoresScreen.js';
 
@@ -256,5 +257,33 @@ describe('the scores screen', () => {
         const ben = screen.getByRole('rowheader', { name: /^Ben/ }).closest('tr');
         expect(ben?.textContent).toBe('Ben, 4 in allNothing yet4');
         expect(screen.getByRole('link', { name: 'Back to round 2' })).toBeTruthy();
+    });
+});
+
+describe('keeping the screen awake on the scores', () => {
+    afterEach(noWakeLock);
+
+    const round = {
+        entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) },
+    };
+
+    it('asks to keep the screen awake while the game is in play', async () => {
+        const { request } = wakeLockBrowser();
+        await draw(
+            saved('flip-7', [round], {
+                index: 1,
+                round: { entries: {}, out: [] },
+                step: { part: 'entry', player: 'ann' },
+            })
+        );
+        await answered();
+        expect(request).toHaveBeenCalledWith('screen');
+    });
+
+    it('asks for nothing once the game is over', async () => {
+        const { request } = wakeLockBrowser();
+        await draw(saved('flip-7', [round]));
+        await answered();
+        expect(request).not.toHaveBeenCalled();
     });
 });
