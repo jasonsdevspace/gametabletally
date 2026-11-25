@@ -15,8 +15,10 @@ import { createPortal } from 'react-dom';
 import { Link } from '../navigation.js';
 import { fromHistory, hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
+import { useAwake } from './awake.js';
 import { Icon } from './icon.js';
 import { GamesProvider } from './opened-game.js';
+import { useUpdateOffer } from './update-offer.js';
 
 /**
  * The frame every screen for keeping score sits in: the design kit's app frame, with the screen's
@@ -181,6 +183,9 @@ export const AppFrame = ({
     readonly children?: ReactNode;
 }) => {
     const shown = useRef<ShowToast | null>(null);
+    const [toast, setToast] = useState<HTMLElement | null>(null);
+    // The message the toast was last asked to show, which says whether it still shows the offer.
+    const last = useRef<string | null>(null);
     const [dock, setDock] = useState<HTMLElement | null>(null);
     const [held, setHeld] = useState(0);
     const hold = useCallback(() => {
@@ -197,17 +202,22 @@ export const AppFrame = ({
     const attach = useCallback((element: HTMLDivElement) => {
         const controller = new AbortController();
         shown.current = attachToast(element, { signal: controller.signal });
+        setToast(element);
         return () => {
             controller.abort();
             shown.current = null;
+            setToast(null);
         };
     }, []);
 
     // The same function for the frame's life, which reaches the toast once it is attached.
-    const show = useCallback<ShowToast>(
-        (message, action) => shown.current?.(message, action) ?? (() => undefined),
-        []
-    );
+    const show = useCallback<ShowToast>((message, action) => {
+        last.current = message;
+        return shown.current?.(message, action) ?? (() => undefined);
+    }, []);
+    useUpdateOffer({ screen, search, show, toast, last });
+    // The screen stays lit through a game in play, from the round to its scores and back.
+    useAwake(screen === 'game' || screen === 'scores');
     return (
         <ToastContext.Provider value={show}>
             <GamesProvider>

@@ -40,6 +40,26 @@ export const NEWER_DATABASE =
 export const BLOCKED_DATABASE =
     'Another tab of the app is open on an older version. Close it, then open the app again.';
 
+/** How a newer build has the database: it refused this page, or closed the store under it. */
+export type Newer = 'refused' | 'closed';
+
+const hearing = new Set<(how: Newer) => void>();
+
+/**
+ * Hears each time a newer build has the database, refusing a page that opens it or closing a store
+ * as it upgrades, so the app can offer that build or reload into it. Returns what stops hearing.
+ */
+export const hearNewer = (listener: (how: Newer) => void): (() => void) => {
+    hearing.add(listener);
+    return () => {
+        hearing.delete(listener);
+    };
+};
+
+const tell = (how: Newer) => {
+    for (const listener of hearing) listener(how);
+};
+
 /** A request's result, once it has one. */
 const settled = <Result>(request: IDBRequest<Result>): Promise<Result> =>
     new Promise((resolve, reject) => {
@@ -265,7 +285,8 @@ const storeOver = (database: IDBDatabase): Store => {
  * that opening at the new version runs. A database a newer build has already upgraded is
  * refused with a sentence a page can show, as a newer file is. An open tab lets go of the
  * database when a newer build asks to upgrade it, and a build that is kept waiting by a tab
- * that does not says so.
+ * that does not says so, and closes the connection that opens once that tab lets go, since no
+ * page is left listening to it and it would keep the next newer build waiting in turn.
  */
 export const openStore = async (
     factory: IDBFactory = indexedDB,
@@ -280,16 +301,21 @@ export const openStore = async (
             if (!database.objectStoreNames.contains(kind))
                 database.createObjectStore(kind, { keyPath });
     };
+    let refused = false;
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
         opening.onsuccess = () => {
-            resolve(opening.result);
+            if (refused) opening.result.close();
+            else resolve(opening.result);
         };
         opening.onblocked = () => {
+            refused = true;
             reject(new Error(BLOCKED_DATABASE));
         };
         opening.onerror = () => {
+            const newer = opening.error?.name === 'VersionError';
+            if (newer) tell('refused');
             reject(
-                opening.error?.name === 'VersionError'
+                newer
                     ? new Error(NEWER_DATABASE)
                     : (opening.error ?? new Error('The saved games could not be opened.'))
             );
@@ -298,6 +324,7 @@ export const openStore = async (
     const store = storeOver(database);
     database.onversionchange = () => {
         store.close();
+        tell('closed');
     };
     return store;
 };

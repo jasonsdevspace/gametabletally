@@ -11,7 +11,14 @@ import {
     type SavedPlayer,
     toScoreInput,
 } from './format.js';
-import { BLOCKED_DATABASE, keepStorage, NEWER_DATABASE, openStore, storageKept } from './store.js';
+import {
+    BLOCKED_DATABASE,
+    hearNewer,
+    keepStorage,
+    NEWER_DATABASE,
+    openStore,
+    storageKept,
+} from './store.js';
 
 /*
  * The store runs here against an IndexedDB that lives in memory, with the real one's
@@ -380,6 +387,49 @@ describe('a database and a build of different versions', () => {
             BLOCKED_DATABASE
         );
         held.close();
+    });
+
+    it('closes a connection that opens after it said it was kept waiting', async () => {
+        const factory = new IDBFactory();
+        const held = await openAt(factory, FORMAT_VERSION);
+        await expect(openStore(factory, 'gametabletally', FORMAT_VERSION + 1)).rejects.toThrow(
+            BLOCKED_DATABASE
+        );
+        // The tab that kept it waiting closes, so the open above goes through with no page
+        // listening. The next build is kept waiting by nothing only where that one was closed.
+        held.close();
+        const next = await openAt(factory, FORMAT_VERSION + 2);
+        expect(next.version).toBe(FORMAT_VERSION + 2);
+        next.close();
+    });
+
+    it('tells who listens when a newer build refuses this page or closes the store under it', async () => {
+        const heard: string[] = [];
+        const stop = hearNewer((how) => {
+            heard.push(how);
+        });
+        try {
+            const factory = new IDBFactory();
+            const store = await openStore(factory);
+            const upgraded = await openAt(factory, FORMAT_VERSION + 1);
+            expect(store.closed()).toBe(true);
+            upgraded.close();
+            await expect(openStore(factory)).rejects.toThrow(NEWER_DATABASE);
+            expect(heard).toEqual(['closed', 'refused']);
+        } finally {
+            stop();
+        }
+    });
+
+    it('tells no one when the page closes the store itself', async () => {
+        const heard = vi.fn();
+        const stop = hearNewer(heard);
+        try {
+            (await openStore(new IDBFactory())).close();
+            expect(heard).not.toHaveBeenCalled();
+        } finally {
+            stop();
+        }
     });
 });
 

@@ -10,7 +10,8 @@ import { answerFor, readPrecache } from './answer.js';
  * and never from the network. A page fetched fresh from a newer build would upgrade the phone's
  * database, and the next page from the cache would be the older build, refused by the database it
  * had just been using. A new worker installs and waits, and takes over once every page of the
- * app the phone has open is closed.
+ * app the phone has open is closed, or once a page asks it to, as the visitor agrees to the new
+ * version the page offers.
  */
 
 declare const self: ServiceWorkerGlobalScope;
@@ -30,6 +31,10 @@ self.addEventListener('install', (event) => {
                 cache.addAll(PRECACHE.files.map((file) => new Request(file, { cache: 'reload' })))
             )
     );
+});
+
+self.addEventListener('message', (event) => {
+    if (event.data === 'take over') event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
