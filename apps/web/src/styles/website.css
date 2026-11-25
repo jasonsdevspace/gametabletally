@@ -78,7 +78,6 @@
 .gtt-mark path {
     fill: none;
     stroke: var(--dk-on-accent);
-    stroke-width: 5;
     stroke-linecap: round;
 }
 

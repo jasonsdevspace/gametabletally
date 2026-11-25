@@ -50,7 +50,10 @@ against the built script in a runtime that is not Node.
   The app installs from its manifest, and its service worker, built from `apps/web/worker`,
   caches every file of the build on the first visit and answers every page from that cache after,
   so the app opens with no connection. A newer build's worker installs and waits for the visitor
-  to take it.
+  to take it. The app's mark is drawn from one source, `apps/web/src/mark.ts`, which the header
+  reads and `npm run icons` draws the favicon and every install icon from into `apps/web/public`.
+  A new mark is a change to that file and a run of `npm run icons`, and a test fails where the
+  icons were not drawn again.
   It is drawn from [`@jasonsdevspace/design-kit`](https://www.npmjs.com/package/@jasonsdevspace/design-kit)
   with the kit's colors as they are. `apps/web/src/styles/app.css` lays the app's typeface, the
   lip under a key and the grounds of the games over the kit,

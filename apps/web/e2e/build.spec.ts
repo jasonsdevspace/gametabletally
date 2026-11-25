@@ -3,7 +3,9 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
+import { drawnFrom } from '../scripts/icons.mjs';
 import { precacheOf } from '../scripts/precache.mjs';
+import { ICO_SIZES, ICONS, markSvg } from '../src/mark.js';
 import { ENTRY_FILES, FRAME_FILE, OWN_FILES, SCREEN_FILES } from '../src/own-files.js';
 import { inApp, NOT_FOUND_FILE, ROUTES } from '../src/routes.js';
 import { installCacheOf, readPrecache } from '../worker/answer.js';
@@ -63,7 +65,9 @@ test('the manifest names the app, its start, standalone display, its colors and 
         expect(icon, `an icon at ${size}`).toBeDefined();
         expect(sizeOf(icon?.src ?? '')).toEqual([size, size]);
     }
-    expect(icons.some((icon) => icon.purpose === 'maskable')).toBe(true);
+    const maskable = icons.find((icon) => icon.purpose === 'maskable');
+    expect(maskable?.src).toBe('/icons/icon-maskable-512.png');
+    expect(sizeOf(maskable?.src ?? '')).toEqual([512, 512]);
     // The start address is one the app builds.
     expect(readdirSync(join(DIST, 'play'))).toContain('index.html');
 });
@@ -105,6 +109,29 @@ test("the worker's install takes from the browser's cache only the files the bui
     expect(existsSync(fileURLToPath(new URL('../public/assets', import.meta.url)))).toBe(false);
 });
 
+test("draws every icon from the mark's source as it stands, at the size it is named by", () => {
+    const drawn: unknown = JSON.parse(
+        readFileSync(fileURLToPath(new URL('../scripts/icons-drawn.json', import.meta.url)), 'utf8')
+    );
+    // Drawn again after the mark last changed, by `npm run icons`.
+    expect(drawn).toEqual({ source: drawnFrom() });
+    for (const icon of ICONS)
+        if (icon.size === null)
+            expect(readFileSync(join(DIST, icon.file), 'utf8'), icon.file).toBe(markSvg(icon));
+        else expect(sizeOf(`/${icon.file}`), icon.file).toEqual([icon.size, icon.size]);
+    // The favicon's .ico holds a PNG at each of its sizes, and nothing else.
+    const ico = readFileSync(join(DIST, 'favicon.ico'));
+    expect(ico.readUInt16LE(2)).toBe(1);
+    const count = ico.readUInt16LE(4);
+    const sizes = Array.from({ length: count }, (_, at) => {
+        const entry = 6 + 16 * at;
+        const png = ico.subarray(ico.readUInt32LE(entry + 12));
+        expect(png.subarray(1, 4).toString('ascii')).toBe('PNG');
+        return [ico.readUInt8(entry), png.readUInt32BE(16)];
+    });
+    expect(sizes).toEqual(ICO_SIZES.map((size) => [size, size]));
+});
+
 test('the worker caches every file a page asks for, and each is served, as its install fetches it', async ({
     request,
 }) => {
@@ -131,8 +158,9 @@ test('every page carries each tag an install reads once', () => {
             /<link rel="manifest"/g,
             /<meta name="theme-color" content="#[0-9a-f]{6}" media="\(prefers-color-scheme: light\)"/g,
             /<meta name="theme-color" content="#[0-9a-f]{6}" media="\(prefers-color-scheme: dark\)"/g,
-            /<link rel="icon"/g,
-            /<link rel="apple-touch-icon"/g,
+            /<link rel="icon" href="\/favicon\.ico" sizes="16x16 32x32 48x48"/g,
+            /<link rel="icon" href="\/favicon\.svg" type="image\/svg\+xml"/g,
+            /<link rel="apple-touch-icon" href="\/icons\/apple-touch-icon\.png"/g,
             /<meta name="viewport"/g,
         ])
             expect(html.match(tag)?.length ?? 0, `${page} ${tag.source}`).toBe(1);
