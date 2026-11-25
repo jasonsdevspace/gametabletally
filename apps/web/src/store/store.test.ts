@@ -421,6 +421,28 @@ describe('a database and a build of different versions', () => {
         }
     });
 
+    it('tells no one of a newer build when another tab deletes the database', async () => {
+        const heard = vi.fn();
+        const stop = hearNewer(heard);
+        try {
+            const factory = new IDBFactory();
+            const store = await openStore(factory);
+            await new Promise<void>((resolve, reject) => {
+                const deleting = factory.deleteDatabase('gametabletally');
+                deleting.onsuccess = () => {
+                    resolve();
+                };
+                deleting.onerror = () => {
+                    reject(deleting.error ?? new Error('not deleted'));
+                };
+            });
+            expect(store.closed()).toBe(true);
+            expect(heard).not.toHaveBeenCalled();
+        } finally {
+            stop();
+        }
+    });
+
     it('tells no one when the page closes the store itself', async () => {
         const heard = vi.fn();
         const stop = hearNewer(heard);

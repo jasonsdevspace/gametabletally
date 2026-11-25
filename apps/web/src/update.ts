@@ -1,3 +1,5 @@
+import { hearNewer } from './store/store.js';
+
 /**
  * A newer build of the app, which the service worker installs beside the one running and keeps
  * waiting until the visitor agrees to it.
@@ -6,10 +8,18 @@
  * the browser for a newer build each time the page is shown again, so a phone picked up the next
  * day finds one. A screen offers what is waiting, and agreeing hands the page to it: the waiting
  * worker is asked to take over, and the page reloads once it has.
+ *
+ * A worker that takes over takes over every tab of the app, so a tab that did not agree finds the
+ * build it runs replaced, as it does when a newer build closes the database under it. Such a tab
+ * reloads at once where it is hidden, and otherwise says so and waits for the visitor.
  */
 
-/** Nothing waiting, a build waiting, or a build waiting that this page cannot do without. */
-export type UpdateState = 'none' | 'ready' | 'needed';
+/**
+ * What the page has to offer, the most pressing first: a reload, once a newer build has closed
+ * the database under it or taken over from another tab, a reload or the waiting build where the
+ * phone's games were saved by a newer one, the waiting build, or nothing.
+ */
+export type UpdateState = 'closed' | 'replaced' | 'reload' | 'needed' | 'ready' | 'none';
 
 /** What the page reads of a worker. */
 interface Worker extends EventTarget {
@@ -41,6 +51,8 @@ let workers: Workers | null = null;
 let waiting: Worker | null = null;
 let needed = false;
 let applying = false;
+/** How the build this page runs was replaced, where it was. */
+let outdated: 'closed' | 'replaced' | null = null;
 const listeners = new Set<() => void>();
 
 const notify = () => {
@@ -60,8 +72,24 @@ export const subscribeUpdate = (listener: () => void): (() => void) => {
 };
 
 export const updateState = (): UpdateState => {
-    if (waiting === null) return 'none';
-    return needed ? 'needed' : 'ready';
+    if (outdated) return outdated;
+    // A page a newer database refused with no newer worker to hand it to can still reload, which a
+    // page no worker serves takes from the network.
+    if (needed) return waiting && workers?.controller ? 'needed' : 'reload';
+    return waiting ? 'ready' : 'none';
+};
+
+/**
+ * Marks the build this page runs as replaced, and reloads at once where the page is hidden, since
+ * no one is reading it.
+ */
+const replace = (how: 'closed' | 'replaced') => {
+    if (document.visibilityState === 'hidden') {
+        page.reload();
+        return;
+    }
+    if (outdated !== 'closed') outdated = how;
+    notify();
 };
 
 /** Holds the worker that has installed and waits, until it moves on or is replaced. */
@@ -69,9 +97,16 @@ const track = (worker: Worker | null) => {
     // A first install has no build to replace, so a worker counts only beside one in charge.
     if (!worker || !workers?.controller) return;
     const settle = () => {
-        if (worker.state === 'installed') waiting = worker;
-        else if (waiting === worker) waiting = null;
-        else return;
+        if (worker.state === 'installed' && waiting !== worker) {
+            // A newer worker in the place of one agreed to is offered afresh.
+            applying = false;
+            waiting = worker;
+        } else if (worker.state !== 'installed' && waiting === worker) {
+            waiting = null;
+            // One that was replaced will never take over, so the next can be agreed to. One that
+            // is taking over keeps the page waiting to reload.
+            if (worker.state === 'redundant') applying = false;
+        } else return;
         notify();
     };
     worker.addEventListener('statechange', settle);
@@ -92,6 +127,16 @@ export const watchUpdates = (
     waiting = null;
     needed = false;
     applying = false;
+    outdated = null;
+    // A first visit's worker taking charge is no newer build, so only a change from one in charge
+    // is. The page that agreed reloads into it, and any other is told.
+    let controlled = Boolean(container.controller);
+    container.addEventListener('controllerchange', () => {
+        if (applying) page.reload();
+        else if (controlled) replace('replaced');
+        applying = false;
+        controlled = true;
+    });
     track(found.waiting);
     track(found.installing);
     found.addEventListener('updatefound', () => {
@@ -113,8 +158,12 @@ export const updateNeeded = (): void => {
 
 /** Hands the page to the waiting worker, and reloads it once that worker has taken over. */
 export const applyUpdate = (): void => {
-    if (!waiting || !workers || applying) return;
+    if (!waiting || applying) return;
     applying = true;
-    workers.addEventListener('controllerchange', page.reload, { once: true });
     waiting.postMessage('take over');
 };
+
+hearNewer((how) => {
+    if (how === 'refused') updateNeeded();
+    else replace('closed');
+});

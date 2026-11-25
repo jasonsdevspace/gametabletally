@@ -1,7 +1,7 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppFrame, currentOf, Dock, useToast } from './AppFrame.js';
+import { act, appLine, render, screen, waitFor, within } from './render.testing.js';
 
 /*
  * The frame every screen for keeping score sits in: its one heading, its tab bar and the place
@@ -68,7 +68,7 @@ describe("the app's frame", () => {
 
     it('holds one place for a toast, its status line on the page before any toast is shown', () => {
         render(<AppFrame screen="play" title="Play" />);
-        const statuses = screen.getAllByRole('status');
+        const statuses = screen.getAllByRole('status').filter((one) => one !== appLine());
         expect(statuses).toHaveLength(1);
         expect(statuses[0]).toHaveTextContent('');
     });
@@ -91,7 +91,9 @@ describe("the app's frame", () => {
             screen.getByRole('button', { name: 'Save' }).click();
         });
         await waitFor(() => {
-            expect(screen.getByRole('status')).toHaveTextContent('Round 3 saved.');
+            expect(document.querySelector('.dk-app-toast [role="status"]')).toHaveTextContent(
+                'Round 3 saved.'
+            );
         });
     });
 
@@ -119,7 +121,9 @@ describe("the app's frame", () => {
         act(() => {
             vi.advanceTimersByTime(150);
         });
-        expect(screen.getByRole('status')).toHaveTextContent('Round 3 saved.');
+        expect(document.querySelector('.dk-app-toast [role="status"]')).toHaveTextContent(
+            'Round 3 saved.'
+        );
         unmount();
         // Microtasks run, as the kit takes the toast down in one, and the faked clock stands still,
         // so the toast's wait before it leaves, still set, is counted rather than run out.

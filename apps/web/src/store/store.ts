@@ -322,9 +322,10 @@ export const openStore = async (
         };
     });
     const store = storeOver(database);
-    database.onversionchange = () => {
+    database.onversionchange = (event) => {
         store.close();
-        tell('closed');
+        // A deleted database is no newer build, so only an upgrade is told.
+        if (event.newVersion !== null && event.newVersion > database.version) tell('closed');
     };
     return store;
 };

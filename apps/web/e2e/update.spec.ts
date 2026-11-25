@@ -101,3 +101,47 @@ test("offers a waiting version off the round's screen, and takes it once agreed,
     await expect(standings).toHaveText(before);
     expect(loads).toBe(1);
 });
+
+test('tells a second tab the app was updated in the first, and reloads it only once it is hidden', async ({
+    page,
+    context,
+}) => {
+    await page.goto('/');
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+    await page.goto(hrefOf('play'));
+    await page.waitForLoadState('load');
+    const second = await context.newPage();
+    await second.goto(hrefOf('history'));
+    await second.waitForLoadState('load');
+    for (const tab of [page, second]) {
+        await expect(tab.locator('html')).toHaveAttribute('data-ready', 'true');
+        expect(await inCharge(tab)).toMatch(/\/sw\.js$/);
+    }
+    await installNewer(page);
+    await second.evaluate(() => {
+        Object.assign(window, { stayed: true });
+    });
+
+    const update = page.locator('.dk-app-toast').getByRole('button', { name: 'Update' });
+    await expect(update).toBeEnabled();
+    const reloaded = page.waitForEvent('load');
+    await update.click();
+    await reloaded;
+
+    const notice = second.locator('.dk-app-toast');
+    await expect(notice.locator('.dk-toast-message')).toHaveText(
+        'The app was updated in another tab. Reload this page to keep scoring.'
+    );
+    await expect(notice.getByRole('button', { name: 'Reload' })).toBeVisible();
+    expect(await second.evaluate(() => 'stayed' in window)).toBe(true);
+
+    // Hidden, as when the visitor switches to the first tab, the second reloads into the new build.
+    const hidden = second.waitForEvent('load');
+    await second.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+        document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await hidden;
+    expect(await second.evaluate(() => 'stayed' in window)).toBe(false);
+    expect(await inCharge(second)).toMatch(/\/sw\.js\?build=2$/);
+});
