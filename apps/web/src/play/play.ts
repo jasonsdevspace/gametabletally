@@ -329,7 +329,9 @@ interface Last {
  * what is saved each time a started game is saved, since from then the phone holds something worth
  * keeping. A browser that has agreed already is not asked again. `count` counts a game started
  * and a game finished by the game it is, and a game is counted as finished once while the model is
- * open, however often it is put back in play and ended again.
+ * open, however often it is put back in play and ended again. A saved game does not say whether
+ * it was over before, since undo and a changed round put it back as if it never was, so a game
+ * put back in play and ended again after the app is opened afresh is counted as finished again.
  */
 export const openPlay = (
     store: Store,

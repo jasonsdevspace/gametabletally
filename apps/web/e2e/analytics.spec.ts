@@ -54,10 +54,11 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
     let connected = true;
     // The tracker counts nothing in a browser a test drives, unless the page says it is one of
     // Plausible's own checks.
-    await page.addInitScript(() => {
+    const context = page.context();
+    await context.addInitScript(() => {
         Object.assign(window, { __plausible: true });
     });
-    page.on('request', (request) => {
+    context.on('request', (request) => {
         const url = new URL(request.url());
         if (url.hostname === 'plausible.io' || /plausible/i.test(url.pathname))
             requests.push({
@@ -66,12 +67,12 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
                 cookie: request.headers()['cookie'],
             });
     });
-    await page.route(`${LIVE}/**`, async (route) => {
+    await context.route(`${LIVE}/**`, async (route) => {
         const { pathname, search } = new URL(route.request().url());
         const response = await route.fetch({ url: new URL(`${pathname}${search}`, baseURL).href });
         await route.fulfill({ response });
     });
-    await page.route('https://plausible.io/**', async (route) => {
+    await context.route('https://plausible.io/**', async (route) => {
         if (!connected) {
             await route.abort('internetdisconnected');
             return;
@@ -93,7 +94,7 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
                 .map(({ n, p }) => ({ n, p })),
         connect: async (on: boolean) => {
             connected = on;
-            await page.context().setOffline(!on);
+            await context.setOffline(!on);
         },
     };
 };
@@ -162,6 +163,8 @@ test("counts a game started and a game finished by the game's name alone, and se
     await seed(page, [nearly], PLAYERS);
 
     const started = await startFlip7(page);
+    // The start reaches Plausible before the page is left, so leaving never races its send.
+    await expect.poll(plausible.events).toEqual([{ n: 'Game started', p: { game: 'Flip 7' } }]);
 
     // The last round takes Zelda past two hundred, which ends the game.
     await open(page, hrefOf('game', nearly.id));
@@ -218,18 +221,26 @@ test('keeps a game started with no connection on the phone, and sends it when th
     await seed(page, [], PLAYERS);
     await open(page, newGameOf('flip-7'));
     await plausible.connect(false);
-    const kept = () => page.evaluate((key) => localStorage.getItem(key), KEPT);
+    const kept = () =>
+        page.evaluate((key) => {
+            const read: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+            return Array.isArray(read)
+                ? read.map((entry: { n?: unknown; g?: unknown }) =>
+                      entry.g === undefined ? [entry.n] : [entry.n, entry.g]
+                  )
+                : [];
+        }, KEPT);
     for (const { name } of PLAYERS) await page.getByRole('button', { name: `Add ${name}` }).click();
     const start = page.getByRole('button', { name: 'Start the game' });
     await expect(start).not.toHaveAttribute('aria-disabled');
     await start.click();
     await expect(page).toHaveURL(/\/game\/\?id=/);
-    await expect.poll(kept).toBe(JSON.stringify([['Game started', 'Flip 7']]));
+    await expect.poll(kept).toEqual([['Game started', 'Flip 7']]);
     expect(plausible.events()).toEqual([]);
 
     await plausible.connect(true);
     await expect.poll(plausible.events).toEqual([{ n: 'Game started', p: { game: 'Flip 7' } }]);
-    await expect.poll(kept).toBeNull();
+    await expect.poll(kept).toEqual([]);
 });
 
 test('keeps events made with no connection up to the limit, and drops the newest past it', async ({
@@ -246,7 +257,13 @@ test('keeps events made with no connection up to the limit, and drops the newest
         ({ key, most }) => {
             localStorage.setItem(
                 key,
-                JSON.stringify(Array.from({ length: most }, () => ['Game finished', 'Skyjo']))
+                JSON.stringify(
+                    Array.from({ length: most }, (_, at) => ({
+                        i: `e${at}`,
+                        n: 'Game finished',
+                        g: 'Skyjo',
+                    }))
+                )
             );
         },
         { key: KEPT, most: MOST_KEPT }
@@ -262,4 +279,28 @@ test('keeps events made with no connection up to the limit, and drops the newest
     expect(plausible.events()).toEqual(
         Array.from({ length: MOST_KEPT }, () => ({ n: 'Game finished', p: { game: 'Skyjo' } }))
     );
+});
+
+test('sends events kept by two open pages once each when the connection returns', async ({
+    page,
+    baseURL,
+}) => {
+    const plausible = await onTheLiveAddress(page, baseURL);
+    const other = await page.context().newPage();
+    await open(page, hrefOf('install'));
+    await open(other, hrefOf('about'));
+    await plausible.connect(false);
+    for (const each of [page, other])
+        await each.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+    await expect
+        .poll(() => page.evaluate((key) => localStorage.getItem(key), KEPT))
+        .toContain('Install');
+    await plausible.connect(true);
+    await expect.poll(plausible.events).toEqual([
+        { n: 'Install', p: undefined },
+        { n: 'Install', p: undefined },
+    ]);
+    // Neither page sends either event again once both have heard the connection is back.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)));
+    expect(plausible.events()).toHaveLength(2);
 });

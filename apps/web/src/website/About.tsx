@@ -56,21 +56,28 @@ export const About = () => {
                 <section aria-labelledby="privacy">
                     <h2 id="privacy">Privacy</h2>
                     <p>
-                        Your games and your players never leave the phone. Names and scores are kept
-                        on the phone they were entered on and are not sent anywhere.
+                        The app never sends your games or your players anywhere. Names and scores
+                        stay on the phone they were entered on, and leave it only in a file you save
+                        yourself.
                     </p>
                     <p>
-                        The app counts how many people use it, with Plausible, which sets no cookies
-                        and does not follow you to other sites. It counts the pages opened, and each
-                        time a game is started, a game is finished and the app is installed. A game
-                        started or finished is counted with the game&apos;s name, such as Skyjo, and
-                        nothing else. No count holds a name, a score or anything that says who you
-                        are.
+                        To see how many people use it, the app counts visits with a service called
+                        Plausible. Plausible sets no cookies and does not follow you to other sites.
                     </p>
                     <p>
-                        With no connection, these counts are kept on the phone and sent once it is
-                        back. If too many pile up, the newest are dropped. A browser set to send
-                        Global Privacy Control is not counted at all.
+                        It counts the pages you open, each game started, each game finished and each
+                        install. A game started or finished is counted with the game&apos;s name,
+                        such as Skyjo, and nothing else. No count holds a name, a score or anything
+                        that says who you are. With each page, Plausible also notes how long it
+                        stayed open and how far it was scrolled, and works out the country, browser
+                        and kind of device from the request without keeping the connection&apos;s
+                        address.
+                    </p>
+                    <p>
+                        With no connection, a game started, a game finished or an install is kept on
+                        the phone and sent once the connection is back. If too many are waiting, new
+                        ones are dropped. If your browser sends Global Privacy Control, a setting
+                        that asks sites not to track you, nothing is counted at all.
                     </p>
                 </section>
                 <section aria-labelledby="look">

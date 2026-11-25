@@ -76,12 +76,18 @@ A merge to main is built and deployed to GitHub Pages at gametabletally.com once
 passed, and a merge that fails one is not deployed. The live address counts page views with
 [Plausible](https://plausible.io/), with no cookie and no count for a browser that sends Global
 Privacy Control. A page is sent by its path alone, so the id of a game or a player never leaves the
-phone, and no other address, a local build or a test among them, is counted. Beside page views it
-counts a game started and a game finished, each with the game's name and nothing else, and an
-install where the browser reports one. An event made with no connection is kept in local storage,
-up to a limit past which the newest are dropped, and sent once the connection returns. That list is
-the only thing counting stores on the phone. Marking the events as goals in Plausible is done by
-hand in its dashboard.
+phone, and no other address, a local build or a test among them, is counted. With each page,
+Plausible also notes how long it stayed open and how far it was scrolled, and works out the country,
+browser and kind of device from the request without keeping the connection's address. Beside page
+views it counts a game started and a game finished, each with the game's name and nothing else, and
+an install where the browser reports one. A game is counted as finished once while the app is open,
+since a saved game does not say whether it was over before, so one put back in play and ended again
+after the app is opened afresh is counted again. An event is taken off its list as it is sent, so
+it is never sent twice. One made with no connection is kept in local storage, up to a limit past
+which new ones are dropped, and sent once the connection returns, while one that fails with the
+browser online, as a blocker makes it, is dropped. That list is the only thing counting stores on
+the phone, and it is removed where a visit does not count. Marking the events as goals in Plausible
+is done by hand in its dashboard.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the
