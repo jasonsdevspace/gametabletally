@@ -8,3 +8,6 @@ choice costs, and the test behind it. Each is written when the decision is made.
    implementation has to pass.
 2. [Games are saved as they were entered, in IndexedDB](0002-games-are-saved-as-entered.md): no
    total is saved, so the scores and the games cannot disagree.
+3. [Rule options belong to the scoring package, and the published rule is the
+   default](0003-rule-options-belong-to-the-scoring-package.md): an option's meaning is fixed
+   within a version of a rule set, and an option or a value added stays in it.

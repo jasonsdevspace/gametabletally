@@ -3985,6 +3985,245 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "with the target score at fifty, the game is over at the end of the round in which a total reaches it",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {
+                    "target-score": 50
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 50
+                            },
+                            "ben": {
+                                "total": 10
+                            },
+                            "cat": {
+                                "total": 5
+                            }
+                        },
+                        "ender": "cat"
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 10,
+                            "cat": 5
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 50,
+                    "ben": 10,
+                    "cat": 5
+                },
+                "leaders": ["cat"],
+                "winners": ["cat"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the target score at one hundred and fifty, a total past one hundred leaves the game in play",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {
+                    "target-score": 150
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 70
+                            },
+                            "ben": {
+                                "total": 10
+                            },
+                            "cat": {
+                                "total": 5
+                            }
+                        },
+                        "ender": "cat"
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 50
+                            },
+                            "ben": {
+                                "total": 10
+                            },
+                            "cat": {
+                                "total": 5
+                            }
+                        },
+                        "ender": "cat"
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 70,
+                            "ben": 10,
+                            "cat": 5
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 10,
+                            "cat": 5
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 120,
+                    "ben": 20,
+                    "cat": 10
+                },
+                "leaders": ["cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "the target score given as null is not given, and the game plays to the published one hundred",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {
+                    "target-score": null
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 70
+                            },
+                            "ben": {
+                                "total": 10
+                            },
+                            "cat": {
+                                "total": 5
+                            }
+                        },
+                        "ender": "cat"
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "total": 50
+                            },
+                            "ben": {
+                                "total": 10
+                            },
+                            "cat": {
+                                "total": 5
+                            }
+                        },
+                        "ender": "cat"
+                    }
+                ]
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 70,
+                            "ben": 10,
+                            "cat": 5
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 50,
+                            "ben": 10,
+                            "cat": 5
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 120,
+                    "ben": 20,
+                    "cat": 10
+                },
+                "leaders": ["cat"],
+                "winners": ["cat"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a target score the option does not allow is refused",
+            "input": {
+                "game": "skyjo",
+                "rules": 1,
+                "options": {
+                    "target-score": 75
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "skyjo",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "value-not-allowed",
+                        "data": {
+                            "option": "target-score",
+                            "value": 75
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
         }
     ]
 }

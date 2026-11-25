@@ -4449,6 +4449,475 @@
                 "missed": ["cat"],
                 "problems": []
             }
+        },
+        {
+            "name": "with the target score at one hundred, the game is over at the end of the round in which a total reaches it",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": 100
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9],
+                                "modifiers": ["x2", "+10", "+6"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 100,
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 100,
+                    "ben": 1,
+                    "cat": 2
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the target score at two hundred and fifty, a total past two hundred leaves the game in play",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": 250
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8, 7, 6],
+                                "modifiers": ["x2", "+10", "+8", "+6", "+4", "+2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10],
+                                "modifiers": ["x2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 171,
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 66,
+                            "ben": 3,
+                            "cat": 4
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 237,
+                    "ben": 4,
+                    "cat": 6
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "the target score given as two hundred plays to the published two hundred",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": 200
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8, 7, 6],
+                                "modifiers": ["x2", "+10", "+8", "+6", "+4", "+2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10],
+                                "modifiers": ["x2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 171,
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 66,
+                            "ben": 3,
+                            "cat": 4
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 237,
+                    "ben": 4,
+                    "cat": 6
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "the target score given as null is not given, and the game plays to the published two hundred",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": null
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10, 9, 8, 7, 6],
+                                "modifiers": ["x2", "+10", "+8", "+6", "+4", "+2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [1],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [2],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "numbers": [12, 11, 10],
+                                "modifiers": ["x2"],
+                                "bust": false
+                            },
+                            "ben": {
+                                "numbers": [3],
+                                "modifiers": [],
+                                "bust": false
+                            },
+                            "cat": {
+                                "numbers": [4],
+                                "modifiers": [],
+                                "bust": false
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "over",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 171,
+                            "ben": 1,
+                            "cat": 2
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 66,
+                            "ben": 3,
+                            "cat": 4
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 237,
+                    "ben": 4,
+                    "cat": 6
+                },
+                "leaders": ["ann"],
+                "winners": ["ann"],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a target score the option does not allow is refused",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": 175
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "value-not-allowed",
+                        "data": {
+                            "option": "target-score",
+                            "value": 175
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "a target score given as text is refused, and names the text",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target-score": "100"
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "value-not-allowed",
+                        "data": {
+                            "option": "target-score",
+                            "value": "100"
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "the options refused are reported sorted by name",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "zeta": 1,
+                    "target-score": 175,
+                    "alpha": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "unknown-option",
+                        "data": {
+                            "option": "alpha"
+                        },
+                        "round": null,
+                        "player": null
+                    },
+                    {
+                        "code": "value-not-allowed",
+                        "data": {
+                            "option": "target-score",
+                            "value": 175
+                        },
+                        "round": null,
+                        "player": null
+                    },
+                    {
+                        "code": "unknown-option",
+                        "data": {
+                            "option": "zeta"
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an option given as null is not given, whatever its name",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target": null,
+                    "target-score": null
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
         }
     ]
 }

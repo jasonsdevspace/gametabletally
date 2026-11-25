@@ -1,0 +1,12 @@
+{
+    "game": "flip-7",
+    "rules": 1,
+    "options": [
+        {
+            "id": "target-score",
+            "kind": "number",
+            "default": 200,
+            "values": [100, 150, 200, 250, 300]
+        }
+    ]
+}

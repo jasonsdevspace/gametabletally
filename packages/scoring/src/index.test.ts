@@ -45,7 +45,7 @@ describe('the games the package knows', () => {
     });
 
     it('says which rule set a new game starts under, which way is ahead and how many can play', () => {
-        expect(GAMES).toEqual([
+        expect(GAMES.map(({ options: _, ...game }) => game)).toEqual([
             {
                 id: 'flip-7',
                 name: 'Flip 7',
@@ -64,6 +64,29 @@ describe('the games the package knows', () => {
                 maxPlayers: 6,
             },
         ]);
+    });
+
+    it('names each option by an id of its own in its game, safe in an address', () => {
+        for (const { options } of GAMES) {
+            const ids = options.map(({ id }) => id);
+            expect(new Set(ids).size).toBe(ids.length);
+            for (const id of ids) expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+        }
+    });
+
+    it('gives each option a name and a description in a sentence, and each number option its default among its values', () => {
+        for (const { options } of GAMES)
+            for (const option of options) {
+                expect(option.name.trim()).not.toBe('');
+                expect(option.description).toMatch(/^[A-Z].*\.$/);
+                if (option.kind !== 'number') continue;
+                expect(new Set(option.values).size).toBe(option.values.length);
+                expect(option.values).toContain(option.default);
+            }
+    });
+
+    it('carries options that survive being written as JSON', () => {
+        expect(JSON.parse(JSON.stringify(GAMES))).toEqual(GAMES);
     });
 });
 
@@ -233,5 +256,63 @@ describe('scoring a game handed over as text', () => {
             winners: [],
             problems: [{ code: 'not-a-game', round: null, player: null }],
         });
+    });
+});
+
+describe('Plus or minus one in Wizard', () => {
+    const PLAYERS = ['ann', 'ben', 'cat', 'dan'] as const;
+
+    /** Rounds already scored under the option, so a round of any count of cards can follow. */
+    const PLAYED = [
+        {
+            entries: {
+                ann: { bid: 1, tricks: 1 },
+                ben: { bid: 1, tricks: 0 },
+                cat: { bid: 0, tricks: 0 },
+                dan: { bid: 0, tricks: 0 },
+            },
+        },
+        {
+            entries: {
+                ann: { bid: 2, tricks: 2 },
+                ben: { bid: 2, tricks: 0 },
+                cat: { bid: 0, tricks: 0 },
+                dan: { bid: 0, tricks: 0 },
+            },
+        },
+    ];
+
+    /** Every way the players can bid in a round of the cards given. */
+    const everyBid = (dealt: number): number[][] =>
+        PLAYERS.reduce<number[][]>(
+            (sets) =>
+                sets.flatMap((set) => Array.from({ length: dealt + 1 }, (_, bid) => [...set, bid])),
+            [[]]
+        );
+
+    /** Whether the bids are refused for coming to the cards dealt, with the players out given. */
+    const refusedFor = (index: number, bids: readonly number[], out: readonly string[]) => {
+        const entries = Object.fromEntries(
+            PLAYERS.map((player, seat) => [player, { bid: bids[seat] }])
+        );
+        const answer = score({
+            game: 'wizard',
+            rules: 1,
+            options: { 'plus-minus-one': true },
+            players: [...PLAYERS],
+            rounds: [...PLAYED.slice(0, index), { entries, out }],
+        });
+        return answer.problems.some(({ code }) => code === 'bid-total');
+    };
+
+    it('never changes its verdict on a round when a player who bid is then marked out', () => {
+        const changed = [0, 1, 2].flatMap((index) =>
+            everyBid(index + 1).flatMap((bids) =>
+                PLAYERS.filter(
+                    (player) => refusedFor(index, bids, [player]) !== refusedFor(index, bids, [])
+                ).map((player) => `round ${index + 1}, bids ${bids.join(' ')}, ${player} out`)
+            )
+        );
+        expect(changed).toEqual([]);
     });
 });

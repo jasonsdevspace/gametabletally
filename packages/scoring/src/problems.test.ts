@@ -24,6 +24,7 @@ const CODES = {
     'too-many-players': true,
     'player-twice': true,
     'unknown-option': true,
+    'value-not-allowed': true,
     'not-a-round': true,
     'unknown-out': true,
     'out-twice': true,
@@ -47,6 +48,7 @@ const CODES = {
     'impossible-bid': true,
     'impossible-tricks': true,
     'trick-total': true,
+    'bid-total': true,
 } as const satisfies Record<ProblemCode, true>;
 
 /** The codes the README's table of codes lists, in its first column. */

@@ -1,9 +1,10 @@
 import {
     bestAmong,
     contenders,
+    declare,
+    isOn,
     isRecord,
     isWhole,
-    noOptions,
     problemAt,
     readEntries,
     type Refusal,
@@ -13,6 +14,7 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
+import type { SwitchOption } from './types.js';
 
 /**
  * Wizard, as published. Each round deals one card more than the round before, starting from one,
@@ -51,6 +53,19 @@ const MET = 20;
 const PER_TRICK = 10;
 /** The cards in the deck, which the last round deals out between the players. */
 const DECK = 60;
+
+/**
+ * The published variant Plus or minus one, off by the published rules: the bids of a round may not
+ * add up to the cards dealt to each player, so at least one player misses.
+ */
+const PLUS_MINUS_ONE: SwitchOption = {
+    kind: 'switch',
+    id: 'plus-minus-one',
+    name: 'Plus or minus one',
+    description:
+        'The bids may not add up to the cards dealt to each player, so somebody misses their bid.',
+    default: false,
+};
 
 /**
  * How many rounds a game of Wizard lasts for a number of players: the deck dealt out between them
@@ -132,12 +147,53 @@ const tricksGiven = (round: unknown, players: readonly string[]): number => {
     }, 0);
 };
 
+/**
+ * Every bid made in a round added up, once each player in it has bid, or null while a bid is still
+ * to come. A bid made by a player then marked out of the round counts too, since it was made at the
+ * table, so marking a player out never changes whether the bids come to the cards dealt. Read only
+ * from a round whose entries are accepted, so every entry left in it is a bid.
+ */
+const bidsMade = (
+    round: unknown,
+    { players, out }: Pick<RoundContext, 'players' | 'out'>
+): number | null => {
+    const entries = isRecord(round) && isRecord(round['entries']) ? round['entries'] : {};
+    const bidOf = (player: string): number | null => {
+        const entry = Object.prototype.hasOwnProperty.call(entries, player)
+            ? entries[player]
+            : undefined;
+        const bid = isRecord(entry) ? entry['bid'] : undefined;
+        return isWhole(bid) ? bid : null;
+    };
+    const bids = players.map(bidOf);
+    if (bids.some((bid) => bid === null)) return null;
+    return [...bids, ...out.map(bidOf)].reduce<number>((sum, bid) => sum + (bid ?? 0), 0);
+};
+
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     // The first round deals one card, and each round after one more, whoever plays it.
     const dealt = context.index + 1;
     const read = withoutBidsOfThoseOut(round, context.out, dealt);
     const { scores, problems, allIn } = readEntries(read, context, readPlayer(dealt));
     if (problems.length > 0) return { scores, problems, complete: false };
+    // Under Plus or minus one, the last bid cannot make the bids come to the cards dealt, so a
+    // round whose bids do is refused, whatever its tricks. The bids are read from the round as
+    // entered, so a bid passed over for a player marked out still counts.
+    if (isOn(context.options, PLUS_MINUS_ONE) && bidsMade(round, context) === dealt)
+        return {
+            scores,
+            complete: false,
+            problems: [
+                problemAt(
+                    refusal(
+                        'bid-total',
+                        `The bids come to ${dealt}, the cards dealt to each player, and the options say they may not.`,
+                        { dealt }
+                    ),
+                    context.index
+                ),
+            ],
+        };
     // Once every player in the round has played the hand, between them they took every trick. Before
     // then, tricks that already come to more than were dealt can never be right.
     const given = tricksGiven(read, context.players);
@@ -177,8 +233,7 @@ export const WIZARD: Rules = {
     ahead: 'highest',
     minPlayers: 3,
     maxPlayers: 6,
-    // The published rules are the only ones this version knows.
-    checkOptions: noOptions('Wizard'),
+    options: declare(PLUS_MINUS_ONE),
     scoreRound,
     winners,
 };
