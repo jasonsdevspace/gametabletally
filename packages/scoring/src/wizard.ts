@@ -148,19 +148,26 @@ const tricksGiven = (round: unknown, players: readonly string[]): number => {
 };
 
 /**
- * The bids of the players in a round added up, once each of them has bid, or null while a bid is
- * still to come. Read only from a round whose entries are accepted, so every entry holds a bid.
+ * Every bid made in a round added up, once each player in it has bid, or null while a bid is still
+ * to come. A bid made by a player then marked out of the round counts too, since it was made at the
+ * table, so marking a player out never changes whether the bids come to the cards dealt. Read only
+ * from a round whose entries are accepted, so every entry left in it is a bid.
  */
-const bidsMade = (round: unknown, players: readonly string[]): number | null => {
+const bidsMade = (
+    round: unknown,
+    { players, out }: Pick<RoundContext, 'players' | 'out'>
+): number | null => {
     const entries = isRecord(round) && isRecord(round['entries']) ? round['entries'] : {};
-    const bids = players.map((player) => {
+    const bidOf = (player: string): number | null => {
         const entry = Object.prototype.hasOwnProperty.call(entries, player)
             ? entries[player]
             : undefined;
         const bid = isRecord(entry) ? entry['bid'] : undefined;
         return isWhole(bid) ? bid : null;
-    });
-    return bids.every((bid) => bid !== null) ? bids.reduce((sum, bid) => sum + bid, 0) : null;
+    };
+    const bids = players.map(bidOf);
+    if (bids.some((bid) => bid === null)) return null;
+    return [...bids, ...out.map(bidOf)].reduce<number>((sum, bid) => sum + (bid ?? 0), 0);
 };
 
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
@@ -170,8 +177,9 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     const { scores, problems, allIn } = readEntries(read, context, readPlayer(dealt));
     if (problems.length > 0) return { scores, problems, complete: false };
     // Under Plus or minus one, the last bid cannot make the bids come to the cards dealt, so a
-    // round whose bids do is refused, whatever its tricks.
-    if (isOn(context.options, PLUS_MINUS_ONE) && bidsMade(read, context.players) === dealt)
+    // round whose bids do is refused, whatever its tricks. The bids are read from the round as
+    // entered, so a bid passed over for a player marked out still counts.
+    if (isOn(context.options, PLUS_MINUS_ONE) && bidsMade(round, context) === dealt)
         return {
             scores,
             complete: false,

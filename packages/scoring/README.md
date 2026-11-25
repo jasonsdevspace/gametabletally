@@ -263,11 +263,16 @@ A player out of a round changes neither the cards it deals nor the number of rou
 fixed when the game starts, and the tricks of the players in it come to the cards dealt. A bid made by a player who is then out of the round is passed over, since a bid with no tricks behind it is nobody's score. That is an entry that would be taken as a bid with no tricks yet. Any other entry for a player out of a round is refused, as it is in every game.
 
 Its one option is `plus-minus-one`, the published variant Plus or minus one, a switch that is off
-by the published rules. With it on, the bids of a round may not add up to the cards
-dealt to each player, so at least one player misses. Once every player in the round has bid, a round
-whose bids come to the cards dealt is refused, with the count, whether or not its tricks are in, and
-what each bid came to still stands in its `scores`. Only the bids of the players in the round are
-added up, so the bid of a player out of it, which is passed over, counts for nothing.
+by the published rules. With it on, the bids of a round may not add up to the cards dealt to each
+player, so at least one player misses. Once every player in the round has bid, a round whose bids
+come to the cards dealt is refused, with the count, whether or not its tricks are in, and what each
+bid came to still stands in its `scores`.
+
+Every bid made counts toward that total, the bid of a player then marked out of the round included,
+though it is passed over in the scores. A bid was made at the table, and the bids after it were made
+knowing it, so marking a player out never changes whether a round's bids are refused. A table that
+bids again after a player leaves clears the stale bid from the round, and the bids are then added up
+without it.
 
 ## The cases
 

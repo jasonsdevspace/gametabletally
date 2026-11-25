@@ -258,3 +258,61 @@ describe('scoring a game handed over as text', () => {
         });
     });
 });
+
+describe('Plus or minus one in Wizard', () => {
+    const PLAYERS = ['ann', 'ben', 'cat', 'dan'] as const;
+
+    /** Rounds already scored under the option, so a round of any count of cards can follow. */
+    const PLAYED = [
+        {
+            entries: {
+                ann: { bid: 1, tricks: 1 },
+                ben: { bid: 1, tricks: 0 },
+                cat: { bid: 0, tricks: 0 },
+                dan: { bid: 0, tricks: 0 },
+            },
+        },
+        {
+            entries: {
+                ann: { bid: 2, tricks: 2 },
+                ben: { bid: 2, tricks: 0 },
+                cat: { bid: 0, tricks: 0 },
+                dan: { bid: 0, tricks: 0 },
+            },
+        },
+    ];
+
+    /** Every way the players can bid in a round of the cards given. */
+    const everyBid = (dealt: number): number[][] =>
+        PLAYERS.reduce<number[][]>(
+            (sets) =>
+                sets.flatMap((set) => Array.from({ length: dealt + 1 }, (_, bid) => [...set, bid])),
+            [[]]
+        );
+
+    /** Whether the bids are refused for coming to the cards dealt, with the players out given. */
+    const refusedFor = (index: number, bids: readonly number[], out: readonly string[]) => {
+        const entries = Object.fromEntries(
+            PLAYERS.map((player, seat) => [player, { bid: bids[seat] }])
+        );
+        const answer = score({
+            game: 'wizard',
+            rules: 1,
+            options: { 'plus-minus-one': true },
+            players: [...PLAYERS],
+            rounds: [...PLAYED.slice(0, index), { entries, out }],
+        });
+        return answer.problems.some(({ code }) => code === 'bid-total');
+    };
+
+    it('never changes its verdict on a round when a player who bid is then marked out', () => {
+        const changed = [0, 1, 2].flatMap((index) =>
+            everyBid(index + 1).flatMap((bids) =>
+                PLAYERS.filter(
+                    (player) => refusedFor(index, bids, [player]) !== refusedFor(index, bids, [])
+                ).map((player) => `round ${index + 1}, bids ${bids.join(' ')}, ${player} out`)
+            )
+        );
+        expect(changed).toEqual([]);
+    });
+});

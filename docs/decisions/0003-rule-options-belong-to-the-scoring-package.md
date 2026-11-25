@@ -45,6 +45,10 @@ given no options, or an option given as null, is played by the book.
   additions: a game saved before it never gave the new option or value, so it scores as it did.
 - **An option holds for the whole game.** It is handed over with the rest of the game every time,
   and the package has no notion of one changing between rounds.
+- **Under Wizard's Plus or minus one, every bid made counts toward the round's total,** the bid of
+  a player then marked out of the round included. The bids after it were made knowing it, so
+  marking a player out never changes whether the bids are refused. A table that bids again after a
+  player leaves clears the stale bid, and the bids are added up without it.
 - **The name and description of an option are the package's English** and not part of the
   contract, as a refusal's sentence is not. A caller keys on the id.
 

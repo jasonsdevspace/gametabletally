@@ -5660,7 +5660,7 @@
             }
         },
         {
-            "name": "with plus or minus one on, only the bids of the players in the round are added up",
+            "name": "with plus or minus one on, a player out of the round who made no bid adds nothing to the bids",
             "input": {
                 "game": "wizard",
                 "rules": 1,
@@ -5718,7 +5718,7 @@
             }
         },
         {
-            "name": "with plus or minus one on, the bid of a player out of the round is passed over and not added up",
+            "name": "with plus or minus one on, the bid of a player then marked out of the round still counts, so bids that came to the cards dealt stay refused",
             "input": {
                 "game": "wizard",
                 "rules": 1,
@@ -5731,6 +5731,67 @@
                         "entries": {
                             "ann": {
                                 "bid": 0
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 1
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, bids that did not come to the cards dealt stay accepted after the last bidder is marked out of the round",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
                             },
                             "ben": {
                                 "bid": 0
