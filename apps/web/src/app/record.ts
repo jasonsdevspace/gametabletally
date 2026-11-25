@@ -27,6 +27,12 @@ export interface GameRecord {
     readonly average: number;
 }
 
+/** The player's games of the game given, each with the scoring package's answer for it. */
+const scoredFor = (games: readonly SavedGame[], player: string, game: string) =>
+    games
+        .filter((saved) => saved.game === game && saved.players.includes(player))
+        .map((saved) => ({ saved, result: score(toScoreInput(saved)) }));
+
 /**
  * The player's record for each game they have finished, in the order the scoring package lists the
  * games, and empty when they have finished none. A game they missed a round of counts as played,
@@ -37,9 +43,7 @@ export const recordOf = (games: readonly SavedGame[], player: string): GameRecor
     GAMES.flatMap(({ id, name, ahead }) => {
         const totals: number[] = [];
         let won = 0;
-        for (const saved of games) {
-            if (saved.game !== id || !saved.players.includes(player)) continue;
-            const result = score(toScoreInput(saved));
+        for (const { saved, result } of scoredFor(games, player, id)) {
             if (!isFinished({ saved, result })) continue;
             totals.push(result.totals[player] ?? 0);
             if (result.winners.includes(player)) won += 1;
@@ -57,3 +61,19 @@ export const recordOf = (games: readonly SavedGame[], player: string): GameRecor
             },
         ];
     });
+
+/**
+ * Whether the player is in a game that has yet to end, of a game the record counts, so the page
+ * can say it counts once it ends. A game this build has no rules for is never counted, so it is
+ * never taken for one in play either.
+ */
+export const hasGameInPlay = (games: readonly SavedGame[], player: string): boolean =>
+    GAMES.some(({ id }) => scoredFor(games, player, id).some((one) => !isFinished(one)));
+
+/**
+ * An average as the record shows it, a whole number rounded half away from zero on either side of
+ * it, so -2.5 shows as -3, never as -2, and nothing shows as -0.
+ */
+export const rounded = (value: number): number =>
+    // Adding zero turns a negative zero, from a small negative average, into a plain one.
+    Math.sign(value) * Math.round(Math.abs(value)) + 0;

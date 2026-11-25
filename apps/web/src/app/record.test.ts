@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SavedGame } from '../store/format.js';
-import { recordOf } from './record.js';
+import { hasGameInPlay, recordOf, rounded } from './record.js';
 
 /* A player's record, worked out from saved games with no page and no database. */
 
@@ -278,5 +278,36 @@ describe("a player's record", () => {
             step: { player: 'ann', part: 'entry' },
         });
         expect(recordOf([inPlay], 'ann')).toEqual([]);
+    });
+});
+
+describe('whether a player has a game in play', () => {
+    const inPlay = saved('skyjo', ['ann', 'ben'], [], {
+        index: 0,
+        round: { entries: {} },
+        step: { player: 'ann', part: 'entry' },
+    });
+
+    it('takes a game the record would count once it ends', () => {
+        expect(hasGameInPlay([inPlay], 'ann')).toBe(true);
+        expect(hasGameInPlay([inPlay], 'cat')).toBe(false);
+    });
+
+    it('takes no finished game, and no game the record cannot score', () => {
+        expect(hasGameInPlay([flip7(['ann', 'ben', 'dan'], 'ann')], 'ann')).toBe(false);
+        expect(hasGameInPlay([saved('no-such-game', ['ann', 'ben'], [])], 'ann')).toBe(false);
+    });
+});
+
+describe('an average as the record shows it', () => {
+    it('rounds half away from zero, either side of it', () => {
+        expect(rounded(2.5)).toBe(3);
+        expect(rounded(-2.5)).toBe(-3);
+        expect(rounded(-0.5)).toBe(-1);
+        expect(rounded(116.4)).toBe(116);
+    });
+
+    it('never gives a negative zero', () => {
+        expect(Object.is(rounded(-0.4), 0)).toBe(true);
     });
 });
