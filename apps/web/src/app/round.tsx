@@ -341,12 +341,14 @@ export const useRound = ({
             const lines = game.saved.players.map((one) =>
                 lineOf(one, round, scores[one], round.out.includes(one))
             );
-            summary.offer(roundSummary(index, lines));
+            // Undo needs no words of its own here, since the header says whose turn it is again.
+            summary.offer(roundSummary(index, lines), null);
             // A round that ends the game opens its recap, where the table looks at the phone
             // together, and a changed round that does not goes back to the page it was opened from.
+            // The recap takes the round's place, since a finished game's screen only leads to it.
             const ended = saved.outcome === 'ended';
             if (changing) backToScores(ended);
-            else if (ended) navigate(hrefOf('recap', id));
+            else if (ended) navigate(hrefOf('recap', id), { replace: true });
         } else if (saved.error !== null) say(saved.error);
         else if (!quiet)
             say(saved.problems[0] ? refusal(saved.problems[0]) : 'The round could not be saved.');
@@ -389,7 +391,8 @@ export const useRound = ({
                             kept.draft.preview.rounds[draft.index]?.scores[player],
                             false
                         )
-                    )
+                    ),
+                    null
                 );
         } finally {
             setBusy(false);

@@ -69,7 +69,7 @@ export const App = () => {
     if (route && Object.hasOwn(SECTION_OF, route.name))
         return (
             <StatusProvider>
-                <AppFrame screen={route.name} title={titleAt(route, search)}>
+                <AppFrame screen={route.name} search={search} title={titleAt(route, search)}>
                     <Boundary key={place} title={titleAt(route, search)} failed={<ScreenFailed />}>
                         <AppScreen route={route} />
                     </Boundary>

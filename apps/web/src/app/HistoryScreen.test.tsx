@@ -11,13 +11,16 @@ import { render, screen, within } from './render.testing.js';
 
 const hand = (numbers: number[], modifiers: string[] = []) => ({ numbers, modifiers, bust: false });
 const SEVEN = [12, 11, 10, 9, 8, 7, 6];
-const DATES = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' });
+const FORMATS = {
+    date: new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }),
+    time: new Intl.DateTimeFormat('en-US', { timeStyle: 'short', timeZone: 'UTC' }),
+};
 
 /**
  * A database holding Ann, Ben and Cat, a game of Flip 7 Ann won, started on the day given, for
- * each day, and a game of Skyjo still in play.
+ * each day, and a game of Skyjo still in play unless it is asked to hold none.
  */
-const database = async (finished: readonly string[]) => {
+const database = async (finished: readonly string[], inPlay = true) => {
     const factory = new IDBFactory();
     const store = await openStore(factory);
     for (const [id, name] of [
@@ -47,13 +50,14 @@ const database = async (finished: readonly string[]) => {
         }
     }
     at = '2026-11-23T19:00:00.000Z';
-    await play.start({
-        id: 'in-play',
-        game: 'skyjo',
-        rules: 1,
-        options: {},
-        players: ['ann', 'ben'],
-    });
+    if (inPlay)
+        await play.start({
+            id: 'in-play',
+            game: 'skyjo',
+            rules: 1,
+            options: {},
+            players: ['ann', 'ben'],
+        });
     await play.settled();
     store.close();
     return () => openStore(factory);
@@ -63,7 +67,7 @@ const draw = (open: () => ReturnType<typeof openStore>) => {
     window.history.replaceState(null, '', '/history/');
     render(
         <AppFrame screen="history" title="History">
-            <HistoryScreen open={open} dates={DATES} />
+            <HistoryScreen open={open} formats={FORMATS} />
         </AppFrame>
     );
 };
@@ -74,17 +78,17 @@ describe('the history', () => {
         const list = await screen.findByRole('list', { name: 'Finished games' });
         const links = within(list).getAllByRole('link');
         expect(links.map((link) => link.textContent)).toEqual([
-            'Ann won, Flip 7, November 21, 2026. Ann, Ben and Cat.›',
-            'Ann won, Flip 7, November 14, 2026. Ann, Ben and Cat.›',
+            'Ann won with 229, Flip 7, November 21, 2026. Ann, Ben and Cat.›',
+            'Ann won with 229, Flip 7, November 14, 2026. Ann, Ben and Cat.›',
         ]);
         expect(links.map((link) => link.getAttribute('href'))).toEqual([
-            '/recap/?id=2026-11-21',
-            '/recap/?id=2026-11-14',
+            '/recap/?id=2026-11-21&from=history',
+            '/recap/?id=2026-11-14&from=history',
         ]);
     });
 
     it('says what will appear there and how to start a game while no game has finished', async () => {
-        draw(await database([]));
+        draw(await database([], false));
         expect(
             await screen.findByText(
                 'No finished games yet. Each game is listed here once it ends, with its players and who won.'
@@ -95,5 +99,16 @@ describe('the history', () => {
             '/play/'
         );
         expect(screen.queryByRole('list', { name: 'Finished games' })).toBeNull();
+    });
+
+    it('points to the game in play on the Play screen while none has finished', async () => {
+        draw(await database([]));
+        expect(
+            await screen.findByText(
+                'No finished games yet. Each game is listed here once it ends, with its players and who won. Your game in play is on the Play screen.'
+            )
+        ).toBeVisible();
+        expect(screen.getByRole('link', { name: 'Go to Play' })).toHaveAttribute('href', '/play/');
+        expect(screen.queryByRole('link', { name: 'Start a game' })).toBeNull();
     });
 });

@@ -53,6 +53,19 @@ describe("the app's frame", () => {
         expect(currentOf('play', 'constructor')).toBeUndefined();
     });
 
+    it('marks the history for a recap opened from it, and play for one reached as a game ends', () => {
+        expect(currentOf('history', 'recap', '?id=g-1&from=history')).toBe('true');
+        expect(currentOf('play', 'recap', '?id=g-1&from=history')).toBeUndefined();
+        expect(currentOf('play', 'recap', '?id=g-1')).toBe('true');
+        expect(currentOf('history', 'recap', '?id=g-1')).toBeUndefined();
+        render(<AppFrame screen="recap" title="Recap" search="?id=g-1&from=history" />);
+        expect(tabs().getByRole('link', { name: 'History' })).toHaveAttribute(
+            'aria-current',
+            'true'
+        );
+        expect(tabs().getByRole('link', { name: 'Play' })).not.toHaveAttribute('aria-current');
+    });
+
     it('holds one place for a toast, its status line on the page before any toast is shown', () => {
         render(<AppFrame screen="play" title="Play" />);
         const statuses = screen.getAllByRole('status');

@@ -16,17 +16,40 @@ export interface FinishedGame {
     readonly won: string;
     /** The game's name. */
     readonly game: string;
-    /** The day it was started, written out in the form the formatter gives. */
+    /**
+     * The day it was started, written out in the visitor's form, with the time it was started where
+     * another listed game was started the same day.
+     */
     readonly date: string;
     /** The players, in seat order. */
     readonly players: string;
 }
 
-/** Who won, in a few words, alone or sharing the win, or that the rules named no one. */
-export const wonBy = (winners: readonly string[]): string => {
+/** How a date and a time are written, in the visitor's form unless a test gives its own. */
+export interface DateFormats {
+    readonly date: Intl.DateTimeFormat;
+    readonly time: Intl.DateTimeFormat;
+}
+
+let visitor: DateFormats | null = null;
+
+/** The visitor's own way of writing a date and a time, made once and kept. */
+export const visitorFormats = (): DateFormats =>
+    (visitor ??= {
+        date: new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }),
+        time: new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }),
+    });
+
+/**
+ * Who won, in a few words, alone or sharing the win, with the winning total, as the recap says it,
+ * or that the rules named no one.
+ */
+export const wonBy = (winners: readonly string[], total: number): string => {
     if (winners.length === 0) return 'No winner';
     const named = listOf(winners, 'and');
-    return winners.length === 1 ? `${named} won` : `${named} shared the win`;
+    return winners.length === 1
+        ? `${named} won with ${String(total)}`
+        : `${named} shared the win, level on ${String(total)}`;
 };
 
 /**
@@ -45,25 +68,34 @@ const startedLastFirst = (first: GameInPlay, second: GameInPlay): number =>
     first.saved.id.localeCompare(second.saved.id);
 
 /**
- * Every finished game, the newest first, with who won, the game, the day it was started in the form
- * the formatter writes and the players' names. A game in play is left out, since the start screen
- * offers it.
+ * Every finished game, the newest first, with who won and by what total, the game, the day it was
+ * started in the form the formats write and the players' names. Two games started the same day
+ * carry the time each was started too, so their rows read apart. A game in play is left out, since
+ * the start screen offers it.
  */
 export const finishedOf = (
     games: readonly GameInPlay[],
     names: ReadonlyMap<string, string>,
-    dates: Intl.DateTimeFormat
-): FinishedGame[] =>
-    games
-        .filter(isFinished)
-        .sort(startedLastFirst)
-        .map(({ saved, result }) => ({
+    formats: DateFormats
+): FinishedGame[] => {
+    const finished = games.filter(isFinished).sort(startedLastFirst);
+    const days = finished.map(({ saved }) => formats.date.format(new Date(saved.started)));
+    return finished.map(({ saved, result }, at) => {
+        const day = days[at] ?? '';
+        const shared = days.filter((one) => one === day).length > 1;
+        const started = new Date(saved.started);
+        return {
             id: saved.id,
-            won: wonBy(result.winners.map((one) => nameIn(names, one))),
+            won: wonBy(
+                result.winners.map((one) => nameIn(names, one)),
+                result.totals[result.winners[0] ?? ''] ?? 0
+            ),
             game: gameNameOf(saved.game),
-            date: dates.format(new Date(saved.started)),
+            date: shared ? `${day}, ${formats.time.format(started)}` : day,
             players: listOf(
                 saved.players.map((one) => nameIn(names, one)),
                 'and'
             ),
-        }));
+        };
+    });
+};

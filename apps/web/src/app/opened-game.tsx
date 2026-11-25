@@ -7,7 +7,7 @@ import {
     useSyncExternalStore,
 } from 'react';
 
-import { usePlace } from '../navigation.js';
+import { Link, usePlace } from '../navigation.js';
 import { type GameInPlay, openPlay, type Play } from '../play/play.js';
 import { hrefOf } from '../routes.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
@@ -175,6 +175,19 @@ export const useGame = (play: Play, id: string): GameInPlay | undefined =>
     useSyncExternalStore(play.subscribe, play.snapshot, play.snapshot).games.find(
         ({ saved }) => saved.id === id
     );
+
+/**
+ * What a screen about one game says where this phone does not hold it, as after a delete, with a
+ * way to the history, where a game deleted a moment ago can be put back from the toast.
+ */
+export const GameGone = () => (
+    <>
+        <p>This game is not on this phone. It may have been deleted.</p>
+        <p>
+            <Link href={hrefOf('history')}>Go to the history</Link>
+        </p>
+    </>
+);
 
 /** A player's name, or words that stand for one this phone no longer holds. */
 export const nameIn = (names: ReadonlyMap<string, string>, player: string): string =>

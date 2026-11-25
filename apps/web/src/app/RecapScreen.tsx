@@ -2,14 +2,15 @@ import { GAMES } from '@gametabletally/scoring';
 import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
 import { type ReactNode, useState } from 'react';
 
-import { Link, navigate } from '../navigation.js';
+import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, NewGame, Play } from '../play/play.js';
-import { changingRoundOf, hrefOf } from '../routes.js';
+import { changingRoundOf, fromHistory, hrefOf } from '../routes.js';
 import { refusalOf } from '../store/store.js';
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
+import { visitorFormats } from './history.js';
 import { gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
+import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { newGameOf } from './PlayStart.js';
 import { GameTables } from './ScoresScreen.js';
 import { useDiscard, useSummary } from './summary.js';
@@ -126,6 +127,7 @@ const Recap = ({
     readonly newId: () => string;
 }) => {
     const game = useGame(play, id);
+    const { search } = usePlace();
     const say = useStatus();
     const summary = useSummary(play);
     const [busy, setBusy] = useState(false);
@@ -134,7 +136,7 @@ const Recap = ({
     const deleteButton = useBusy<HTMLButtonElement>();
     // Set as a delete starts, so the page says nothing of the game it took away while it goes.
     const [leaving, setLeaving] = useState(false);
-    if (!game) return leaving ? null : <p>This game is not on this phone.</p>;
+    if (!game) return leaving ? null : <GameGone />;
     const { result, saved } = game;
     const standing = standingOf(game);
 
@@ -144,6 +146,7 @@ const Recap = ({
      * others.
      */
     const again = async () => {
+        if (leaving) return;
         summary.clear();
         const fresh = againOf(saved, present, newId());
         const least = GAMES.find((one) => one.id === saved.game)?.minPlayers ?? 0;
@@ -171,10 +174,14 @@ const Recap = ({
      * to a game that is gone, with the frame's toast offering Undo there.
      */
     const remove = async () => {
+        if (busy) return;
         setLeaving(true);
-        const done = await deleteGame(id, gameNameOf(saved.game));
+        const day = visitorFormats().date.format(new Date(saved.started));
+        const done = await deleteGame(id, gameNameOf(saved.game), day);
         if (done === true) {
-            navigate(hrefOf('history'), { replace: true });
+            // Opened from the history, the recap goes back to it, so Back never shows it twice.
+            if (fromHistory(search)) window.history.back();
+            else navigate(hrefOf('history'), { replace: true });
             return;
         }
         setLeaving(false);
@@ -203,6 +210,7 @@ const Recap = ({
                     <Button
                         ref={deleteButton}
                         text
+                        off={busy}
                         busy={deleting === null ? false : 'Deleting the game.'}
                         onClick={() => void remove()}
                     >
@@ -217,6 +225,7 @@ const Recap = ({
                         accent
                         tall
                         busy={busy ? 'Starting the game.' : false}
+                        off={leaving || deleting !== null}
                         onClick={() => void again()}
                     >
                         Play again <span className="dk-visually-hidden">with the same players</span>

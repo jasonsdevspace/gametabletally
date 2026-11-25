@@ -9,7 +9,7 @@ import { type ChangedFrom, changingRoundOf, hrefOf, roundIn } from '../routes.js
 import { listOf } from '../website/games.js';
 import { Dock } from './AppFrame.js';
 import { canEnter, gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
+import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { useSummary } from './summary.js';
 
 /*
@@ -384,7 +384,7 @@ const Scores = ({
     readonly names: ReadonlyMap<string, string>;
 }) => {
     const game = useGame(play, id);
-    if (!game) return <p>This game is not on this phone.</p>;
+    if (!game) return <GameGone />;
     const { result, draft } = game;
     const back =
         draft !== null && draft.index === result.rounds.length

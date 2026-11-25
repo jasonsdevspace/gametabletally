@@ -149,6 +149,10 @@ describe('a round of Wizard', () => {
                 'The bids for round 2 are in: Ann 2, Ben 0 and Cat 1.'
             );
         });
+        // Undo puts the bids back to set, and the screen's line says so.
+        fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+        await heard(screenLine(), 'The bids for round 2 are taken back.');
+        expect(await screen.findByRole('button', { name: 'Save the bids' })).toBeTruthy();
     });
 
     it("says nothing and leaves no timer when the round's screen goes while a typed count settles", async () => {
