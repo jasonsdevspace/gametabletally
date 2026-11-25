@@ -3,7 +3,7 @@ import {
     contenders,
     isRecord,
     isWhole,
-    noOptions,
+    numberOption,
     plain,
     readEntries,
     type Refusal,
@@ -13,15 +13,16 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
+import type { GameOption } from './types.js';
 
 /**
  * Flip 7, as published. A player ends a round holding number cards and modifier cards, or
  * having bust. The round's score is the number cards added up, doubled by the x2 card, plus each
  * plus card, plus fifteen for seven different numbers. Neither the plus cards nor the fifteen
  * are ever doubled. A bust scores nothing. The game ends with the round in which a player
- * reaches two hundred, and the highest total wins. A tie at the top does not end it. A player who
- * has been out of a round can reach the two hundred and end the game, and wins it only when every
- * player has been out of one.
+ * reaches two hundred, or the target score a table chooses, and the highest total wins. A tie at
+ * the top does not end it. A player who has been out of a round can reach the target and end the
+ * game, and wins it only when every player has been out of one.
  *
  * The deck also holds three action cards: Freeze, Flip Three and Second Chance. They change who
  * plays on and whether a repeated number is a bust, and never what a hand is worth, so an entry
@@ -63,7 +64,15 @@ export const FLIP_7_BONUS = { numbers: 7, points: 15 } as const;
 /** How many different numbers end the round and earn the bonus. */
 const FLIP = FLIP_7_BONUS.numbers;
 const BONUS = FLIP_7_BONUS.points;
-const TARGET = 200;
+
+/** The total that ends the game, two hundred by the published rules. */
+const TARGET: GameOption = {
+    id: 'target-score',
+    name: 'Target score',
+    description: 'The game ends with the round in which a player reaches this total.',
+    default: 200,
+    values: [100, 150, 200, 250, 300],
+};
 
 /** What each plus card adds. The x2 card adds nothing and doubles the numbers instead. */
 const PLUS: Readonly<Record<Flip7Modifier, number>> = {
@@ -165,8 +174,8 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
  * Once any total has reached the target, whoever has played every round and leads the others who
  * have, alone.
  */
-const winners = ({ totals, missed }: Standing): readonly number[] | null => {
-    if (Math.max(...totals) < TARGET) return null;
+const winners = ({ totals, missed, options }: Standing): readonly number[] | null => {
+    if (Math.max(...totals) < numberOption(options, TARGET)) return null;
     const leading = bestAmong(totals, contenders(missed), 'highest');
     // A tie at the top does not end the game. It goes on by whole rounds until one player leads.
     return leading.length === 1 ? leading : null;
@@ -179,8 +188,7 @@ export const FLIP_7: Rules = {
     minPlayers: 3,
     maxPlayers: null,
     ahead: 'highest',
-    // The published rules are the only ones this version knows.
-    checkOptions: noOptions('Flip 7'),
+    options: [TARGET],
     scoreRound,
     winners,
 };

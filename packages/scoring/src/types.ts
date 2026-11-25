@@ -9,7 +9,11 @@ export interface ScoreInput {
     readonly game: string;
     /** The version of the game's rule set the game is played under, as `GAMES` lists it. */
     readonly rules: number;
-    /** The options that change a rule, by name. A game with none takes an empty object. */
+    /**
+     * The options that change a rule, by their ids, as `GAMES` lists them for the game. An option
+     * not given, or given as null, is played by the published rule, so a game played by the book
+     * takes an empty object. The options hold for the whole game.
+     */
     readonly options: Readonly<Record<string, unknown>>;
     /** The players' ids in seat order. An id is the caller's own and never appears in a message. */
     readonly players: readonly string[];
@@ -49,6 +53,7 @@ export interface ProblemData {
     readonly 'too-many-players': { readonly max: number; readonly given: number };
     readonly 'player-twice': Nothing;
     readonly 'unknown-option': { readonly option: string };
+    readonly 'value-not-allowed': { readonly option: string; readonly value: Plain };
     /**
      * `out` when the round's list of players out is not a list of ids, or nothing when the round
      * does not hold its entries.
@@ -87,6 +92,7 @@ export interface ProblemData {
     readonly 'impossible-bid': Range;
     readonly 'impossible-tricks': Range;
     readonly 'trick-total': { readonly dealt: number; readonly given: number };
+    readonly 'bid-total': { readonly dealt: number };
 }
 
 /** A name for a reason something is refused, one of those the README's table lists. */
@@ -175,6 +181,26 @@ export interface ScoreResult {
     readonly problems: readonly Problem[];
 }
 
+/** A value an option can take: a number, such as a target score, or on and off. */
+export type OptionValue = number | boolean;
+
+/**
+ * A rule a table may change for a game, as an app offers it. The game's published rule is its
+ * default, so a game given no options is played by the book.
+ */
+export interface GameOption {
+    /** What a game's options name it by. It never changes once a game has been saved with it. */
+    readonly id: string;
+    /** What a player calls it. */
+    readonly name: string;
+    /** What it changes, in a plain sentence. */
+    readonly description: string;
+    /** The value of the published rule, which a game not given the option is played by. */
+    readonly default: OptionValue;
+    /** Every value it can take, the default among them, in the order an app offers them. */
+    readonly values: readonly OptionValue[];
+}
+
 /** A game the package knows, as an app lists it. */
 export interface Game {
     /** What a saved game names it by. It never changes once a game has been saved under it. */
@@ -192,4 +218,6 @@ export interface Game {
     readonly minPlayers: number;
     /** The most players it takes, or null when the rules name no limit. */
     readonly maxPlayers: number | null;
+    /** The rules a table may change for it, in the order an app offers them. */
+    readonly options: readonly GameOption[];
 }

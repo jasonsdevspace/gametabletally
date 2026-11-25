@@ -45,7 +45,7 @@ describe('the games the package knows', () => {
     });
 
     it('says which rule set a new game starts under, which way is ahead and how many can play', () => {
-        expect(GAMES).toEqual([
+        expect(GAMES.map(({ options: _, ...game }) => game)).toEqual([
             {
                 id: 'flip-7',
                 name: 'Flip 7',
@@ -64,6 +64,55 @@ describe('the games the package knows', () => {
                 maxPlayers: 6,
             },
         ]);
+    });
+
+    it('lists the options of each, with the published rule as the default', () => {
+        const declared = GAMES.map(({ id, options }) => ({
+            id,
+            options: options.map(({ id: option, default: published, values }) => ({
+                option,
+                published,
+                values,
+            })),
+        }));
+        expect(declared).toEqual([
+            {
+                id: 'flip-7',
+                options: [
+                    { option: 'target-score', published: 200, values: [100, 150, 200, 250, 300] },
+                ],
+            },
+            {
+                id: 'skyjo',
+                options: [{ option: 'target-score', published: 100, values: [50, 100, 150, 200] }],
+            },
+            {
+                id: 'wizard',
+                options: [{ option: 'plus-minus-one', published: false, values: [false, true] }],
+            },
+        ]);
+    });
+
+    it('names each option by an id of its own in its game, safe in an address', () => {
+        for (const { options } of GAMES) {
+            const ids = options.map(({ id }) => id);
+            expect(new Set(ids).size).toBe(ids.length);
+            for (const id of ids) expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+        }
+    });
+
+    it('gives each option a name and a description in a sentence, and its default among its values', () => {
+        for (const { options } of GAMES)
+            for (const option of options) {
+                expect(option.name.trim()).not.toBe('');
+                expect(option.description).toMatch(/^[A-Z].*\.$/);
+                expect(new Set(option.values).size).toBe(option.values.length);
+                expect(option.values).toContain(option.default);
+            }
+    });
+
+    it('carries options that survive being written as JSON', () => {
+        expect(JSON.parse(JSON.stringify(GAMES))).toEqual(GAMES);
     });
 });
 

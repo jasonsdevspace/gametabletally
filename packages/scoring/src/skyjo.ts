@@ -3,7 +3,7 @@ import {
     contenders,
     isRecord,
     isWhole,
-    noOptions,
+    numberOption,
     plain,
     problemAt,
     readEntries,
@@ -14,6 +14,7 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
+import type { GameOption } from './types.js';
 
 /**
  * Skyjo, as published. A round ends when one player has turned every card face up, and each
@@ -21,10 +22,10 @@ import {
  * loses a column whenever its three cards match. The player who ended the round has to hold the
  * lowest score of it alone. If another player holds as little or less, and their own score is
  * above zero, it is doubled. The game ends with the round in which a player reaches one hundred,
- * and the lowest total wins. Only the players in a round count toward it, so the player who ended
- * it is compared with them, and a player out of it cannot have ended it. A player who has been out
- * of a round can reach one hundred and end the game, and wins it only when every player has been
- * out of one.
+ * or the target score a table chooses, and the lowest total wins. Only the players in a round
+ * count toward it, so the player who ended it is compared with them, and a player out of it cannot
+ * have ended it. A player who has been out of a round can reach the target and end the game, and
+ * wins it only when every player has been out of one.
  *
  * Players count their own cards, and a cleared column leaves a hand with fewer of them, so an
  * entry is the total a player counted. It may be given as the cards themselves instead, which
@@ -52,7 +53,15 @@ const LOWEST_CARD = -2;
 const HIGHEST_CARD = 12;
 /** A grid holds four columns of three, and never gains a card. */
 const MOST_CARDS = 12;
-const TARGET = 100;
+
+/** The total that ends the game, one hundred by the published rules. */
+const TARGET: GameOption = {
+    id: 'target-score',
+    name: 'Target score',
+    description: 'The game ends with the round in which a player reaches this total.',
+    default: 100,
+    values: [50, 100, 150, 200],
+};
 
 /** How many of a card the deck holds: five of the lowest, ten of the next, fifteen zeros, ten of each other. */
 const copiesOf = (card: number): number => {
@@ -189,8 +198,8 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
  * Once any total has reached the target, whoever has played every round and holds the lowest
  * total of those who have.
  */
-const winners = ({ totals, missed }: Standing): readonly number[] | null => {
-    if (Math.max(...totals) < TARGET) return null;
+const winners = ({ totals, missed, options }: Standing): readonly number[] | null => {
+    if (Math.max(...totals) < numberOption(options, TARGET)) return null;
     // Players level on the lowest total share the win.
     return bestAmong(totals, contenders(missed), 'lowest');
 };
@@ -202,8 +211,7 @@ export const SKYJO: Rules = {
     ahead: 'lowest',
     minPlayers: 2,
     maxPlayers: 8,
-    // The published rules are the only ones this version knows.
-    checkOptions: noOptions('Skyjo'),
+    options: [TARGET],
     scoreRound,
     winners,
 };
