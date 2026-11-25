@@ -1,7 +1,8 @@
-import { GAMES } from '@gametabletally/scoring';
+import { type Game, GAMES, type OptionValue } from '@gametabletally/scoring';
 import {
     Button,
     ChoiceField,
+    SelectField,
     useBusy,
     useFocusAfterDraw,
     useStatus,
@@ -17,15 +18,17 @@ import { playersOf } from '../website/games.js';
 import { Dock, useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { Icon } from './icon.js';
+import { optionsOf, shownOf } from './options.js';
 import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
 /**
- * The new game screen: the game, the players and their seats, and the button that starts it. The
- * game comes picked from the start screen's link, as `?game=`. The saved players are read from the
- * phone once the screen is running, and a name typed here is saved as a player at once, so it is
- * offered from then on. The seats are a list with a button to move each one up and one to move it
- * down, which a keyboard and a thumb both reach, and a screen reader is told each seat's new place.
+ * The new game screen: the game, the players and their seats, the game's rule options, and the
+ * button that starts it. The game comes picked from the start screen's link, as `?game=`. The saved
+ * players are read from the phone once the screen is running, and a name typed here is saved as a
+ * player at once, so it is offered from then on. The seats are a list with a button to move each
+ * one up and one to move it down, which a keyboard and a thumb both reach, and a screen reader is
+ * told each seat's new place. The options are saved with the game and fixed once it starts.
  */
 
 /** A seat's three actions, each with its icon and the words a screen reader says for it. */
@@ -98,6 +101,66 @@ const SeatRow = ({
     );
 };
 
+/** Values picked for a game's options, by their ids. */
+type Picked = Readonly<Record<string, OptionValue>>;
+
+/**
+ * The game's rule options, each in the kit's field for its kind: a select for a number and a
+ * checkbox for a switch, with the package's name and description, the published rule chosen.
+ */
+const RuleFields = ({
+    game,
+    picked,
+    onPick,
+}: {
+    readonly game: Game;
+    readonly picked: Picked;
+    readonly onPick: (id: string, value: OptionValue) => void;
+}) => (
+    <section className="dk-stack dk-stack-heading" aria-labelledby="rules">
+        <h2 id="rules">Rules</h2>
+        {shownOf(game).map((option) =>
+            option.kind === 'number' ? (
+                <SelectField
+                    key={option.id}
+                    label={option.name}
+                    hint={option.description}
+                    value={String(picked[option.id] ?? option.default)}
+                    onChange={(event) => {
+                        onPick(option.id, Number(event.currentTarget.value));
+                    }}
+                >
+                    {option.values.map((value) => (
+                        <option key={value} value={value}>
+                            {value === option.default
+                                ? `${String(value)}, the published rule`
+                                : value}
+                        </option>
+                    ))}
+                </SelectField>
+            ) : (
+                <ChoiceField
+                    key={option.id}
+                    label={option.name}
+                    hint={option.description}
+                    name={option.id}
+                    type="checkbox"
+                    choices={[
+                        {
+                            value: 'on',
+                            label: 'On',
+                            checked: (picked[option.id] ?? option.default) === true,
+                            onChange: (event) => {
+                                onPick(option.id, event.currentTarget.checked);
+                            },
+                        },
+                    ]}
+                />
+            )
+        )}
+    </section>
+);
+
 export interface NewGameProps {
     /** Opens the phone's database, which a test opens in memory. */
     readonly open?: () => Promise<Store>;
@@ -157,6 +220,8 @@ export const NewGame = ({
     // The game the visitor chose here, which stands over the one the start screen's link picked.
     const [chosen, setChosen] = useState<string | null>(null);
     const [seats, setSeats] = useState<readonly string[]>([]);
+    // The options picked for each game, kept while another game is looked at.
+    const [picked, setPicked] = useState<Readonly<Record<string, Picked>>>({});
     const say = useStatus();
     const show = useToast();
     const [refused, setRefused] = useState('');
@@ -273,7 +338,7 @@ export const NewGame = ({
                     id,
                     game: game.id,
                     rules: game.rules,
-                    options: {},
+                    options: optionsOf(game, picked[game.id] ?? {}),
                     players: seats,
                 });
                 return play.snapshot().games.find(({ saved }) => saved.id === id)?.error ?? null;
@@ -346,6 +411,18 @@ export const NewGame = ({
                 )}
                 <AddByName field={nameField} onAdd={addByName} />
             </section>
+            {game && shownOf(game).length > 0 ? (
+                <RuleFields
+                    game={game}
+                    picked={picked[game.id] ?? {}}
+                    onPick={(id, value) => {
+                        setPicked((now) => ({
+                            ...now,
+                            [game.id]: { ...now[game.id], [id]: value },
+                        }));
+                    }}
+                />
+            ) : null}
             <Dock>
                 {/* Beside the button that was pressed, which may be far below the body's top. */}
                 <Failure words={refused} />

@@ -536,7 +536,7 @@ export const openPlay = (
                 const game = gameOf(id);
                 const draft = draftOf(game);
                 const before = toDraftRound(draft.round);
-                const round = withOut(before, game.players, out);
+                const round = withOut(before, game.players, out, draft.step?.part === 'tricks');
                 const steps = stepsOf(game.game, game.players, round);
                 const still = steps.some((step) => sameStep(step, draft.step));
                 // The turn moves as entering moves it: from a player taken out, to the next seat

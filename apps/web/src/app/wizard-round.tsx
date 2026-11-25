@@ -1,4 +1,4 @@
-import { type Problem, wizardRounds } from '@gametabletally/scoring';
+import { type Problem, score, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
 import {
     Button,
@@ -10,7 +10,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import type { Play, StepValue } from '../play/play.js';
 import { type DraftRound, playingIn } from '../play/steps.js';
-import { isRecord } from '../store/format.js';
+import { isRecord, type SavedGame, toScoreInput } from '../store/format.js';
 import { listOf } from '../website/games.js';
 import { Failure } from './failure.js';
 import { nameIn } from './opened-game.js';
@@ -101,6 +101,67 @@ export const wizardRefusalWords = (problem: Problem): string =>
     problem.code === 'trick-total'
         ? tricksLeftWords(Number(problem.data.given), Number(problem.data.dealt))
         : problem.message;
+
+/**
+ * The bid the player who bids last cannot make, since the rules would refuse the bids it completes,
+ * or null where they would refuse none. Each bid they could make is tried in the round, beside the
+ * others' and any bid of a player marked out, so the rules' own refusal decides, under whatever
+ * options the game was started with.
+ */
+export const barredBid = (
+    game: SavedGame,
+    index: number,
+    round: DraftRound,
+    last: string
+): number | null => {
+    for (let bid = 0; bid <= index + 1; bid += 1) {
+        const tried = { ...round, entries: { ...round.entries, [last]: { bid } } };
+        const rounds = [...game.rounds.slice(0, index), tried];
+        const { problems } = score({ ...toScoreInput(game), rounds });
+        if (problems.some(({ code, round: at }) => code === 'bid-total' && at === index))
+            return bid;
+    }
+    return null;
+};
+
+/** No bid barred, while the others' bids are not all in or every bid can be made. */
+const NONE_BARRED = { words: '', blocked: false } as const;
+
+/**
+ * The bid the dealer, who bids last, cannot make against the others' bids as set, in words, and
+ * whether the dealer's bid as set is it, which holds the bids.
+ */
+const barredNow = ({
+    game,
+    playing,
+    dealer,
+    countOf,
+    nameOf,
+}: {
+    readonly game: GameWithDraft;
+    readonly playing: readonly string[];
+    readonly dealer: string | null;
+    readonly countOf: (player: string) => number | null;
+    readonly nameOf: (player: string) => string;
+}): { readonly words: string; readonly blocked: boolean } => {
+    const others = playing.filter((one) => one !== dealer);
+    const bids = others.map((one) => [one, { bid: countOf(one) }] as const);
+    if (dealer === null || bids.some(([, { bid }]) => bid === null)) return NONE_BARRED;
+    const { index, round } = game.draft;
+    const entries = { ...round.entries, ...Object.fromEntries(bids) };
+    const bid = barredBid(game.saved, index, { ...round, entries }, dealer);
+    if (bid === null) return NONE_BARRED;
+    return {
+        words: `The bids may not add up to ${String(index + 1)}, the cards each player holds, so ${nameOf(dealer)}, bidding last, cannot bid ${String(bid)}.`,
+        blocked: countOf(dealer) === bid,
+    };
+};
+
+/** Which line says why the round cannot move on: a count out of its limits, a barred bid, or the tricks. */
+const whyOf = (wrong: string, blocked: boolean): string => {
+    if (wrong !== '') return 'counts-why';
+    return blocked ? 'bids-barred' : 'tricks-left';
+};
 
 /** A round's heading: which round of how many, the cards each player holds, and who deals. */
 const RoundTitle = ({
@@ -408,6 +469,7 @@ const CountsView = ({
     counts,
     left,
     wrong,
+    barred,
     onText,
     pressWords,
 }: {
@@ -422,6 +484,8 @@ const CountsView = ({
     readonly left: string;
     /** Why a count typed is refused, in words, or an empty string. */
     readonly wrong: string;
+    /** The bid the last to bid cannot make, in words, or an empty string. */
+    readonly barred: string;
     readonly onText: (player: string, text: string) => void;
     /** The words said after each press's value, the tricks still to enter. */
     readonly pressWords?: (() => string) | undefined;
@@ -451,6 +515,11 @@ const CountsView = ({
             {wrong === '' ? null : (
                 <p className="dk-field-hint" id="counts-why">
                     {wrong}
+                </p>
+            )}
+            {barred === '' ? null : (
+                <p className="dk-field-hint" id="bids-barred">
+                    {barred}
                 </p>
             )}
             <div className="gtt-counts">
@@ -518,6 +587,13 @@ export const WizardRound = ({
         refusedBy === undefined || phase === 'hand'
             ? ''
             : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
+    // The dealer bids last, so the bid they cannot make is said before they make it, and the bids
+    // are held while theirs is it.
+    const barred =
+        phase === 'bids'
+            ? barredNow({ game, playing, dealer, countOf: counts.countOf, nameOf })
+            : NONE_BARRED;
+    const { blocked } = barred;
 
     // The tricks still to enter, as last said, so the same words are not said again. A press says
     // them with its value, in the stepper's own message, and a count typed says them once the
@@ -576,7 +652,7 @@ export const WizardRound = ({
 
     const saveBids = async () => {
         const values = valuesOf(counts.withText('', ''));
-        if (values === null) return;
+        if (values === null || blocked) return;
         const done = await actionsOf.run(
             () => play.enterAll(id, values),
             'The bids could not be saved.',
@@ -669,7 +745,7 @@ export const WizardRound = ({
         />
     );
     const parts = { playing, names, dealer };
-    const refused = wrong !== '' || (phase === 'tricks' && given !== dealt);
+    const refused = wrong !== '' || blocked || (phase === 'tricks' && given !== dealt);
 
     return (
         <div className="gtt-game gtt-wizard">
@@ -693,6 +769,7 @@ export const WizardRound = ({
                     counts={counts}
                     left={left}
                     wrong={wrong}
+                    barred={barred.words}
                     onText={change}
                     pressWords={pressWords}
                 />
@@ -705,7 +782,7 @@ export const WizardRound = ({
                 off={busy}
                 moving={actionsOf.moving}
                 refused={refused}
-                why={wrong === '' ? 'tricks-left' : 'counts-why'}
+                why={whyOf(wrong, blocked)}
                 label={labelOf(phase, changing, draft.index)}
                 onNext={() => {
                     if (phase === 'bids') void saveBids();

@@ -110,16 +110,23 @@ export const read = (round: DraftRound, { part, player }: SavedStep): unknown =>
 
 /**
  * The round with the players named as out, in seat order, and with what they had entered and any
- * claim that one of them ended it taken out, since nobody out of a round has a part in it.
+ * claim that one of them ended it taken out, since nobody out of a round has a part in it. Once the
+ * bids are made, a bid of a player marked out is kept, with nothing else they entered, since the
+ * bids after it were made knowing it and the rules count it.
  */
 export const withOut = (
     round: DraftRound,
     players: readonly string[],
-    out: readonly string[]
+    out: readonly string[],
+    bidsMade = false
 ): DraftRound => {
     const seated = players.filter((player) => out.includes(player));
     const entries = Object.fromEntries(
-        Object.entries(round.entries).filter(([player]) => !seated.includes(player))
+        Object.entries(round.entries).flatMap(([player, entry]) => {
+            if (!seated.includes(player)) return [[player, entry]];
+            const bid = isRecord(entry) ? entry['bid'] : undefined;
+            return bidsMade && typeof bid === 'number' ? [[player, { bid }]] : [];
+        })
     );
     const ender = round['ender'];
     const keep = typeof ender === 'string' && seated.includes(ender) ? { ender: null } : {};

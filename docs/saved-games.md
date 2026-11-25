@@ -40,6 +40,11 @@ whenever they are shown. No total is saved anywhere.
 they are. A game in play and a finished game are saved alike: whether a game is over is worked out
 from its rounds.
 
+A game is saved with every option its game declares, by the option's id, with the value it was
+started with, the published rule's where none was changed, so the rules a game was played by are in
+its record. A game saved before the app offered options holds an empty object, which the scoring
+package plays by the published rules.
+
 ### The round being entered
 
 A round is entered a step at a time, and each step is saved as it is made, so a page closed in the
@@ -108,7 +113,7 @@ from one by merging it as below.
             "id": "g-1",
             "game": "flip-7",
             "rules": 1,
-            "options": {},
+            "options": { "target-score": 200 },
             "players": ["p-ann", "p-ben", "p-cat"],
             "rounds": [],
             "draft": {

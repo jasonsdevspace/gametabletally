@@ -87,6 +87,7 @@ describe('the finished games', () => {
                 game: 'Flip 7',
                 date: 'November 21, 2026',
                 players: 'Ann, Ben and Cat',
+                rules: '',
             },
             {
                 id: 'older',
@@ -94,6 +95,7 @@ describe('the finished games', () => {
                 game: 'Flip 7',
                 date: 'November 14, 2026',
                 players: 'Ann, Ben and Cat',
+                rules: '',
             },
         ]);
     });

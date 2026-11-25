@@ -472,6 +472,41 @@ describe('players out of a round', () => {
         });
     });
 
+    it('keep a bid made before they were marked out, which still counts toward the bids', async () => {
+        const { play } = await setUp();
+        await play.start({ ...newGame('wizard'), options: { 'plus-minus-one': true } });
+        await play.enterAll(
+            'g-1',
+            PLAYERS.map((player, at) => ({
+                step: { part: 'bid', player } as const,
+                value: [0, 1, 1][at],
+            }))
+        );
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.round.entries).toEqual({
+            ann: { bid: 0 },
+            ben: { bid: 1 },
+            cat: { bid: 1 },
+        });
+        // Without Cat's bid, the bids would come to the one card dealt, which the option refuses.
+        const tricks = [
+            { step: { part: 'tricks', player: 'ann' } as const, value: 0 },
+            { step: { part: 'tricks', player: 'ben' } as const, value: 1 },
+        ];
+        expect(await play.saveRound('g-1', undefined, tricks)).toEqual({
+            saved: true,
+            outcome: null,
+        });
+    });
+
+    it('drop a bid still being set when they are marked out', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.holdAll('g-1', [{ step: { part: 'bid', player: 'cat' }, value: 1 }]);
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.round.entries).toEqual({});
+    });
+
     it('ask a player put back before who ended the round, which waits for every total', async () => {
         const { play } = await setUp();
         await play.start(newGame('skyjo'));
