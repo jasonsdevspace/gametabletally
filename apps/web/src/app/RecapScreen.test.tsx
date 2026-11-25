@@ -101,6 +101,20 @@ describe('the recap', () => {
         expect(screen.queryByText('Ann won with 229.')).toBeNull();
     });
 
+    it('names an option the game was played with that differs from the published rules', async () => {
+        await draw({ ...saved(won.rounds.slice(0, 1)), options: { 'target-score': 150 } });
+        expect(await screen.findByText('Ann wins with 151.')).toBeTruthy();
+        expect(
+            screen.getByText('This game of Flip 7 is over. Played with a target score of 150.')
+        ).toBeTruthy();
+    });
+
+    it('names no option where the game was played by the published rules', async () => {
+        await draw({ ...won, options: { 'target-score': 200 } });
+        expect(await screen.findByText('Ann wins with 229.')).toBeTruthy();
+        expect(screen.queryByText(/^Played with/)).toBeNull();
+    });
+
     it('plays again with the same players in the same seats, at the first round of a new game', async () => {
         const { open } = await draw(won);
         await screen.findByText('Ann wins with 229.');

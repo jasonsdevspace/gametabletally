@@ -5,6 +5,7 @@ import { compareInstants, type SavedGame } from '../store/format.js';
 import { listOf } from '../website/games.js';
 import { gameNameOf } from './in-play.js';
 import { nameIn } from './opened-game.js';
+import { playedWith } from './options.js';
 
 /*
  * The finished games as the history lists them. Who won is the scoring package's answer for each
@@ -25,6 +26,8 @@ export interface FinishedGame {
     readonly date: string;
     /** The players, in seat order. */
     readonly players: string;
+    /** The options it was played with that differ from the published rules, or nothing. */
+    readonly rules: string;
 }
 
 /** How a date and a time are written, in the visitor's form unless a test gives its own. */
@@ -106,6 +109,7 @@ export const finishedOf = (
                 saved.players.map((one) => nameIn(names, one)),
                 'and'
             ),
+            rules: playedWith(saved),
         };
     });
 };

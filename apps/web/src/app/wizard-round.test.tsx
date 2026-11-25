@@ -7,7 +7,14 @@ import { AppFrame } from './AppFrame.js';
 import { GameScreen } from './GameScreen.js';
 import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
 import { heard } from './status.testing.js';
-import { bidNote, countIn, countsOf, dealerOf, tricksLeftWords } from './wizard-round.js';
+import {
+    barredBid,
+    bidNote,
+    countIn,
+    countsOf,
+    dealerOf,
+    tricksLeftWords,
+} from './wizard-round.js';
 
 /* A round of Wizard in the app's frame, over a database in memory, and the words it draws. */
 
@@ -20,11 +27,15 @@ const player = (id: string, name: string): SavedPlayer => ({
 
 const PLAYERS = ['ann', 'ben', 'cat'];
 
-const wizard = (draft: SavedGame['draft'], rounds: unknown[] = []): SavedGame => ({
+const wizard = (
+    draft: SavedGame['draft'],
+    rounds: unknown[] = [],
+    options: Readonly<Record<string, unknown>> = {}
+): SavedGame => ({
     id: 'g-1',
     game: 'wizard',
     rules: 1,
-    options: {},
+    options,
     players: PLAYERS,
     rounds,
     draft,
@@ -116,6 +127,23 @@ describe('the words and numbers of a Wizard round', () => {
         );
     });
 
+    it('finds the bid the last to bid cannot make, by the rules, counting a bid of a player out', () => {
+        // The first round's bids come to 3, not the 1 card dealt, so the option lets it stand.
+        const first = [saved({ ann: [1, 1], ben: [1, 0], cat: [1, 0] })];
+        const on = wizard(null, first, { 'plus-minus-one': true });
+        const bids = (entries: Record<string, number>, out: string[] = []) => ({
+            entries: Object.fromEntries(
+                Object.entries(entries).map(([one, bid]) => [one, { bid }])
+            ),
+            out,
+        });
+        expect(barredBid(on, 1, bids({ ann: 1, cat: 0 }), 'ben')).toBe(1);
+        expect(barredBid(on, 1, bids({ ann: 2, cat: 1 }), 'ben')).toBeNull();
+        // Cat's bid was made before Cat was marked out, so it still counts.
+        expect(barredBid(on, 1, bids({ ann: 0, cat: 1 }, ['cat']), 'ben')).toBe(1);
+        expect(barredBid(wizard(null, first), 1, bids({ ann: 1, cat: 0 }), 'ben')).toBeNull();
+    });
+
     it("reads a player's bid and tricks as the round holds them", () => {
         expect(countsOf({ bid: 2 })).toEqual({ bid: 2, tricks: undefined });
         expect(countsOf({ bid: 2, tricks: 1 })).toEqual({ bid: 2, tricks: 1 });
@@ -153,6 +181,107 @@ describe('a round of Wizard', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
         await heard(screenLine(), 'The bids for round 2 are taken back.');
         expect(await screen.findByRole('button', { name: 'Save the bids' })).toBeTruthy();
+    });
+
+    /** Round 2 of a game played with Plus or minus one, Ben dealing and so bidding last. */
+    const plusMinusOne = (round: Record<string, unknown> = {}, step: 'bid' | 'tricks' = 'bid') =>
+        wizard(
+            at({ part: step, player: 'ann' }, round, 1),
+            [saved({ ann: [1, 1], ben: [1, 0], cat: [1, 0] })],
+            { 'plus-minus-one': true }
+        );
+    const barredWords = (bid: number) =>
+        `The bids may not add up to 2, the cards each player holds, so Ben, bidding last, cannot bid ${String(bid)}.`;
+
+    it('says which bid the dealer cannot make once the others have bid, and holds the bids at it', async () => {
+        await draw(plusMinusOne());
+        setCount('bid-ann', 1);
+        // Cat's bid is not yet entered, so the 0 shown is no bid.
+        expect(screen.queryByText(/bidding last/)).toBeNull();
+        setCount('bid-cat', 1);
+        expect(await screen.findByText(barredWords(0))).toBeTruthy();
+        const save = dockButton('Save the bids');
+        await waitFor(() => {
+            expect(save).toHaveAttribute('aria-disabled', 'true');
+        });
+        expect(save).toHaveAccessibleDescription(barredWords(0));
+        expect(count('bid-ben')?.getAttribute('aria-describedby')?.split(' ')).toContain(
+            'bids-barred'
+        );
+        setCount('bid-ben', 1);
+        await waitFor(() => {
+            expect(save).not.toHaveAttribute('aria-disabled');
+        });
+    });
+
+    it("says which bid the dealer cannot make once the dealer's stepper takes focus", async () => {
+        await draw(plusMinusOne());
+        expect(screen.queryByText(/bidding last/)).toBeNull();
+        const ben = count('bid-ben');
+        if (ben === null) throw new Error("There is no count of Ben's bid.");
+        fireEvent.focus(ben);
+        expect(await screen.findByText(barredWords(2))).toBeTruthy();
+    });
+
+    it("says the barred bid with the value a press of the dealer's stepper lands on", async () => {
+        await draw(plusMinusOne());
+        setCount('bid-ann', 1);
+        fireEvent.click(screen.getByRole('button', { name: "Raise Cat's bid" }));
+        const lower = screen.getByRole('button', { name: "Lower Cat's bid" });
+        await waitFor(() => {
+            expect(lower).not.toHaveAttribute('aria-disabled', 'true');
+        });
+        fireEvent.click(lower);
+        await waitFor(() => {
+            expect(count('bid-cat')?.value).toBe('0');
+        });
+        const raise = screen.getByRole('button', { name: "Raise Ben's bid" });
+        await waitFor(() => {
+            expect(raise).not.toHaveAttribute('aria-disabled', 'true');
+        });
+        fireEvent.click(raise);
+        await heard(screenLine(), barredWords(1));
+    });
+
+    it('says the barred bid once a bid typed lands the dealer on it', async () => {
+        await draw(plusMinusOne());
+        setCount('bid-ann', 1);
+        setCount('bid-cat', 1);
+        await heard(screenLine(), barredWords(0));
+    });
+
+    it('counts and names a bid kept from before a player was skipped', async () => {
+        await draw(plusMinusOne({ entries: { cat: { bid: 1 } }, out: ['cat'] }));
+        expect(
+            await screen.findByText(
+                "The bids come to 1 for 2 cards each, counting Cat's bid of 1 from before Cat was skipped."
+            )
+        ).toBeTruthy();
+    });
+
+    it('puts a player back with the bid they made before they were skipped', async () => {
+        await draw(
+            plusMinusOne(
+                { entries: { ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } }, out: ['ben'] },
+                'tricks'
+            )
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Put Ben back' }));
+        await heard(
+            screenLine(),
+            'Ben is back in round 2 with a bid of 0. Change it if Ben bids again.'
+        );
+        expect(count('bid-ben')?.value).toBe('0');
+    });
+
+    it('says nothing of a bid the last cannot make where the option is off', async () => {
+        await draw(
+            wizard(at({ part: 'bid', player: 'ann' }, {}, 1), [
+                saved({ ann: [0, 0], ben: [1, 1], cat: [0, 0] }),
+            ])
+        );
+        setCount('bid-ann', 1);
+        expect(screen.queryByText(/bidding last/)).toBeNull();
     });
 
     it("says nothing and leaves no timer when the round's screen goes while a typed count settles", async () => {

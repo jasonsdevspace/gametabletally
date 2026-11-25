@@ -20,7 +20,11 @@ const FORMATS = {
  * A database holding Ann, Ben and Cat, a game of Flip 7 Ann won, started on the day given, for
  * each day, and a game of Skyjo still in play unless it is asked to hold none.
  */
-const database = async (finished: readonly string[], inPlay = true) => {
+const database = async (
+    finished: readonly string[],
+    inPlay = true,
+    options: Readonly<Record<string, unknown>> = {}
+) => {
     const factory = new IDBFactory();
     const store = await openStore(factory);
     for (const [id, name] of [
@@ -41,10 +45,12 @@ const database = async (finished: readonly string[], inPlay = true) => {
             id: day,
             game: 'flip-7',
             rules: 1,
-            options: {},
+            options,
             players: ['ann', 'ben', 'cat'],
         });
         for (const ann of [hand(SEVEN, ['x2', '+10']), hand(SEVEN)]) {
+            // A lower target ends the game after the first round.
+            if (play.snapshot().games.find(({ saved }) => saved.id === day)?.draft === null) break;
             for (const one of [ann, hand([3]), hand([4])]) await play.enter(day, one);
             await play.saveRound(day);
         }
@@ -85,6 +91,14 @@ describe('the history', () => {
             '/recap/?id=2026-11-21&from=history',
             '/recap/?id=2026-11-14&from=history',
         ]);
+    });
+
+    it('names an option a game was played with that differs from the published rules', async () => {
+        draw(await database(['2026-11-14'], false, { 'target-score': 150 }));
+        const list = await screen.findByRole('list', { name: 'Finished games' });
+        expect(within(list).getByRole('link').textContent).toBe(
+            'Ann won with 151, Flip 7, November 14, 2026. Ann, Ben and Cat. Played with a target score of 150.›'
+        );
     });
 
     it('says what will appear there and how to start a game while no game has finished', async () => {

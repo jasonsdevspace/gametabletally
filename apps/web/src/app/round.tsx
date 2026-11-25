@@ -438,7 +438,12 @@ export const useRound = ({
             say(`${skipWords(name, draft.index, before)}${nextWords(player)}`);
             // Focus stays on the skip, which names the next player, unless no one else can be
             // skipped, when it goes to the way to put this player back.
-            if (!canSkip(game.saved.players, withOut(draft.round, game.saved.players, without)))
+            if (
+                !canSkip(
+                    game.saved.players,
+                    withOut(draft.round, game.saved.players, without, changing)
+                )
+            )
                 focusAfterDraw(`put-back-${player}`);
         } catch (error: unknown) {
             say(error instanceof Error ? error.message : 'The player could not be skipped.');
@@ -458,7 +463,7 @@ export const useRound = ({
                   {
                       game: game.saved.game,
                       players: game.saved.players,
-                      round: withOut(draft.round, game.saved.players, rest),
+                      round: withOut(draft.round, game.saved.players, rest, changing),
                   },
                   player,
                   who
