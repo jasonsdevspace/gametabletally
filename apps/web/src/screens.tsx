@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { GameScreen } from './app/GameScreen.js';
+import { HistoryScreen } from './app/HistoryScreen.js';
 import { NewGame } from './app/NewGame.js';
 import { PlayerPage } from './app/PlayerPage.js';
 import { PlayersList } from './app/PlayersList.js';
@@ -39,6 +40,8 @@ export const AppScreen = ({ route }: { readonly route: Route }) => {
             return <ScoresScreen />;
         case 'recap':
             return <RecapScreen />;
+        case 'history':
+            return <HistoryScreen />;
         case 'players':
             return <PlayersList />;
         case 'player':

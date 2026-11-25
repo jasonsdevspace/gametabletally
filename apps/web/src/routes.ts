@@ -79,6 +79,17 @@ export const changingRoundOf = (id: string, index: number, from: ChangedFrom = '
 export const atRound = (id: string, index: number, page: ChangedFrom = 'scores'): string =>
     `${hrefOf(page, id)}&${new URLSearchParams({ round: String(index + 1) }).toString()}`;
 
+/**
+ * A finished game's recap as the history opens it, which names the history in its address, so the
+ * tab bar marks the history and a delete goes back to it.
+ */
+export const recapFromHistory = (id: string): string =>
+    `${hrefOf('recap', id)}&${new URLSearchParams({ from: 'history' }).toString()}`;
+
+/** Whether a screen's address says it was opened from the history. */
+export const fromHistory = (search: string): boolean =>
+    new URLSearchParams(search).get('from') === 'history';
+
 /** The page a round being changed was opened from, as its address names it. */
 export const changedFrom = (search: string): ChangedFrom =>
     new URLSearchParams(search).get('from') === 'recap' ? 'recap' : 'scores';

@@ -15,7 +15,7 @@ import { isRecord, type SavedStep } from '../store/format.js';
 import { Dock } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { gameNameOf } from './in-play.js';
-import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
+import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import {
     canSkip,
     type GameWithDraft,
@@ -407,7 +407,7 @@ const Entry = ({
             replace: true,
         });
     }, [game, named, opened, id, from]);
-    if (!game) return <p>This game is not on this phone.</p>;
+    if (!game) return <GameGone />;
     const gameName = gameNameOf(game.saved.game);
     const { draft } = game;
     // A finished game's screen says so, and its recap is in the dock.

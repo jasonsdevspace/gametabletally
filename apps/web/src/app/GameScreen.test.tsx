@@ -270,7 +270,13 @@ describe('the game screen', () => {
 
     it('says a game it does not hold', async () => {
         await draw(null);
-        expect(await screen.findByText('This game is not on this phone.')).toBeVisible();
+        expect(
+            await screen.findByText('This game is not on this phone. It may have been deleted.')
+        ).toBeVisible();
+        expect(screen.getByRole('link', { name: 'Go to the history' })).toHaveAttribute(
+            'href',
+            '/history/'
+        );
     });
 
     it('says a game that is over', async () => {

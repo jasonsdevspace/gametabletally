@@ -204,6 +204,23 @@ describe('the scores screen', () => {
         expect(screen.getByText('Ben won with 227.')).toBeTruthy();
     });
 
+    it('says a game this phone does not hold may have been deleted, with a way to the history', async () => {
+        window.history.replaceState(null, '', '/scores/?id=gone');
+        const factory = new IDBFactory();
+        render(
+            <AppFrame screen="scores" title="Scores">
+                <ScoresScreen open={() => openStore(factory)} />
+            </AppFrame>
+        );
+        expect(
+            await screen.findByText('This game is not on this phone. It may have been deleted.')
+        ).toBeVisible();
+        expect(screen.getByRole('link', { name: 'Go to the history' })).toHaveAttribute(
+            'href',
+            '/history/'
+        );
+    });
+
     it('keeps the round arrived back at in the Tab order', async () => {
         await draw(
             saved('flip-7', [{ entries: { ann: hand([3]), ben: hand([4]), cat: hand([5]) } }], {

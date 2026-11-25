@@ -584,7 +584,10 @@ export const WizardRound = ({
         );
         if (!done) return;
         const bids = playing.map((one) => `${nameOf(one)} ${String(counts.countOf(one) ?? 0)}`);
-        summary.offer(`The bids for round ${String(round)} are in: ${listOf(bids, 'and')}.`);
+        summary.offer(
+            `The bids for round ${String(round)} are in: ${listOf(bids, 'and')}.`,
+            `The bids for round ${String(round)} are taken back.`
+        );
     };
 
     const saveTricks = async () => {

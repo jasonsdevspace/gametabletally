@@ -13,7 +13,7 @@ import {
 import { createPortal } from 'react-dom';
 
 import { Link } from '../navigation.js';
-import { hrefOf, type RouteName } from '../routes.js';
+import { fromHistory, hrefOf, type RouteName } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
 import { Icon } from './icon.js';
 import { GamesProvider } from './opened-game.js';
@@ -81,20 +81,27 @@ export const SECTION_OF: Readonly<Record<string, Section>> = {
 
 /**
  * How a tab marks the place the visitor is in: `page` on the section's own screen, `true` on a
- * screen beneath it, and nothing on another section's.
+ * screen beneath it, and nothing on another section's. A recap sits under the history where its
+ * address says it was opened from there, and under play where a game's end opened it.
  */
-export const currentOf = (tab: Section, screen: string): 'page' | 'true' | undefined => {
-    if (!Object.hasOwn(SECTION_OF, screen) || SECTION_OF[screen] !== tab) return undefined;
+export const currentOf = (
+    tab: Section,
+    screen: string,
+    search = ''
+): 'page' | 'true' | undefined => {
+    if (!Object.hasOwn(SECTION_OF, screen)) return undefined;
+    const section = screen === 'recap' && fromHistory(search) ? 'history' : SECTION_OF[screen];
+    if (section !== tab) return undefined;
     return screen === tab ? 'page' : 'true';
 };
 
 /** The tab bar: each top-level place, the one the visitor is in marked. */
-const TabBar = ({ screen }: { readonly screen: string }) => (
+const TabBar = ({ screen, search }: { readonly screen: string; readonly search: string }) => (
     <nav className="dk-app-tabs dk-tabbar" aria-label="Sections">
         <ul>
             {TABS.map(({ section, label, icon }) => (
                 <li key={section}>
-                    <Link href={hrefOf(section)} aria-current={currentOf(section, screen)}>
+                    <Link href={hrefOf(section)} aria-current={currentOf(section, screen, search)}>
                         {icon}
                         {label}
                     </Link>
@@ -161,11 +168,14 @@ const actionOf = (screen: string): ReactNode => {
  */
 export const AppFrame = ({
     screen,
+    search = '',
     title,
     children,
 }: {
     /** The screen's route name, which picks the tab it marks and the bar's action. */
     readonly screen: string;
+    /** The address's query, which says where a recap was opened from, for the tab it marks. */
+    readonly search?: string;
     /** The screen's title, shown in the bar as its one top heading. */
     readonly title: string;
     readonly children?: ReactNode;
@@ -230,7 +240,7 @@ export const AppFrame = ({
                             aria-label="Actions"
                             hidden={held === 0}
                         />
-                        <TabBar screen={screen} />
+                        <TabBar screen={screen} search={search} />
                     </div>
                 </DockContext.Provider>
             </GamesProvider>
