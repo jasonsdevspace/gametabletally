@@ -129,7 +129,7 @@ const RoundTitle = ({
  * the cards dealt. What is typed in its field is kept as it is typed, so a count can be typed over
  * and the kit can say a count outside its limits is refused. Every count is required, so a blank
  * one shows its error too. The kit says the field's name before the error, so the error's own words
- * leave the player out.
+ * name neither the player nor what is counted.
  */
 const Count = ({
     id,
@@ -155,6 +155,9 @@ const Count = ({
     readonly pressWords?: (() => string) | undefined;
 }) => {
     const field = useRef<HTMLInputElement>(null);
+    // The label read is the label shown with what is counted after it, in one piece out of sight,
+    // since a browser puts a space before a piece out of sight that follows the words shown.
+    const seen = detail === '' ? name : `${name} ${detail}`;
     // The stepper says its presses on the screen's status line, with the page's words after the
     // value in one message, and describes its own range.
     const say = useStatus();
@@ -177,16 +180,16 @@ const Count = ({
             tall
             label={
                 <>
-                    {name}
-                    {detail === '' ? null : (
-                        <>
-                            {' '}
-                            <span className="dk-note">{detail}</span>
-                        </>
-                    )}
-                    <span className="dk-visually-hidden">
-                        , {what === 'bid' ? 'bid' : 'tricks taken'}
+                    <span aria-hidden="true">
+                        {name}
+                        {detail === '' ? null : (
+                            <>
+                                {' '}
+                                <span className="dk-note">{detail}</span>
+                            </>
+                        )}
                     </span>
+                    <span className="dk-visually-hidden">{`${seen}, ${what === 'bid' ? 'bid' : 'tricks taken'}`}</span>
                 </>
             }
             subject={`${name}'s ${what}`}
@@ -194,7 +197,7 @@ const Count = ({
             min={0}
             max={max}
             value={text}
-            rangeError={`Enter ${what === 'bid' ? 'a bid' : 'the tricks taken'} from 0 to ${String(max)}.`}
+            rangeError={`Enter a number from 0 to ${String(max)}.`}
             onChange={(event) => {
                 // A press while the round is saving is let go, as every key's is.
                 if (!off) onText(event.currentTarget.value);
