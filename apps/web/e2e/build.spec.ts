@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -6,7 +6,7 @@ import { gzipSync } from 'node:zlib';
 import { precacheOf } from '../scripts/precache.mjs';
 import { ENTRY_FILES, FRAME_FILE, OWN_FILES, SCREEN_FILES } from '../src/own-files.js';
 import { inApp, NOT_FOUND_FILE, ROUTES } from '../src/routes.js';
-import { readPrecache } from '../worker/answer.js';
+import { installCacheOf, readPrecache } from '../worker/answer.js';
 import { builtScripts, scriptHolding } from './built.js';
 import { expect, test } from './support.js';
 
@@ -95,6 +95,15 @@ const listedFiles = (): readonly string[] => {
     if (typeof text !== 'string') throw new Error('The worker holds no list as text.');
     return readPrecache(JSON.parse(text)).files;
 };
+
+test("the worker's install takes from the browser's cache only the files the build named by their hash", () => {
+    const files = listedFiles();
+    expect(files.filter((file) => file.startsWith('/assets/')).length).toBeGreaterThan(0);
+    for (const file of files)
+        expect(installCacheOf(file), file).toBe(file.startsWith('/assets/') ? 'default' : 'reload');
+    // A file copied from the public folder keeps its name, with no hash, so none sits in /assets/.
+    expect(existsSync(fileURLToPath(new URL('../public/assets', import.meta.url)))).toBe(false);
+});
 
 test('the worker caches every file a page asks for, and each is served, as its install fetches it', async ({
     request,

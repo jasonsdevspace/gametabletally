@@ -5,9 +5,10 @@
  *
  * A path ending in a slash serves the folder's `index.html`, a folder asked for without its
  * slash is sent to the path with it, a file is served as it is, and anything else is answered
- * with `404.html` and a 404 status. Text is sent compressed, as Pages sends it, so what a test or
- * an audit measures is what a visitor downloads. Vite's own preview answers an unknown path with the start
- * page instead, which would hide a page that was not built.
+ * with `404.html` and a 404 status. Text is sent compressed, and every file found may be kept by
+ * the browser for as long as Pages lets it, so what a test or an audit measures is what a visitor
+ * downloads. Vite's own preview answers an unknown path with the start page instead, which would
+ * hide a page that was not built.
  */
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -53,13 +54,36 @@ const COMPRESSED = new Set([
     '.txt',
 ]);
 
+/** How long Pages lets a browser keep any file before asking again, in seconds. */
+const MAX_AGE = 600;
+
 const send = (request, response, status, file) => {
     const type = TYPES[extname(file)] ?? 'application/octet-stream';
     const gzip =
         COMPRESSED.has(extname(file)) && /\bgzip\b/.test(request.headers['accept-encoding'] ?? '');
+    let modified;
+    try {
+        modified = statSync(file).mtime;
+    } catch {
+        response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.end(`The build has no ${file}.`);
+        return;
+    }
+    // A file found may be kept for as long as Pages lets it, and a browser that asks whether it
+    // changed since is told it has not, as Pages tells it. A 404 carries neither, as on Pages.
+    const found = status === 200;
+    const since = Date.parse(request.headers['if-modified-since'] ?? '');
+    if (found && since >= Math.floor(modified.getTime() / 1000) * 1000) {
+        response.writeHead(304, { 'Cache-Control': `max-age=${MAX_AGE}` });
+        response.end();
+        return;
+    }
     response.writeHead(status, {
         'Content-Type': type,
         Vary: 'Accept-Encoding',
+        ...(found
+            ? { 'Cache-Control': `max-age=${MAX_AGE}`, 'Last-Modified': modified.toUTCString() }
+            : {}),
         ...(gzip ? { 'Content-Encoding': 'gzip' } : {}),
     });
     const stream = createReadStream(file);
