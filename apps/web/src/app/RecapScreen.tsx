@@ -12,14 +12,16 @@ import { gameNameOf } from './in-play.js';
 import { nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { newGameOf } from './PlayStart.js';
 import { GameTables } from './ScoresScreen.js';
-import { useSummary } from './summary.js';
+import { useDiscard, useSummary } from './summary.js';
 
 /*
  * The recap of a finished game, by its id, so the moment the rules end a game and a look back at it
  * later open the same page: who won, in words, then the final standings and every round, and a way
  * to play again with the same players in the same seats. The scoring package says when a game is
  * over and who won, so a tie the rules share is a shared win and one they play on is no end. A
- * round changed from here can put the game back in play, which the page then says.
+ * round changed from here can put the game back in play, which the page then says. A finished game
+ * is deleted from here at once, and the page gives way to the history, where the frame's toast
+ * offers Undo.
  */
 
 /** Who won, in a sentence, alone or sharing the win, with their total, or that no one did. */
@@ -128,7 +130,11 @@ const Recap = ({
     const summary = useSummary(play);
     const [busy, setBusy] = useState(false);
     const againButton = useBusy<HTMLButtonElement>();
-    if (!game) return <p>This game is not on this phone.</p>;
+    const [deleteGame, deleting] = useDiscard(play, 'deleted');
+    const deleteButton = useBusy<HTMLButtonElement>();
+    // Set as a delete starts, so the page says nothing of the game it took away while it goes.
+    const [leaving, setLeaving] = useState(false);
+    if (!game) return leaving ? null : <p>This game is not on this phone.</p>;
     const { result, saved } = game;
     const standing = standingOf(game);
 
@@ -160,6 +166,21 @@ const Recap = ({
         }
     };
 
+    /**
+     * Deletes the game at once and goes to the history in this page's place, so Back does not lead
+     * to a game that is gone, with the frame's toast offering Undo there.
+     */
+    const remove = async () => {
+        setLeaving(true);
+        const done = await deleteGame(id, gameNameOf(saved.game));
+        if (done === true) {
+            navigate(hrefOf('history'), { replace: true });
+            return;
+        }
+        setLeaving(false);
+        if (done !== null) say(done);
+    };
+
     return (
         <div className="gtt-scores">
             <Head
@@ -177,6 +198,18 @@ const Recap = ({
                 from="recap"
                 lead={standing.kind !== 'over'}
             />
+            {standing.kind === 'over' ? (
+                <p className="dk-actions">
+                    <Button
+                        ref={deleteButton}
+                        text
+                        busy={deleting === null ? false : 'Deleting the game.'}
+                        onClick={() => void remove()}
+                    >
+                        Delete this game
+                    </Button>
+                </p>
+            ) : null}
             {standing.kind === 'over' ? (
                 <Dock>
                     <Button

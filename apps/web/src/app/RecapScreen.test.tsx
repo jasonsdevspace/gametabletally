@@ -131,6 +131,21 @@ describe('the recap', () => {
         });
     });
 
+    it('deletes a finished game at once and gives way to the history in its place', async () => {
+        const { open } = await draw(won);
+        await screen.findByText('Ann wins with 229.');
+        const before = window.history.length;
+        fireEvent.click(screen.getByRole('button', { name: 'Delete this game' }));
+        await waitFor(() => {
+            expect(window.location.pathname + window.location.search).toBe('/history/');
+        });
+        expect(window.history.length).toBe(before);
+        const store = await open();
+        const gone = await store.game('g-1');
+        store.close();
+        expect(gone).toBeNull();
+    });
+
     it('says a round is being changed, with no winner and no Play again, while one is open', async () => {
         await draw({
             ...won,
@@ -161,5 +176,6 @@ describe('the recap', () => {
             await screen.findByText(/This game of Flip 7 is in play, so it has no winner yet\./)
         ).toBeTruthy();
         expect(screen.queryByRole('button', { name: /Play again/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Delete this game' })).toBeNull();
     });
 });

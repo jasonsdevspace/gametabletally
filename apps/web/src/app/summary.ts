@@ -76,14 +76,16 @@ export const useSummary = (play: Play): Summary => {
 const discardsRunning = new WeakSet<Play>();
 
 /**
- * Discards a game at once, with the frame's toast offering Undo, as the app does in place of asking
- * first, and resolves to whether it did, or to the words that say why not, beside the id of the
- * game being discarded, or null. A tap while an Undo or any discard of the model's is under way is
+ * Discards a game at once, or deletes a finished one, with the frame's toast offering Undo, as the
+ * app does in place of asking first, and resolves to whether it did, or to the words that say why
+ * not, beside the id of the game being taken away, or null. A tap while an Undo or any discard of the model's is under way is
  * ignored, so a discard of another game never runs beside one, and the button that discards is the
  * kit's busy button while its discard runs, so a double tap discards once.
  */
 export const useDiscard = (
-    play: Play
+    play: Play,
+    /** What the words call it: a game in play is discarded, and a finished one deleted. */
+    done: 'discarded' | 'deleted' = 'discarded'
 ): readonly [(id: string, gameName: string) => Promise<true | string | null>, string | null] => {
     const summary = useSummary(play);
     const [discarding, setDiscarding] = useState<string | null>(null);
@@ -96,15 +98,15 @@ export const useDiscard = (
             try {
                 await play.discard(id);
             } catch (error: unknown) {
-                return refusalOf(error) ?? 'The game could not be discarded. Try again.';
+                return refusalOf(error) ?? `The game could not be ${done}. Try again.`;
             } finally {
                 discardsRunning.delete(play);
                 setDiscarding(null);
             }
-            summary.offer(`The game of ${gameName} is discarded.`);
+            summary.offer(`The game of ${gameName} is ${done}.`);
             return true as const;
         },
-        [play, summary]
+        [play, summary, done]
     );
     return [discard, discarding] as const;
 };
