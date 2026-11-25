@@ -1,0 +1,5 @@
+{
+    "game": "wizard",
+    "rules": 1,
+    "options": [{ "id": "plus-minus-one", "kind": "switch", "default": false }]
+}

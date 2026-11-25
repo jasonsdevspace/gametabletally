@@ -5416,6 +5416,686 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "with plus or minus one on, bids that add up to the cards dealt are refused, and name the count",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 2
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": -10,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": -10,
+                    "cat": 20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 2
+                        },
+                        "round": 1,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, bids that do not add up to the cards dealt score as usual",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": -10,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": -10,
+                    "cat": 20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with plus or minus one on, bids that add up are refused once the tricks are in too, and what each came to stands",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, a round with a bid still to come is open whatever the bids so far add up to",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with plus or minus one on, a player out of the round who made no bid adds nothing to the bids",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, the bid of a player then marked out of the round still counts, so bids that came to the cards dealt stay refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 1
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, bids that did not come to the cards dealt stay accepted after the last bidder is marked out of the round",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat", "dan"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "dan": {
+                                "bid": 1
+                            }
+                        },
+                        "out": ["dan"]
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "open",
+                        "scores": {},
+                        "out": ["dan"]
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0,
+                    "dan": 0
+                },
+                "leaders": ["ann", "ben", "cat", "dan"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with plus or minus one on, an entry refused is reported and the bids are not added up",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 7
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "impossible-tricks",
+                        "data": {
+                            "min": 0,
+                            "max": 1,
+                            "given": 7
+                        },
+                        "round": 0,
+                        "player": "cat"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one on, bids that add up are refused and tricks that do not come to the cards dealt are not checked",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "refused",
+                        "scores": {
+                            "ann": 30,
+                            "ben": -10,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 1
+                        },
+                        "round": 0,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with plus or minus one off, bids may add up to the cards dealt, as the published rules allow",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": false
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "plus or minus one given as null is not given, and bids may add up to the cards dealt",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": null
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "a value plus or minus one does not allow is refused",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "plus-minus-one": "yes"
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "value-not-allowed",
+                        "data": {
+                            "option": "plus-minus-one",
+                            "value": "yes"
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
         }
     ]
 }

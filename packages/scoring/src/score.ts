@@ -5,13 +5,24 @@ import {
     FEWEST_IN_ROUND,
     isRecord,
     isWhole,
+    plain,
     problemAt,
     type Refusal,
     refusal,
     type Rules,
+    type Settled,
 } from './rules.js';
 import { SKYJO } from './skyjo.js';
-import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
+import type {
+    Game,
+    GameOption,
+    OptionValue,
+    Problem,
+    ProblemData,
+    RoundResult,
+    ScoreInput,
+    ScoreResult,
+} from './types.js';
 import { WIZARD } from './wizard.js';
 
 /**
@@ -27,13 +38,14 @@ const NEWEST: readonly Rules[] = RULES.filter(
 
 /** The games the package can score, in the order an app offers them. */
 export const GAMES: readonly Game[] = NEWEST.map(
-    ({ id, name, rules, ahead, minPlayers, maxPlayers }) => ({
+    ({ id, name, rules, ahead, minPlayers, maxPlayers, options }) => ({
         id,
         name,
         rules,
         ahead,
         minPlayers,
         maxPlayers,
+        options,
     })
 );
 
@@ -93,6 +105,60 @@ const playerProblems = (rules: Rules, players: readonly string[]): readonly Prob
         ),
     ];
 };
+
+/** Whether an option takes a value: one of its numbers, or on or off. */
+const allows = (option: GameOption, value: unknown): value is OptionValue =>
+    option.kind === 'number'
+        ? option.values.some((allowed) => allowed === value)
+        : typeof value === 'boolean';
+
+/** Why a value an option does not take is refused, naming the value where it can be written. */
+const notAllowed = (rules: Rules, option: GameOption, value: unknown): Refusal => {
+    const given = plain(value);
+    const what = given === null ? 'take the value given' : `be ${JSON.stringify(given)}`;
+    return refusal('value-not-allowed', `${option.name} cannot ${what} in ${rules.name}.`, {
+        option: option.id,
+        value: given,
+    });
+};
+
+/**
+ * What is wrong with the options a game is given, if anything: each one the game does not have,
+ * and each value an option does not allow, sorted by id, since the order an object's keys come in
+ * is one runtime's own. An option given as null is one not given, whatever its id, as a part is
+ * anywhere else.
+ */
+const optionProblems = (
+    rules: Rules,
+    options: Readonly<Record<string, unknown>>
+): readonly Problem[] =>
+    Object.keys(options)
+        .sort()
+        .flatMap((id) => {
+            const value = options[id] ?? null;
+            if (value === null) return [];
+            const option = rules.options.find((declared) => declared.id === id);
+            if (!option)
+                return [
+                    problemAt(
+                        refusal(
+                            'unknown-option',
+                            `${rules.name} has no option named ${JSON.stringify(id)}.`,
+                            { option: id }
+                        )
+                    ),
+                ];
+            return allows(option, value) ? [] : [problemAt(notAllowed(rules, option, value))];
+        });
+
+/** The game's options as it is played, with the published rule's for each one not given. */
+const settle = (rules: Rules, options: Readonly<Record<string, unknown>>): Settled =>
+    Object.fromEntries(
+        rules.options.map((option) => {
+            const given = options[option.id];
+            return [option.id, allows(option, given) ? given : option.default];
+        })
+    );
 
 /**
  * The players ahead on the totals, in seat order, among those who have missed no round, or among
@@ -231,6 +297,13 @@ const seat = (round: unknown, players: readonly string[], index: number): Seated
     return { ...named, playing, problems: [...named.problems, problemAt(tooFew, index)] };
 };
 
+/** A game being scored: its rules, the game as handed over, and its options as it is played. */
+interface Playing {
+    readonly rules: Rules;
+    readonly input: ScoreInput;
+    readonly options: Settled;
+}
+
 /**
  * The game with one more round read.
  *
@@ -238,7 +311,7 @@ const seat = (round: unknown, players: readonly string[], index: number): Seated
  * round that is unfinished or refused is passed over, so no game is called over, and nobody the
  * winner, on totals with a round missing from them.
  */
-const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): Walked => {
+const step = ({ rules, input, options }: Playing, walked: Walked, index: number): Walked => {
     if (walked.winners !== null)
         return passedOver(
             walked,
@@ -249,7 +322,7 @@ const step = (rules: Rules, input: ScoreInput, walked: Walked, index: number): W
             walked,
             problemAt(refusal('after-a-gap', 'An earlier round has yet to be scored.', {}), index)
         );
-    const { players, rounds, options } = input;
+    const { players, rounds } = input;
     const round = rounds[index];
     const seated = seat(round, players, index);
     const { out, playing } = seated;
@@ -328,8 +401,9 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
             ),
         ]);
     const { players } = input;
-    const stopped = [...playerProblems(rules, players), ...rules.checkOptions(input.options)];
+    const stopped = [...playerProblems(rules, players), ...optionProblems(rules, input.options)];
     if (stopped.length > 0) return unscored(input, stopped);
+    const playing: Playing = { rules, input, options: settle(rules, input.options) };
     const start: Walked = {
         rounds: [],
         problems: [],
@@ -338,7 +412,7 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
         winners: null,
     };
     const { rounds, problems, totals, missed, winners } = input.rounds.reduce<Walked>(
-        (walked, _, index) => step(rules, input, walked, index),
+        (walked, _, index) => step(playing, walked, index),
         start
     );
     return {

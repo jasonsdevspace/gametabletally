@@ -90,7 +90,9 @@ Nothing here changes for either.
 - An addition that scores every game saved before it exactly as before stays in the version it is
   added to, and anything else is a new one. Players out of a round came in this way: a game saved
   before it has nobody out, so it scores as it did, and the cases written before it pass with
-  nothing changed but each round's `out` and the game's `missed`.
+  nothing changed but each round's `out` and the game's `missed`. Rule options follow the same
+  rule, and [record 3](0003-rule-options-belong-to-the-scoring-package.md) says what about an
+  option is fixed within a version.
 
 ## How it is tested
 

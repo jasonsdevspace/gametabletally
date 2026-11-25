@@ -1,4 +1,21 @@
-import type { Game, OneProblem, Plain, Problem, ProblemCode, ProblemData } from './types.js';
+import type {
+    Game,
+    GameOption,
+    NumberOption,
+    OneProblem,
+    OptionValue,
+    Plain,
+    Problem,
+    ProblemCode,
+    ProblemData,
+    SwitchOption,
+} from './types.js';
+
+/**
+ * A game's options as it is played: the value of each it declares, by id, the published rule's
+ * where the game was not given one.
+ */
+export type Settled = Readonly<Record<string, OptionValue>>;
 
 /** What a game's rules are told about the round they are reading. */
 export interface RoundContext {
@@ -8,8 +25,8 @@ export interface RoundContext {
     readonly out: readonly string[];
     /** The round's place in the game, counted from zero. */
     readonly index: number;
-    /** The game's options, already checked. */
-    readonly options: Readonly<Record<string, unknown>>;
+    /** The game's options, already checked, with the published rule's where none was given. */
+    readonly options: Settled;
 }
 
 /** What a game's rules are told when asked whether the game is over. */
@@ -20,8 +37,8 @@ export interface Standing {
     readonly missed: readonly boolean[];
     /** How many rounds have been scored. */
     readonly rounds: number;
-    /** The game's options, already checked. */
-    readonly options: Readonly<Record<string, unknown>>;
+    /** The game's options, already checked, with the published rule's where none was given. */
+    readonly options: Settled;
 }
 
 /** A round as a game's rules read it. */
@@ -42,8 +59,6 @@ export interface RoundOutcome {
  * what is its own: what a round holds, what it scores, and when the game has ended.
  */
 export interface Rules extends Game {
-    /** What is wrong with the options, if anything. */
-    readonly checkOptions: (options: Readonly<Record<string, unknown>>) => readonly Problem[];
     /** Reads one round as entered, for the players in it. */
     readonly scoreRound: (round: unknown, context: RoundContext) => RoundOutcome;
     /**
@@ -212,20 +227,27 @@ export const readEntries = (
     return { round, scores, problems, allIn: players.every((player) => scores.has(player)) };
 };
 
+/** The number an option is set to in a game, or its default when it is not a number. */
+export const numberOption = (options: Settled, option: NumberOption): number => {
+    const value = options[option.id];
+    return typeof value === 'number' ? value : option.default;
+};
+
+/** Whether an option that is on or off is on in a game. */
+export const isOn = (options: Settled, option: SwitchOption): boolean =>
+    options[option.id] === true;
+
 /**
- * The check of a game's options for a game that has none: each one given is refused by name.
+ * A game's options, frozen with their values, so a caller holding `GAMES` cannot change what
+ * `score` accepts.
  */
-export const noOptions =
-    (game: string) =>
-    (options: Readonly<Record<string, unknown>>): readonly Problem[] =>
-        Object.keys(options).map((option) =>
-            problemAt(
-                refusal(
-                    'unknown-option',
-                    `${game} has no option named ${JSON.stringify(option)}.`,
-                    {
-                        option,
-                    }
-                )
+export const declare = (...options: readonly GameOption[]): readonly GameOption[] =>
+    Object.freeze(
+        options.map((option) =>
+            Object.freeze(
+                option.kind === 'number'
+                    ? { ...option, values: Object.freeze([...option.values]) }
+                    : { ...option }
             )
-        );
+        )
+    );
