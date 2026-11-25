@@ -478,6 +478,15 @@ describe('skipping a player for a round', () => {
         await draw();
         press('Next: Ben');
         expect(await screen.findByRole('button', { name: 'Undo' })).toBeVisible();
+        // The toast draws Undo as the entry is kept, a moment before the screen takes a tap again,
+        // so the skip is pressed once it is live.
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'Skip Ben this round' })).not.toHaveAttribute(
+                'aria-disabled',
+                'true'
+            );
+        });
+        expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
         press('Skip Ben this round');
         await heard(
             appLine(),
