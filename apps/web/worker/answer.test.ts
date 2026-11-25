@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { answerFor, readPrecache } from './answer.js';
+import { answerFor, installCacheOf, readPrecache } from './answer.js';
 
 const FILES = new Set(['/index.html', '/about/index.html', '/404.html', '/assets/app.js']);
 
@@ -41,5 +41,22 @@ describe('the file list the build writes into the worker', () => {
     it('is refused when it is anything else', () => {
         for (const raw of [null, 'x', { version: 1, files: [] }, { version: 'a', files: [1] }])
             expect(() => readPrecache(raw)).toThrow(/no file list/);
+    });
+});
+
+describe('how the install fetches a file', () => {
+    it("takes a file named by its content's hash from the browser's own cache", () => {
+        expect(installCacheOf('/assets/index-Bitifb3N.js')).toBe('default');
+        expect(installCacheOf('/assets/web-vzcrtIRC.css')).toBe('default');
+        expect(installCacheOf('/assets/game-table-880-r2Siuwts.webp')).toBe('default');
+    });
+
+    it('takes every page and every file with no hash in its name from the server', () => {
+        expect(installCacheOf('/index.html')).toBe('reload');
+        expect(installCacheOf('/about/index.html')).toBe('reload');
+        expect(installCacheOf('/manifest.webmanifest')).toBe('reload');
+        expect(installCacheOf('/fonts/atkinson.woff2')).toBe('reload');
+        expect(installCacheOf('/icons/icon-192.png')).toBe('reload');
+        expect(installCacheOf('/assets/notes.txt')).toBe('reload');
     });
 });

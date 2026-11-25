@@ -5,9 +5,10 @@
  *
  * A path ending in a slash serves the folder's `index.html`, a folder asked for without its
  * slash is sent to the path with it, a file is served as it is, and anything else is answered
- * with `404.html` and a 404 status. Text is sent compressed, as Pages sends it, so what a test or
- * an audit measures is what a visitor downloads. Vite's own preview answers an unknown path with the start
- * page instead, which would hide a page that was not built.
+ * with `404.html` and a 404 status. Text is sent compressed, and every file may be kept by the
+ * browser for as long as Pages lets it, so what a test or an audit measures is what a visitor
+ * downloads. Vite's own preview answers an unknown path with the start page instead, which would
+ * hide a page that was not built.
  */
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -53,13 +54,19 @@ const COMPRESSED = new Set([
     '.txt',
 ]);
 
+/** How long Pages lets a browser keep any file before asking again, in seconds. */
+const MAX_AGE = 600;
+
 const send = (request, response, status, file) => {
     const type = TYPES[extname(file)] ?? 'application/octet-stream';
     const gzip =
         COMPRESSED.has(extname(file)) && /\bgzip\b/.test(request.headers['accept-encoding'] ?? '');
+    const { mtime } = statSync(file);
     response.writeHead(status, {
         'Content-Type': type,
         Vary: 'Accept-Encoding',
+        'Cache-Control': `max-age=${MAX_AGE}`,
+        'Last-Modified': mtime.toUTCString(),
         ...(gzip ? { 'Content-Encoding': 'gzip' } : {}),
     });
     const stream = createReadStream(file);

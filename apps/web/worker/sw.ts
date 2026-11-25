@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { answerFor, readPrecache } from './answer.js';
+import { answerFor, installCacheOf, readPrecache } from './answer.js';
 
 /**
  * The service worker: the whole app, cached on the first visit, so every page opens again with no
@@ -23,13 +23,16 @@ const CACHE = `game-table-tally-${PRECACHE.version}`;
 const FILES = new Set(PRECACHE.files);
 
 self.addEventListener('install', (event) => {
-    // Each file straight from the server, past the browser's own cache, which could still hold a
-    // page of the build before and leave this worker caching two builds at once.
+    // Each page and unhashed file straight from the server, past the browser's own cache, which
+    // could still hold a page of the build before and leave this worker caching two builds at once.
+    // A hashed file can only be this build's, so the copy the page just loaded is used.
     event.waitUntil(
         caches
             .open(CACHE)
             .then((cache) =>
-                cache.addAll(PRECACHE.files.map((file) => new Request(file, { cache: 'reload' })))
+                cache.addAll(
+                    PRECACHE.files.map((file) => new Request(file, { cache: installCacheOf(file) }))
+                )
             )
     );
 });

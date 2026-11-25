@@ -96,6 +96,34 @@ test('once the worker serves the page, a move to a screen not yet opened draws w
     await expect(page.locator('html')).not.toHaveAttribute('data-saw-loading');
 });
 
+test('installs without downloading again a hashed file the page loaded, and fetches every page and unhashed file afresh', async ({
+    page,
+}) => {
+    // The files the page loaded before the worker began to install, which the browser keeps, and
+    // what the worker took from the network rather than the browser's cache, which sends no body.
+    const loaded = new Set<string>();
+    const downloaded: string[] = [];
+    let installing = false;
+    page.context().on('requestfinished', (request) => {
+        const path = new URL(request.url()).pathname;
+        if (!request.serviceWorker()) {
+            if (!installing && path.startsWith('/assets/')) loaded.add(path);
+            return;
+        }
+        installing = true;
+        void request.sizes().then(({ responseBodySize }) => {
+            if (responseBodySize > 0) downloaded.push(path);
+        });
+    });
+    await visitOnce(page);
+    // The install is over once the worker is ready, and what it read is counted as each finishes.
+    await expect
+        .poll(() => downloaded)
+        .toEqual(expect.arrayContaining(['/index.html', '/404.html', '/manifest.webmanifest']));
+    expect(loaded.size).toBeGreaterThan(0);
+    expect(downloaded.filter((path) => loaded.has(path))).toEqual([]);
+});
+
 test('a navigation is answered by the worker and never reaches the network', async ({ page }) => {
     await visitOnce(page);
     const reached = requestsOfTheWorker(page);
