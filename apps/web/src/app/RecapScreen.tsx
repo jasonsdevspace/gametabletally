@@ -11,18 +11,19 @@ import { Dock } from './AppFrame.js';
 import { visitorFormats } from './history.js';
 import { gameNameOf } from './in-play.js';
 import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
+import { playedWith } from './options.js';
 import { newGameOf } from './PlayStart.js';
 import { GameTables } from './ScoresScreen.js';
 import { useDiscard, useSummary } from './summary.js';
 
 /*
  * The recap of a finished game, by its id, so the moment the rules end a game and a look back at it
- * later open the same page: who won, in words, then the final standings and every round, and a way
- * to play again with the same players in the same seats. The scoring package says when a game is
- * over and who won, so a tie the rules share is a shared win and one they play on is no end. A
- * round changed from here can put the game back in play, which the page then says. A finished game
- * is deleted from here at once, and the page gives way to the history, where the frame's toast
- * offers Undo.
+ * later open the same page: who won, in words, any rule option that differed from the published
+ * rules, then the final standings and every round, and a way to play again with the same players
+ * in the same seats. The scoring package says when a game is over and who won, so a tie the rules
+ * share is a shared win and one they play on is no end. A round changed from here can put the game
+ * back in play, which the page then says. A finished game is deleted from here at once, and the
+ * page gives way to the history, where the frame's toast offers Undo.
  */
 
 /** Who won, in a sentence, alone or sharing the win, with their total, or that no one did. */
@@ -75,13 +76,17 @@ const Head = ({
     gameName,
     names,
     totals,
+    rules,
 }: {
     readonly standing: Standing;
     readonly id: string;
     readonly gameName: string;
     readonly names: ReadonlyMap<string, string>;
     readonly totals: Readonly<Record<string, number>>;
+    /** The options it was played with that differ from the published rules, or nothing. */
+    readonly rules: string;
 }): ReactNode => {
+    const played = rules === '' ? null : ` ${rules}`;
     if (standing.kind === 'over')
         return (
             <>
@@ -91,7 +96,9 @@ const Head = ({
                         totals[standing.winners[0] ?? ''] ?? 0
                     )}
                 </p>
-                <p>This game of {gameName} is over.</p>
+                <p>
+                    This game of {gameName} is over.{played}
+                </p>
             </>
         );
     if (standing.kind === 'changing')
@@ -101,13 +108,13 @@ const Head = ({
                 <Link href={changingRoundOf(id, standing.round, 'recap')}>
                     Go back to round {standing.round + 1}
                 </Link>
-                .
+                .{played}
             </p>
         );
     return (
         <p>
             This game of {gameName} is in play, so it has no winner yet.{' '}
-            <Link href={hrefOf('game', id)}>Go back to the game</Link>.
+            <Link href={hrefOf('game', id)}>Go back to the game</Link>.{played}
         </p>
     );
 };
@@ -196,6 +203,7 @@ const Recap = ({
                 gameName={gameNameOf(saved.game)}
                 names={names}
                 totals={result.totals}
+                rules={playedWith(saved)}
             />
             <GameTables
                 play={play}

@@ -10,10 +10,10 @@ import { WithGames } from './opened-game.js';
 
 /**
  * The history: every finished game, the newest first, each a row that opens its recap and says who
- * won and by what total, the game, the day and the players. A game is deleted from its recap, which
- * comes back here with the frame's toast offering Undo, so a row is one link, as the design kit's
- * rows are. The games are read once the screen is running, never in the prerender, and who won is
- * worked out from each game's rounds as they are read.
+ * won and by what total, the game, the day, the players and any rule option that differed. A game
+ * is deleted from its recap, which comes back here with the frame's toast offering Undo, so a row
+ * is one link, as the design kit's rows are. The games are read once the screen is running, never
+ * in the prerender, and who won is worked out from each game's rounds as they are read.
  */
 
 export interface HistoryScreenProps {
@@ -65,6 +65,7 @@ const Finished = ({
                             <span className="dk-visually-hidden">, </span>
                             <span className="dk-row-detail">
                                 {game.game}, {game.date}. {game.players}.
+                                {game.rules === '' ? null : ` ${game.rules}`}
                             </span>
                         </span>
                         <span className="dk-row-sign" aria-hidden="true">

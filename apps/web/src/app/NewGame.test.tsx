@@ -263,6 +263,68 @@ describe('the new game screen', () => {
         await heard(status(), 'Ben takes seat 2 again.');
     });
 
+    it("offers the game's rule options below the players, with the published rules chosen", async () => {
+        await draw();
+        const target = screen.getByRole('combobox', { name: 'Target score' });
+        expect(target).toHaveValue('100');
+        expect(target).toHaveAccessibleDescription(
+            'The game ends with the round in which a player reaches this total.'
+        );
+        expect(
+            within(target)
+                .getAllByRole('option')
+                .map((one) => one.textContent)
+        ).toEqual(['50', '100, the published rule', '150', '200']);
+        // Below the players.
+        const seats = screen.getByRole('heading', { name: 'Players, in seat order' });
+        expect(seats.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING
+        );
+        // Another game offers its own, and a switch is a checkbox in a group named for it.
+        fireEvent.click(screen.getByRole('radio', { name: /^Wizard/ }));
+        expect(screen.queryByRole('combobox', { name: 'Target score' })).toBeNull();
+        const rule = screen.getByRole('group', { name: 'Plus or minus one' });
+        expect(rule).toHaveAccessibleDescription(
+            'The bids may not add up to the cards dealt to each player, so somebody misses their bid.'
+        );
+        expect(within(rule).getByRole('checkbox', { name: 'Plus or minus one' })).not.toBeChecked();
+    });
+
+    it('starts a game with an option changed, saving every option with its value', async () => {
+        const { open, went } = await draw();
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ann' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Add Ben' }));
+        fireEvent.change(screen.getByRole('combobox', { name: 'Target score' }), {
+            target: { value: '50' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
+        await waitFor(() => {
+            expect(went).toEqual(['/game/?id=id-1']);
+        });
+        const store = await open();
+        const game = await store.game('id-1');
+        store.close();
+        expect(game?.options).toEqual({ 'target-score': 50 });
+    });
+
+    it('starts a game of Wizard with its switch on', async () => {
+        const { open, went } = await draw(
+            [player('ann', 'Ann'), player('ben', 'Ben'), player('cat', 'Cat')],
+            '/new/?game=wizard'
+        );
+        for (const name of ['Ann', 'Ben', 'Cat'])
+            fireEvent.click(screen.getByRole('button', { name: `Add ${name}` }));
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Plus or minus one' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
+        await waitFor(() => {
+            expect(went).toEqual(['/game/?id=id-1']);
+        });
+        const store = await open();
+        const game = await store.game('id-1');
+        store.close();
+        expect(game?.options).toEqual({ 'plus-minus-one': true });
+    });
+
     it('keeps the start button off, saying how many the game takes, until enough are seated', async () => {
         const { went } = await draw([player('ann', 'Ann')]);
         const dock = screen.getByRole('region', { name: 'Actions' });
@@ -293,7 +355,7 @@ describe('the new game screen', () => {
         expect(game).toMatchObject({
             game: 'skyjo',
             rules: GAMES.find(({ id }) => id === 'skyjo')?.rules,
-            options: {},
+            options: { 'target-score': 100 },
             players: ['ben', 'ann'],
             rounds: [],
             draft: { index: 0, step: { player: 'ben' } },
