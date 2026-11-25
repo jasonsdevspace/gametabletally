@@ -1,21 +1,105 @@
+import type { PlausibleEventOptions } from '@plausible-analytics/tracker';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { counts, countVisits, DOMAIN, pathsOnly, stopCounting } from './analytics.js';
+import {
+    countEvent,
+    counts,
+    countVisits,
+    DOMAIN,
+    KEPT,
+    MOST_KEPT,
+    pathsOnly,
+    stopCounting,
+} from './analytics.js';
 import { navigate } from './navigation.js';
 
-/* Page views counted on the live address only, by path alone, and never in the way of the app. */
+/*
+ * Page views and the three events counted on the live address only, by path alone, with the game's
+ * name the only thing an event carries, events made with no connection kept and sent later, and
+ * never in the way of the app.
+ */
 
 const live = { hostname: DOMAIN };
 
 /** A tracker that records what it was started with and each page view it was asked to send. */
 const tracker = () => {
     const init = vi.fn();
-    const track = vi.fn();
+    const track = vi.fn<(name: string, options: PlausibleEventOptions) => void>();
     return { init, track, load: () => Promise.resolve({ init, track }) };
 };
 
+/**
+ * A tracker over a connection the test turns off and on, which records each event that gets
+ * through by its name and what it carries, and answers each send as Plausible, a lost connection
+ * or a blocker would. The browser says it is offline only while the connection is lost, not while
+ * a blocker refuses the sends, and a send can be held unanswered, as one is while a page closes.
+ */
+const network = () => {
+    const sent: { name: string; props: unknown }[] = [];
+    let connected = true;
+    let online = true;
+    let holding = false;
+    vi.spyOn(navigator, 'onLine', 'get').mockImplementation(() => online);
+    const track = vi.fn((name: string, options: PlausibleEventOptions) => {
+        if (holding) return;
+        if (connected && name !== 'pageview') sent.push({ name, props: options.props });
+        options.callback?.(
+            connected ? { status: 202 } : { error: new TypeError('Failed to fetch') }
+        );
+    });
+    return {
+        sent,
+        track,
+        load: () => Promise.resolve({ init: vi.fn(), track }),
+        lose: () => {
+            connected = false;
+            online = false;
+        },
+        /** Refuses every send while the browser is still online, as a blocker does. */
+        block: () => {
+            connected = false;
+        },
+        /** Leaves every send unanswered, as a page that closes leaves the one on its way. */
+        hold: () => {
+            holding = true;
+        },
+        /** Gets the connection back without the browser firing its event. */
+        recover: () => {
+            connected = true;
+            online = true;
+        },
+        /** Gets the connection back, as the browser says when it does. */
+        reconnect: () => {
+            connected = true;
+            online = true;
+            window.dispatchEvent(new Event('online'));
+        },
+    };
+};
+
+/** The events kept on the phone, as stored, each by its name and its game's name. */
+const kept = (): unknown[] => {
+    const read: unknown = JSON.parse(localStorage.getItem(KEPT) ?? '[]');
+    return Array.isArray(read)
+        ? read.map((entry: { n?: unknown; g?: unknown }) =>
+              entry.g === undefined ? [entry.n] : [entry.n, entry.g]
+          )
+        : [];
+};
+
+/** Lets every send under way finish, so a test can check what was not sent. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
+
+/** Entries as a page writes them, each with its own id. */
+const stored = (entries: readonly (readonly [string] | readonly [string, string])[]) =>
+    JSON.stringify(
+        entries.map(([n, g], at) => (g === undefined ? { i: `e${at}`, n } : { i: `e${at}`, n, g }))
+    );
+
 afterEach(() => {
     stopCounting();
+    vi.restoreAllMocks();
+    localStorage.clear();
     window.history.replaceState(null, '', '/');
 });
 
@@ -43,8 +127,9 @@ describe('starting the count', () => {
             bindToWindow: false,
             logging: false,
         });
-        expect(track).toHaveBeenCalledTimes(1);
-        expect(track).toHaveBeenCalledWith('pageview', {});
+        expect(track.mock.calls.map(([name, options]) => [name, Object.keys(options)])).toEqual([
+            ['pageview', ['callback']],
+        ]);
     });
 
     it('never loads the tracker where a visit does not count', async () => {
@@ -154,5 +239,209 @@ describe('what a page view sends', () => {
 
     it('sends nothing for a page whose address cannot be read', () => {
         expect(pathsOnly({ n: 'pageview', u: 'nowhere', d: DOMAIN, r: null })).toBeNull();
+    });
+});
+
+describe('the events counted', () => {
+    it("counts a game started and a game finished with the game's name and nothing else", async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'flip-7', live, {});
+        countEvent('Game finished', 'skyjo', live, {});
+        await vi.waitFor(() => {
+            expect(sent).toEqual([
+                { name: 'Game started', props: { game: 'Flip 7' } },
+                { name: 'Game finished', props: { game: 'Skyjo' } },
+            ]);
+        });
+        expect(kept()).toEqual([]);
+    });
+
+    it('counts an install with nothing beside it', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Install', props: undefined }]);
+        });
+    });
+
+    it('counts nothing for a game the app does not know, so nothing typed is ever sent', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'Alice', live, {});
+        expect(sent).toEqual([]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('keeps nothing and sends nothing where a visit does not count', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        countEvent('Game started', 'flip-7', { hostname: 'localhost' }, {});
+        countEvent('Install', undefined, live, { globalPrivacyControl: true });
+        expect(sent).toEqual([]);
+        expect(localStorage.getItem(KEPT)).toBeNull();
+    });
+
+    it('forgets the events kept once the browser sends Global Privacy Control', async () => {
+        localStorage.setItem(KEPT, stored([['Install']]));
+        countEvent('Install', undefined, live, { globalPrivacyControl: true });
+        expect(localStorage.getItem(KEPT)).toBeNull();
+        localStorage.setItem(KEPT, stored([['Install']]));
+        expect(await countVisits(live, { globalPrivacyControl: true }, network().load)).toBe(false);
+        expect(localStorage.getItem(KEPT)).toBeNull();
+    });
+
+    it('sends an event where the browser will not store it', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        });
+        countEvent('Game started', 'wizard', live, {});
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Game started', props: { game: 'Wizard' } }]);
+        });
+    });
+});
+
+describe('events made with no connection', () => {
+    it('are kept on the phone and sent when the connection returns', async () => {
+        const { sent, load, lose, reconnect } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Game started', 'wizard', live, {});
+        countEvent('Game finished', 'wizard', live, {});
+        await vi.waitFor(() => {
+            expect(kept()).toEqual([
+                ['Game started', 'Wizard'],
+                ['Game finished', 'Wizard'],
+            ]);
+        });
+        expect(sent).toEqual([]);
+        reconnect();
+        await vi.waitFor(() => {
+            expect(sent).toEqual([
+                { name: 'Game started', props: { game: 'Wizard' } },
+                { name: 'Game finished', props: { game: 'Wizard' } },
+            ]);
+        });
+        expect(kept()).toEqual([]);
+    });
+
+    it('are sent once a page view gets through, where the browser never fired its event', async () => {
+        const { sent, load, lose, recover } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(() => {
+            expect(kept()).toEqual([['Install']]);
+        });
+        recover();
+        navigate('/play/');
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Install', props: undefined }]);
+        });
+        expect(kept()).toEqual([]);
+    });
+
+    it('are sent by the next visit, made before the tracker starts', async () => {
+        countEvent('Game started', 'skyjo', live, {});
+        expect(kept()).toEqual([['Game started', 'Skyjo']]);
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Game started', props: { game: 'Skyjo' } }]);
+        });
+    });
+
+    it('are kept up to the limit, and past it the newest are dropped', async () => {
+        const { sent, load, lose, reconnect } = network();
+        await countVisits(live, {}, load);
+        lose();
+        for (let at = 0; at < MOST_KEPT; at += 1) countEvent('Game started', 'flip-7', live, {});
+        countEvent('Game finished', 'flip-7', live, {});
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(() => {
+            expect(kept()).toHaveLength(MOST_KEPT);
+        });
+        reconnect();
+        await vi.waitFor(() => {
+            expect(sent).toHaveLength(MOST_KEPT);
+        });
+        expect(sent.every(({ name }) => name === 'Game started')).toBe(true);
+    });
+
+    it('send no more than the limit from a longer list read back', async () => {
+        localStorage.setItem(
+            KEPT,
+            stored(Array.from({ length: MOST_KEPT + 10 }, () => ['Install'] as const))
+        );
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        await vi.waitFor(() => {
+            expect(kept()).toEqual([]);
+        });
+        expect(sent).toHaveLength(MOST_KEPT);
+    });
+
+    it('are dropped when a send fails while the browser is online, as a blocker makes it', async () => {
+        const { sent, load, block, recover } = network();
+        await countVisits(live, {}, load);
+        block();
+        countEvent('Game finished', 'skyjo', live, {});
+        await vi.waitFor(() => {
+            expect(kept()).toEqual([]);
+        });
+        recover();
+        navigate('/play/');
+        await settle();
+        expect(sent).toEqual([]);
+    });
+
+    it('are not sent again by the next visit once one is on its way as the page closes', async () => {
+        const first = network();
+        await countVisits(live, {}, first.load);
+        first.hold();
+        countEvent('Install', undefined, live, {});
+        // The send is on its way, unanswered, when the page closes.
+        await vi.waitFor(() => {
+            expect(first.track).toHaveBeenCalledWith('Install', expect.anything());
+        });
+        stopCounting();
+        const next = network();
+        await countVisits(live, {}, next.load);
+        navigate('/play/');
+        await settle();
+        expect(next.sent).toEqual([]);
+        expect(kept()).toEqual([]);
+    });
+
+    it('send nothing from a kept list changed on the phone but the three events, each with a game the app knows', async () => {
+        localStorage.setItem(
+            KEPT,
+            JSON.stringify([
+                { i: 'a', n: 'Game started', g: 'Alice' },
+                { i: 'b', n: 'Score', g: 229 },
+                { i: 'c', n: 'Install', g: 'g-7d1e' },
+                'Game started',
+                ['Game finished', 'Wizard'],
+                { n: 'Install' },
+                { i: 'd', n: 'Game finished', g: 'Wizard' },
+            ])
+        );
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        await vi.waitFor(() => {
+            expect(kept()).toEqual([]);
+        });
+        expect(sent).toEqual([{ name: 'Game finished', props: { game: 'Wizard' } }]);
+    });
+
+    it('send nothing from a kept list that is not one', async () => {
+        localStorage.setItem(KEPT, '{not a list');
+        const { sent, load } = network();
+        expect(await countVisits(live, {}, load)).toBe(true);
+        expect(sent).toEqual([]);
     });
 });

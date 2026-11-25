@@ -137,7 +137,8 @@ export const buildGame = async (
     play: (model: ReturnType<typeof openPlay>) => Promise<void> = () => Promise.resolve()
 ): Promise<SavedGame> => {
     const store = await openStore(new IDBFactory(), 'seed');
-    const model = openPlay(store, fixedClock());
+    // Built outside the browser, where nothing is counted.
+    const model = openPlay(store, fixedClock(), undefined, () => undefined);
     await model.start(game);
     await play(model);
     const built = await store.game(game.id);

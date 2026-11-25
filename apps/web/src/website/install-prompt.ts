@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
+import { type Counted, countEvent } from '../analytics.js';
+
 /**
  * The browser's own offer to install the app, where it makes one. Chrome and Edge on Android and
  * on a computer fire `beforeinstallprompt` once the app can be installed, and the page may keep
@@ -47,9 +49,10 @@ let stopListening = (): void => undefined;
 
 /**
  * Starts hearing the browser's offer and the app's installation, in place of any listening under
- * way. Called once when the module loads in a browser, and again by a test that starts afresh.
+ * way, counting each installation the browser reports. Called once when the module loads in a
+ * browser, and again by a test that starts afresh.
  */
-export const listenForInstall = (): (() => void) => {
+export const listenForInstall = (count: (event: Counted) => void = countEvent): (() => void) => {
     stopListening();
     state = standalone() ? INSTALLED : NONE;
     const offer = (event: Event) => {
@@ -59,6 +62,7 @@ export const listenForInstall = (): (() => void) => {
     };
     const installed = () => {
         set(INSTALLED);
+        count('Install');
     };
     window.addEventListener('beforeinstallprompt', offer);
     window.addEventListener('appinstalled', installed);

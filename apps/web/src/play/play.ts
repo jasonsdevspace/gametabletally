@@ -1,5 +1,6 @@
 import { type Problem, score, type ScoreResult } from '@gametabletally/scoring';
 
+import { type Counted, countEvent } from '../analytics.js';
 import {
     compareInstants,
     type SavedDraft,
@@ -326,12 +327,17 @@ interface Last {
  * Opens the games in progress over a store. `now` gives the time each change is saved at, as an
  * ISO 8601 date and time in UTC, and a test passes its own. `askToKeep` asks the browser to keep
  * what is saved each time a started game is saved, since from then the phone holds something worth
- * keeping. A browser that has agreed already is not asked again.
+ * keeping. A browser that has agreed already is not asked again. `count` counts a game started
+ * and a game finished by the game it is, and a game is counted as finished once while the model is
+ * open, however often it is put back in play and ended again. A saved game does not say whether
+ * it was over before, since undo and a changed round put it back as if it never was, so a game
+ * put back in play and ended again after the app is opened afresh is counted as finished again.
  */
 export const openPlay = (
     store: Store,
     now: () => string = () => new Date().toISOString(),
-    askToKeep: () => Promise<unknown> = () => keepStorage()
+    askToKeep: () => Promise<unknown> = () => keepStorage(),
+    count: (event: Counted, game: string) => void = countEvent
 ): Play => {
     const games = new Map<string, SavedGame>();
     const errors = new Map<string, string>();
@@ -342,6 +348,8 @@ export const openPlay = (
     const views = new WeakMap<SavedGame, GameInPlay>();
     // Each change waits for the one before it, so two taps never save over each other.
     let queue: Promise<unknown> = Promise.resolve();
+    // The games counted as finished, so a round undone and saved again is not counted twice.
+    const finished = new Set<string>();
 
     const viewOf = (game: SavedGame): GameInPlay => {
         const error = errors.get(game.id) ?? null;
@@ -477,8 +485,10 @@ export const openPlay = (
                     changed: at,
                 };
                 const refused = await keep({ ...fresh, draft: newDraft(fresh, 0) }, null);
+                if (refused !== null) return;
+                count('Game started', game.game);
                 // The answer is not waited for, since a browser may ask the visitor first.
-                if (refused === null) void askToKeep().catch(() => undefined);
+                void askToKeep().catch(() => undefined);
             }),
         enter: (id, value) =>
             inOrder(async () => {
@@ -605,6 +615,10 @@ export const openPlay = (
                     after.state === 'over' &&
                     (before.state !== 'over' || scoredTo(before) !== scoredTo(after));
                 const resumed = before.state === 'over' && after.state !== 'over';
+                if (before.state !== 'over' && after.state === 'over' && !finished.has(id)) {
+                    finished.add(id);
+                    count('Game finished', game.game);
+                }
                 return { saved: true, outcome: ended ? 'ended' : resumed ? 'resumed' : null };
             }),
         reopen: (id, index) =>
