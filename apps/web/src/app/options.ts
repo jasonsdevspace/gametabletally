@@ -28,17 +28,40 @@ export const optionsOf = (
 ): Record<string, OptionValue> =>
     Object.fromEntries(game.options.map(({ id, default: rule }) => [id, picked[id] ?? rule]));
 
+/** An option's name in the middle of a sentence. */
+const named = ({ name }: GameOption): string => `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+
 /**
- * The options a game was played with that differ from the published rules, as a sentence, or
- * nothing where it was played by the book.
+ * The options of a game that differ from the published rules, as a sentence, or nothing where it
+ * was played by the book: a number as "a target score of 50", and a switch as played with it or
+ * without it.
  */
-export const playedWith = ({ game, options }: Pick<SavedGame, 'game' | 'options'>): string => {
-    const declared = GAMES.find(({ id }) => id === game);
-    const changed = (declared ? shownOf(declared) : []).flatMap((option) => {
+export const optionWords = (game: Game, options: Readonly<Record<string, unknown>>): string => {
+    const played = shownOf(game).flatMap((option) => {
         const value = options[option.id];
         if (value === option.default) return [];
-        if (typeof value === 'number') return [`${option.name} ${String(value)}`];
-        return typeof value === 'boolean' ? [`${option.name} ${value ? 'on' : 'off'}`] : [];
+        if (typeof value === 'number')
+            return [{ with: true, words: `a ${named(option)} of ${String(value)}` }];
+        return typeof value === 'boolean' ? [{ with: value, words: named(option) }] : [];
     });
-    return changed.length === 0 ? '' : `Played with ${listOf(changed, 'and')}.`;
+    const part = (on: boolean) => {
+        const words = played.filter((one) => one.with === on).map((one) => one.words);
+        return words.length === 0 ? [] : [`${on ? 'with' : 'without'} ${listOf(words, 'and')}`];
+    };
+    const parts = [...part(true), ...part(false)];
+    return parts.length === 0 ? '' : `Played ${parts.join(' and ')}.`;
+};
+
+/**
+ * The options a saved game was played with that differ from the published rules, as a sentence.
+ * A game saved under a version of its rules this build does not declare says nothing, since its
+ * published rules may not be the ones this build knows.
+ */
+export const playedWith = ({
+    game,
+    rules,
+    options,
+}: Pick<SavedGame, 'game' | 'rules' | 'options'>): string => {
+    const declared = GAMES.find(({ id, rules: version }) => id === game && version === rules);
+    return declared ? optionWords(declared, options) : '';
 };

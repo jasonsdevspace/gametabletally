@@ -148,7 +148,7 @@ const RuleFields = ({
                     choices={[
                         {
                             value: 'on',
-                            label: 'On',
+                            label: option.name,
                             checked: (picked[option.id] ?? option.default) === true,
                             onChange: (event) => {
                                 onPick(option.id, event.currentTarget.checked);

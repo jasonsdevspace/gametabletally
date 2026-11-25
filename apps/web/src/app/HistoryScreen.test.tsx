@@ -97,7 +97,7 @@ describe('the history', () => {
         draw(await database(['2026-11-14'], false, { 'target-score': 150 }));
         const list = await screen.findByRole('list', { name: 'Finished games' });
         expect(within(list).getByRole('link').textContent).toBe(
-            'Ann won with 151, Flip 7, November 14, 2026. Ann, Ben and Cat. Played with Target score 150.›'
+            'Ann won with 151, Flip 7, November 14, 2026. Ann, Ben and Cat. Played with a target score of 150.›'
         );
     });
 

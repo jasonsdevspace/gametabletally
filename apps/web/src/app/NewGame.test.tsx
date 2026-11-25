@@ -287,7 +287,7 @@ describe('the new game screen', () => {
         expect(rule).toHaveAccessibleDescription(
             'The bids may not add up to the cards dealt to each player, so somebody misses their bid.'
         );
-        expect(within(rule).getByRole('checkbox', { name: 'On' })).not.toBeChecked();
+        expect(within(rule).getByRole('checkbox', { name: 'Plus or minus one' })).not.toBeChecked();
     });
 
     it('starts a game with an option changed, saving every option with its value', async () => {
@@ -314,7 +314,7 @@ describe('the new game screen', () => {
         );
         for (const name of ['Ann', 'Ben', 'Cat'])
             fireEvent.click(screen.getByRole('button', { name: `Add ${name}` }));
-        fireEvent.click(screen.getByRole('checkbox', { name: 'On' }));
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Plus or minus one' }));
         fireEvent.click(screen.getByRole('button', { name: 'Start the game' }));
         await waitFor(() => {
             expect(went).toEqual(['/game/?id=id-1']);

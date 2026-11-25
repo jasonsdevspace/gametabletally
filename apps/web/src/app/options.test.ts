@@ -1,7 +1,7 @@
-import { type Game, type GameOption, GAMES } from '@gametabletally/scoring';
+import { type Game, type GameOption, GAMES, type SwitchOption } from '@gametabletally/scoring';
 import { describe, expect, it } from 'vitest';
 
-import { optionsOf, playedWith, shownOf } from './options.js';
+import { optionsOf, optionWords, playedWith, shownOf } from './options.js';
 
 /* A game's rule options as the app offers them, saves them and names them. */
 
@@ -23,6 +23,13 @@ if (!isOption(newKind)) throw new Error('The option was not read.');
 
 /** Skyjo with the option of a kind this build does not know. */
 const withNewKind: Game = { ...gameOf('skyjo'), options: [...gameOf('skyjo').options, newKind] };
+
+/** A game's switch option, which Wizard has. */
+const switchOf = (game: Game): SwitchOption => {
+    const option = game.options.find((one): one is SwitchOption => one.kind === 'switch');
+    if (!option) throw new Error(`${game.name} has no switch.`);
+    return option;
+};
 
 describe("a game's rule options", () => {
     it('are the ones the scoring package declares for each game', () => {
@@ -49,15 +56,33 @@ describe("a game's rule options", () => {
     });
 
     it('are named only where they differ from the published rules', () => {
-        expect(playedWith({ game: 'skyjo', options: { 'target-score': 50 } })).toBe(
-            'Played with Target score 50.'
+        const named = (game: string, options: Readonly<Record<string, unknown>>) =>
+            playedWith({ game, rules: 1, options });
+        expect(named('skyjo', { 'target-score': 50 })).toBe('Played with a target score of 50.');
+        expect(named('wizard', { 'plus-minus-one': true })).toBe('Played with plus or minus one.');
+        expect(named('skyjo', { 'target-score': 100 })).toBe('');
+        expect(named('wizard', { 'plus-minus-one': false })).toBe('');
+        expect(named('flip-7', {})).toBe('');
+        expect(named('flip-7', { 'target-score': null })).toBe('');
+    });
+
+    it('name a switch the published rules have on as played without it', () => {
+        const switchedOn: Game = {
+            ...gameOf('wizard'),
+            options: [{ ...switchOf(gameOf('wizard')), default: true }],
+        };
+        expect(optionWords(switchedOn, { 'plus-minus-one': false })).toBe(
+            'Played without plus or minus one.'
         );
-        expect(playedWith({ game: 'wizard', options: { 'plus-minus-one': true } })).toBe(
-            'Played with Plus or minus one on.'
-        );
-        expect(playedWith({ game: 'skyjo', options: { 'target-score': 100 } })).toBe('');
-        expect(playedWith({ game: 'wizard', options: { 'plus-minus-one': false } })).toBe('');
-        expect(playedWith({ game: 'flip-7', options: {} })).toBe('');
-        expect(playedWith({ game: 'flip-7', options: { 'target-score': null } })).toBe('');
+        expect(
+            optionWords(
+                { ...switchedOn, options: [...switchedOn.options, ...gameOf('skyjo').options] },
+                { 'plus-minus-one': false, 'target-score': 50 }
+            )
+        ).toBe('Played with a target score of 50 and without plus or minus one.');
+    });
+
+    it('name nothing for a game saved under a version of its rules this build does not know', () => {
+        expect(playedWith({ game: 'skyjo', rules: 2, options: { 'target-score': 50 } })).toBe('');
     });
 });

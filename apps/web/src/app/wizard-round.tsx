@@ -102,11 +102,15 @@ export const wizardRefusalWords = (problem: Problem): string =>
         ? tricksLeftWords(Number(problem.data.given), Number(problem.data.dealt))
         : problem.message;
 
+/** The bids tried for each saved game, by the round and who bids last, so none is tried twice. */
+const tried = new WeakMap<SavedGame, Map<string, number | null>>();
+
 /**
  * The bid the player who bids last cannot make, since the rules would refuse the bids it completes,
  * or null where they would refuse none. Each bid they could make is tried in the round, beside the
  * others' and any bid of a player marked out, so the rules' own refusal decides, under whatever
- * options the game was started with.
+ * options the game was started with. The answer is kept for the game as saved and the bids given,
+ * so a screen drawn again with the same bids scores nothing.
  */
 export const barredBid = (
     game: SavedGame,
@@ -114,22 +118,59 @@ export const barredBid = (
     round: DraftRound,
     last: string
 ): number | null => {
-    for (let bid = 0; bid <= index + 1; bid += 1) {
-        const tried = { ...round, entries: { ...round.entries, [last]: { bid } } };
-        const rounds = [...game.rounds.slice(0, index), tried];
+    const known = tried.get(game) ?? new Map<string, number | null>();
+    tried.set(game, known);
+    const key = JSON.stringify([index, round, last]);
+    const kept = known.get(key);
+    if (kept !== undefined) return kept;
+    let barred: number | null = null;
+    for (let bid = 0; bid <= index + 1 && barred === null; bid += 1) {
+        const withBid = { ...round, entries: { ...round.entries, [last]: { bid } } };
+        const rounds = [...game.rounds.slice(0, index), withBid];
         const { problems } = score({ ...toScoreInput(game), rounds });
         if (problems.some(({ code, round: at }) => code === 'bid-total' && at === index))
-            return bid;
+            barred = bid;
     }
-    return null;
+    known.set(key, barred);
+    return barred;
 };
 
-/** No bid barred, while the others' bids are not all in or every bid can be made. */
+/** The bids kept in a round for players marked out of it after they bid, which the rules count. */
+const keptBids = (round: DraftRound): { readonly player: string; readonly bid: number }[] =>
+    round.out.flatMap((player) => {
+        const { bid } = countsOf(round.entries[player]);
+        return bid === undefined ? [] : [{ player, bid }];
+    });
+
+/**
+ * What the bids come to against the cards dealt, naming any bid kept from a player skipped after
+ * they bid, which the total counts.
+ */
+export const bidsLineWords = (
+    total: number,
+    dealt: number,
+    kept: readonly { readonly name: string; readonly bid: number }[]
+): string => {
+    const each = `${String(dealt)} ${dealt === 1 ? 'card' : 'cards'} each`;
+    if (kept.length === 0) return `The bids come to ${String(total)} for ${each}.`;
+    const bids = listOf(
+        kept.map(({ name, bid }) => `${name}'s bid of ${String(bid)}`),
+        'and'
+    );
+    const who = listOf(
+        kept.map(({ name }) => name),
+        'and'
+    );
+    return `The bids come to ${String(total)} for ${each}, counting ${bids} from before ${who} ${kept.length === 1 ? 'was' : 'were'} skipped.`;
+};
+
+/** No bid barred, while a bid of the others is not one or every bid can be made. */
 const NONE_BARRED = { words: '', blocked: false } as const;
 
 /**
- * The bid the dealer, who bids last, cannot make against the others' bids as set, in words, and
- * whether the dealer's bid as set is it, which holds the bids.
+ * The bid the dealer, who bids last, cannot make against the others' counts as they stand, in
+ * words, and whether the dealer's count is it, which holds the bids. It is worked out whatever the
+ * others have entered, and the screen chooses when to show it.
  */
 const barredNow = ({
     game,
@@ -157,7 +198,10 @@ const barredNow = ({
     };
 };
 
-/** Which line says why the round cannot move on: a count out of its limits, a barred bid, or the tricks. */
+/**
+ * Which line says why the round cannot move on: a count out of its limits, a barred bid, or the
+ * tricks still to enter.
+ */
 const whyOf = (wrong: string, blocked: boolean): string => {
     if (wrong !== '') return 'counts-why';
     return blocked ? 'bids-barred' : 'tricks-left';
@@ -202,6 +246,8 @@ const Count = ({
     off,
     onText,
     pressWords,
+    describedBy,
+    onFocusIn,
 }: {
     readonly id: string;
     readonly name: string;
@@ -214,8 +260,25 @@ const Count = ({
     readonly onText: (text: string) => void;
     /** The page's words said after the value of each press, read as the press is said. */
     readonly pressWords?: (() => string) | undefined;
+    /** The id of the page's own words that describe the count too, such as a bid it cannot be. */
+    readonly describedBy?: string | undefined;
+    /** Called as focus moves into the stepper, its buttons or its value. */
+    readonly onFocusIn?: (() => void) | undefined;
 }) => {
     const field = useRef<HTMLInputElement>(null);
+    const focusIn = useRef(onFocusIn);
+    useEffect(() => {
+        focusIn.current = onFocusIn;
+    });
+    useEffect(() => {
+        const stepper = field.current?.closest('.dk-field') ?? field.current;
+        if (!stepper) return undefined;
+        const listen = () => focusIn.current?.();
+        stepper.addEventListener('focusin', listen);
+        return () => {
+            stepper.removeEventListener('focusin', listen);
+        };
+    }, []);
     // The label read is the label shown with what is counted after it, in one piece out of sight,
     // since a browser puts a space before a piece out of sight that follows the words shown.
     const seen = detail === '' ? name : `${name} ${detail}`;
@@ -254,6 +317,7 @@ const Count = ({
                 </>
             }
             subject={`${name}'s ${what}`}
+            aria-describedby={describedBy}
             required
             min={0}
             max={max}
@@ -404,10 +468,18 @@ const useCounts = (game: GameWithDraft, playing: readonly string[], phase: Phase
     /** The texts with one player's changed, for every player in the round. */
     const withText = (one: string, text: string) =>
         Object.fromEntries(playing.map((each) => [each, each === one ? text : textOf(each)]));
+    /** The texts set at this moment, with one player's changed, and no other's. */
+    const setWith = (one: string, text: string) => ({ ...shown.texts, [one]: text });
+    /**
+     * Whether a player's count was entered rather than shown at its start: set at this moment, or,
+     * for a bid, one the round already holds.
+     */
+    const entered = (one: string) =>
+        shown.texts[one] !== undefined || countsOf(draft.round.entries[one]).bid !== undefined;
     const set = (one: string, text: string) => {
         setCounts((now) => ({ ...now, texts: { ...now.texts, [one]: text } }));
     };
-    return { textOf, countOf, withText, set };
+    return { textOf, countOf, withText, setWith, entered, set };
 };
 
 /** The label of the button that moves a round of Wizard on, at each of its moments. */
@@ -472,6 +544,7 @@ const CountsView = ({
     barred,
     onText,
     pressWords,
+    onDealerFocus,
 }: {
     readonly game: GameWithDraft;
     readonly playing: readonly string[];
@@ -487,12 +560,17 @@ const CountsView = ({
     /** The bid the last to bid cannot make, in words, or an empty string. */
     readonly barred: string;
     readonly onText: (player: string, text: string) => void;
-    /** The words said after each press's value, the tricks still to enter. */
+    /** The words said after each press's value: the tricks still to enter, or a bid barred. */
     readonly pressWords?: (() => string) | undefined;
+    /** Called as focus moves into the dealer's stepper. */
+    readonly onDealerFocus: () => void;
 }) => {
     const { draft } = game;
     const dealt = draft.index + 1;
-    const given = playing.reduce((sum, one) => sum + (counts.countOf(one) ?? 0), 0);
+    const kept = keptBids(draft.round);
+    const given =
+        playing.reduce((sum, one) => sum + (counts.countOf(one) ?? 0), 0) +
+        kept.reduce((sum, { bid }) => sum + bid, 0);
     // The bid beside each player's tricks, and who deals beside the bids.
     const detailOf = (one: string) => {
         if (what === 'tricks') return `bid ${String(countsOf(draft.round.entries[one]).bid ?? 0)}`;
@@ -509,7 +587,11 @@ const CountsView = ({
                 </p>
             ) : (
                 <p className="dk-field-hint" id="counts-line" tabIndex={-1}>
-                    The bids come to {given} for {dealt} {dealt === 1 ? 'card' : 'cards'} each.
+                    {bidsLineWords(
+                        given,
+                        dealt,
+                        kept.map(({ player, bid }) => ({ name: nameIn(names, player), bid }))
+                    )}
                 </p>
             )}
             {wrong === '' ? null : (
@@ -537,6 +619,8 @@ const CountsView = ({
                             onText(one, text);
                         }}
                         pressWords={pressWords}
+                        describedBy={one === dealer && barred !== '' ? 'bids-barred' : undefined}
+                        onFocusIn={one === dealer ? onDealerFocus : undefined}
                     />
                 ))}
             </div>
@@ -546,6 +630,72 @@ const CountsView = ({
 
 /** How long a run of presses rests before the tricks still to enter are said, in milliseconds. */
 const SETTLE = 700;
+
+/**
+ * The bid the dealer cannot make, shown once every other player has entered a bid this round, so
+ * a 0 shown at the start is not taken for a bid, or once focus moves into the dealer's stepper,
+ * and always while the dealer's bid is it, which holds the bids. A press that lands the dealer on
+ * it says the words with its value, and a count typed says them once the typing rests.
+ */
+const useBarred = ({
+    game,
+    playing,
+    dealer,
+    counts,
+    nameOf,
+    phase,
+    say,
+}: {
+    readonly game: GameWithDraft;
+    readonly playing: readonly string[];
+    readonly dealer: string | null;
+    readonly counts: ReturnType<typeof useCounts>;
+    readonly nameOf: (player: string) => string;
+    readonly phase: Phase;
+    readonly say: ReturnType<typeof useStatus>;
+}) => {
+    const [focusedAt, setFocusedAt] = useState<number | null>(null);
+    const { index } = game.draft;
+    const now =
+        phase === 'bids'
+            ? barredNow({ game, playing, dealer, countOf: counts.countOf, nameOf })
+            : NONE_BARRED;
+    const others = playing.filter((one) => one !== dealer);
+    const shown = now.blocked || focusedAt === index || others.every(counts.entered);
+    const words = shown ? now.words : '';
+    const { blocked } = now;
+    // The words as last said, so a press and the typing that follows it say them once.
+    const spoken = useRef('');
+    const latest = useRef({ words, blocked });
+    useEffect(() => {
+        latest.current = { words, blocked };
+    });
+    useEffect(() => {
+        if (!blocked) spoken.current = '';
+        if (!blocked || spoken.current === words) return undefined;
+        let live = true;
+        say(
+            () => {
+                if (!live || spoken.current === words) return null;
+                spoken.current = words;
+                return words;
+            },
+            { settle: SETTLE }
+        );
+        return () => {
+            live = false;
+        };
+    }, [words, blocked, say]);
+    const pressWords = (): string => {
+        if (!latest.current.blocked) return '';
+        spoken.current = latest.current.words;
+        return latest.current.words;
+    };
+    const onDealerFocus = () => {
+        setFocusedAt(index);
+    };
+    return { words, blocked, pressWords, onDealerFocus };
+};
 
 /**
  * A round of Wizard being entered, at whichever of its moments it is: the bids, the hand, or the
@@ -589,10 +739,7 @@ export const WizardRound = ({
             : `${nameOf(refusedBy)}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(dealt)}.`;
     // The dealer bids last, so the bid they cannot make is said before they make it, and the bids
     // are held while theirs is it.
-    const barred =
-        phase === 'bids'
-            ? barredNow({ game, playing, dealer, countOf: counts.countOf, nameOf })
-            : NONE_BARRED;
+    const barred = useBarred({ game, playing, dealer, counts, nameOf, phase, say });
     const { blocked } = barred;
 
     // The tricks still to enter, as last said, so the same words are not said again. A press says
@@ -609,7 +756,7 @@ export const WizardRound = ({
         tricksNow.current = phase === 'tricks';
     });
     const pressWords = () => {
-        if (!tricksNow.current) return '';
+        if (!tricksNow.current) return barred.pressWords();
         spoken.current = leftNow.current;
         return leftNow.current;
     };
@@ -633,20 +780,30 @@ export const WizardRound = ({
         say(words);
     };
 
-    const valuesOf = (texts: Readonly<Record<string, string>>): StepValue[] | null => {
-        const values = playing.map((one) => ({
+    const valuesOf = (
+        texts: Readonly<Record<string, string>>,
+        of: readonly string[] = playing
+    ): StepValue[] | null => {
+        const values = of.map((one) => ({
             step: { part: what, player: one } as const,
             value: countIn(texts[one] ?? '', dealt),
         }));
         return values.every(({ value }) => value !== null) ? values : null;
     };
 
-    /** Sets a player's count as typed, and keeps every count once each is one. */
+    /**
+     * Sets a player's count as typed, and keeps every count set at this moment once each is one,
+     * so a count never entered is not kept as if it were.
+     */
     const change = (one: string, text: string) => {
         if (actionsOf.held()) return;
         summary.clear();
         counts.set(one, text);
-        const values = valuesOf(counts.withText(one, text));
+        const texts = counts.setWith(one, text);
+        const values = valuesOf(
+            texts,
+            playing.filter((each) => texts[each] !== undefined)
+        );
         if (values !== null) void play.holdAll(id, values);
     };
 
@@ -703,15 +860,21 @@ export const WizardRound = ({
         return true;
     };
 
-    // A player put back has no bid, so the round goes back to the bids, which are kept as set.
+    // A player put back keeps any bid they made before they were skipped, so the round goes back
+    // to the bids, where it can be changed, or set where they had none, and the others are kept.
     const back = async (one: string) => {
-        // The round's own words for a put back are left unsaid, since these say the bid to set.
+        const { bid } = countsOf(draft.round.entries[one]);
+        // The round's own words for a put back are left unsaid, since these say what to do with
+        // the bid.
         await actionsOf.back('', one, { focus: false, quiet: true });
         const step = keptOf(play, id)?.draft?.step;
         if (step?.part === 'tricks') await actionsOf.goTo({ part: 'bid', player: one });
         setOver(null);
+        const name = nameOf(one);
         sayInstead(
-            `${nameOf(one)} is back in round ${String(round)}. Set ${nameOf(one)}'s bid.`,
+            bid === undefined
+                ? `${name} is back in round ${String(round)}. Set ${name}'s bid.`
+                : `${name} is back in round ${String(round)} with a bid of ${String(bid)}. Change it if ${name} bids again.`,
             left
         );
         focusOn('counts-line');
@@ -770,6 +933,7 @@ export const WizardRound = ({
                     left={left}
                     wrong={wrong}
                     barred={barred.words}
+                    onDealerFocus={barred.onDealerFocus}
                     onText={change}
                     pressWords={pressWords}
                 />

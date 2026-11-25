@@ -499,6 +499,68 @@ describe('players out of a round', () => {
         });
     });
 
+    it('keep a bid in a saved round opened again, whose bids were all made', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.enterAll(
+            'g-1',
+            PLAYERS.map((player, at) => ({
+                step: { part: 'bid', player } as const,
+                value: [1, 0, 1][at],
+            }))
+        );
+        await play.saveRound(
+            'g-1',
+            undefined,
+            PLAYERS.map((player, at) => ({
+                step: { part: 'tricks', player } as const,
+                value: [1, 0, 0][at],
+            }))
+        );
+        await play.reopen('g-1', 0);
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.round.entries['cat']).toEqual({ bid: 1 });
+    });
+
+    it('keep a bid once every bid is in, as after going back to change the bids', async () => {
+        const { play } = await setUp();
+        await play.start(newGame('wizard'));
+        await play.enterAll(
+            'g-1',
+            PLAYERS.map((player, at) => ({
+                step: { part: 'bid', player } as const,
+                value: [0, 1, 1][at],
+            }))
+        );
+        await play.goTo('g-1', { part: 'bid', player: 'ann' });
+        await play.setOut('g-1', ['cat']);
+        expect(shown(play, 'g-1').draft?.round.entries['cat']).toEqual({ bid: 1 });
+    });
+
+    it('keep a bid when the round is saved with them marked out in the same change', async () => {
+        const { play } = await setUp();
+        await play.start({ ...newGame('wizard'), options: { 'plus-minus-one': true } });
+        await play.enterAll(
+            'g-1',
+            PLAYERS.map((player, at) => ({
+                step: { part: 'bid', player } as const,
+                value: [0, 1, 1][at],
+            }))
+        );
+        const tricks = [
+            { step: { part: 'tricks', player: 'ann' } as const, value: 0 },
+            { step: { part: 'tricks', player: 'ben' } as const, value: 1 },
+        ];
+        expect(await play.saveRound('g-1', ['cat'], tricks)).toEqual({
+            saved: true,
+            outcome: null,
+        });
+        expect(shown(play, 'g-1').saved.rounds[0]).toMatchObject({
+            entries: { cat: { bid: 1 } },
+            out: ['cat'],
+        });
+    });
+
     it('drop a bid still being set when they are marked out', async () => {
         const { play } = await setUp();
         await play.start(newGame('wizard'));

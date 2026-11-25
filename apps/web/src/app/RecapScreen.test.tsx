@@ -105,7 +105,7 @@ describe('the recap', () => {
         await draw({ ...saved(won.rounds.slice(0, 1)), options: { 'target-score': 150 } });
         expect(await screen.findByText('Ann wins with 151.')).toBeTruthy();
         expect(
-            screen.getByText('This game of Flip 7 is over. Played with Target score 150.')
+            screen.getByText('This game of Flip 7 is over. Played with a target score of 150.')
         ).toBeTruthy();
     });
 

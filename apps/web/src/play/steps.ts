@@ -109,17 +109,29 @@ export const read = (round: DraftRound, { part, player }: SavedStep): unknown =>
 };
 
 /**
+ * Whether a round's bids are made: every player in it has bid, or it is a saved round opened again.
+ * A game with no bids never has them made.
+ */
+const bidsMadeIn = (round: DraftRound, players: readonly string[], reopened: boolean): boolean => {
+    const playing = playingIn(players, round);
+    const bid = (player: string) => typeof entryOf(round, player)['bid'] === 'number';
+    return playing.some(bid) && (reopened || playing.every(bid));
+};
+
+/**
  * The round with the players named as out, in seat order, and with what they had entered and any
  * claim that one of them ended it taken out, since nobody out of a round has a part in it. Once the
  * bids are made, a bid of a player marked out is kept, with nothing else they entered, since the
- * bids after it were made knowing it and the rules count it.
+ * bids after it were made knowing it and the rules count it. `reopened` is for a saved round opened
+ * again, whose bids were all made when it was saved.
  */
 export const withOut = (
     round: DraftRound,
     players: readonly string[],
     out: readonly string[],
-    bidsMade = false
+    reopened = false
 ): DraftRound => {
+    const bidsMade = bidsMadeIn(round, players, reopened);
     const seated = players.filter((player) => out.includes(player));
     const entries = Object.fromEntries(
         Object.entries(round.entries).flatMap(([player, entry]) => {

@@ -380,7 +380,8 @@ export const openPlay = (
     /** The game with players named as out of the round being entered, which then has no step. */
     const withPlayersOut = (game: SavedGame, out: readonly string[]): SavedGame => {
         const draft = draftOf(game);
-        const round = withOut(toDraftRound(draft.round), game.players, out);
+        const reopened = draft.index < game.rounds.length;
+        const round = withOut(toDraftRound(draft.round), game.players, out, reopened);
         return { ...game, draft: { ...draft, round, step: null } };
     };
 
@@ -536,14 +537,14 @@ export const openPlay = (
                 const game = gameOf(id);
                 const draft = draftOf(game);
                 const before = toDraftRound(draft.round);
-                const round = withOut(before, game.players, out, draft.step?.part === 'tricks');
+                const reopened = draft.index < game.rounds.length;
+                const round = withOut(before, game.players, out, reopened);
                 const steps = stepsOf(game.game, game.players, round);
                 const still = steps.some((step) => sameStep(step, draft.step));
                 // The turn moves as entering moves it: from a player taken out, to the next seat
                 // still in the round, and in a round being entered, the next still to enter, from
                 // the start again after the last. A saved round opened again has every step
                 // entered, so a player put back in it is asked at once.
-                const reopened = draft.index < game.rounds.length;
                 const seats = stepsOf(game.game, game.players, before);
                 const at = seats.findIndex((step) => sameStep(step, draft.step));
                 const inRound = (step: SavedStep) => steps.some((one) => sameStep(one, step));
