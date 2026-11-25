@@ -97,7 +97,7 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
             await context.setOffline(!on);
             // Each open page hears the change in its own time, so the test goes on once every
             // page says it, as a phone's pages have by the time anyone acts.
-            for (const each of context.pages())
+            for (const each of context.pages().filter((open) => !open.isClosed()))
                 await expect.poll(() => each.evaluate(() => navigator.onLine)).toBe(on);
         },
     };
@@ -294,11 +294,17 @@ test('sends events kept by two open pages once each when the connection returns'
     await open(page, hrefOf('install'));
     await open(other, hrefOf('about'));
     await plausible.connect(false);
-    for (const each of [page, other])
+    // Each page counts once the other's event is back on the list, since local storage reaches
+    // another page in its own time and a write made before then can miss it.
+    const waiting = (each: Page) =>
+        each.evaluate((key) => {
+            const read: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+            return Array.isArray(read) ? read.length : 0;
+        }, KEPT);
+    for (const [at, each] of [page, other].entries()) {
         await each.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
-    await expect
-        .poll(() => page.evaluate((key) => localStorage.getItem(key), KEPT))
-        .toContain('Install');
+        for (const reader of [page, other]) await expect.poll(() => waiting(reader)).toBe(at + 1);
+    }
     await plausible.connect(true);
     await expect.poll(plausible.events).toEqual([
         { n: 'Install', p: undefined },

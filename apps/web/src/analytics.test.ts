@@ -412,6 +412,24 @@ describe('events made with no connection', () => {
         expect(kept()).toEqual([]);
     });
 
+    it('are dropped once a blocker refuses them with the connection back, though kept while it was gone', async () => {
+        const { sent, track, load, lose, slow, answer, reconnect, block } = network();
+        await countVisits(live, {}, load);
+        await settle();
+        lose();
+        slow();
+        countEvent('Install', undefined, live, {});
+        reconnect();
+        block();
+        answer();
+        await vi.waitFor(() => {
+            expect(track.mock.calls.filter(([name]) => name === 'Install')).toHaveLength(2);
+        });
+        await settle();
+        expect(kept()).toEqual([]);
+        expect(sent).toEqual([]);
+    });
+
     it('are dropped when a send fails while the browser is online, as a blocker makes it', async () => {
         const { sent, load, block, recover } = network();
         await countVisits(live, {}, load);
