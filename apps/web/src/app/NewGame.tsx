@@ -7,7 +7,7 @@ import {
     useFocusAfterDraw,
     useStatus,
 } from '@jasonsdevspace/design-kit/react';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { navigate, usePlace } from '../navigation.js';
 import { openPlay } from '../play/play.js';
@@ -15,8 +15,9 @@ import { hrefOf } from '../routes.js';
 import type { SavedPlayer } from '../store/format.js';
 import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { playersOf } from '../website/games.js';
-import { Dock, useToast } from './AppFrame.js';
+import { fetchGameAhead } from './entries.js';
 import { Failure } from './failure.js';
+import { Dock, useToast } from './frame-places.js';
 import { Icon } from './icon.js';
 import { optionsOf, shownOf } from './options.js';
 import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
@@ -251,6 +252,11 @@ export const NewGame = ({
     // has no query, and the browser's first draw are the same.
     const asked = running ? new URLSearchParams(search).get('game') : null;
     const game = GAMES.find(({ id }) => id === (chosen ?? asked));
+    // What the game moves between once started is fetched as it is picked.
+    const gameId = game?.id;
+    useEffect(() => {
+        if (gameId !== undefined) fetchGameAhead(gameId);
+    }, [gameId]);
     const why = seatsProblem(game, seats.length);
     const byId = new Map(players.map((player) => [player.id, player]));
     const nameOf = (id: string) => byId.get(id)?.name ?? '';

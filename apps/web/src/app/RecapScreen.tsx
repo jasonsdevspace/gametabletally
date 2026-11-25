@@ -4,16 +4,15 @@ import { type ReactNode, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import type { GameInPlay, NewGame, Play } from '../play/play.js';
-import { changingRoundOf, fromHistory, hrefOf } from '../routes.js';
+import { changingRoundOf, fromHistory, hrefOf, newGameOf } from '../routes.js';
 import { refusalOf } from '../store/store.js';
 import { listOf } from '../website/games.js';
-import { Dock } from './AppFrame.js';
+import { Dock } from './frame-places.js';
+import { GameTables } from './game-tables.js';
 import { visitorFormats } from './history.js';
 import { gameNameOf } from './in-play.js';
 import { GameGone, nameIn, type OpenedGameProps, useGame, WithOpenedGame } from './opened-game.js';
 import { playedWith } from './options.js';
-import { newGameOf } from './PlayStart.js';
-import { GameTables } from './ScoresScreen.js';
 import { useDiscard, useSummary } from './summary.js';
 
 /*

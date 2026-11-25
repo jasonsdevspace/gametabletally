@@ -8,7 +8,7 @@ import { type DraftRound, playingIn, read, stepsOf, toDraftRound, withOut } from
 import { atRound, changedFrom, hrefOf } from '../routes.js';
 import type { SavedStep } from '../store/format.js';
 import { listOf } from '../website/games.js';
-import { Dock } from './AppFrame.js';
+import { Dock } from './frame-places.js';
 import { nameIn } from './opened-game.js';
 import { entrySummary, type RoundLine, roundSummary } from './round-summary.js';
 import { spokenOf } from './ScoreHeader.js';

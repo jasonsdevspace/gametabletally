@@ -11,14 +11,8 @@ import {
     type SavedPlayer,
     toScoreInput,
 } from './format.js';
-import {
-    BLOCKED_DATABASE,
-    hearNewer,
-    keepStorage,
-    NEWER_DATABASE,
-    openStore,
-    storageKept,
-} from './store.js';
+import { hearNewer } from './newer.js';
+import { BLOCKED_DATABASE, keepStorage, NEWER_DATABASE, openStore, storageKept } from './store.js';
 
 /*
  * The store runs here against an IndexedDB that lives in memory, with the real one's

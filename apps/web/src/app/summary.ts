@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { Play } from '../play/play.js';
 import { refusalOf } from '../store/store.js';
-import { useToast } from './AppFrame.js';
+import { useToast } from './frame-places.js';
 import { useSummaryState } from './opened-game.js';
 
 /*

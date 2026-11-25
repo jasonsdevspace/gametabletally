@@ -1,9 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 import { precacheOf } from '../scripts/precache.mjs';
+import { ENTRY_FILES, FRAME_FILE, OWN_FILES, SCREEN_FILES } from '../src/own-files.js';
+import { inApp, NOT_FOUND_FILE, ROUTES } from '../src/routes.js';
 import { readPrecache } from '../worker/answer.js';
+import { builtScripts, scriptHolding } from './built.js';
 import { expect, test } from './support.js';
 
 /*
@@ -126,4 +130,99 @@ test('every page carries each tag an install reads once', () => {
         // One color for the browser's bar in each theme, and no other.
         expect(html.match(/<meta name="theme-color"/g)?.length ?? 0, page).toBe(2);
     }
+});
+
+/*
+ * Each screen's code loads when the screen is first opened, so the build writes each screen and
+ * each game's round entry into a file of its own, and a page fetches the shell and its own code.
+ */
+
+/** The scripts a page fetches as it loads, by the addresses its tags name. */
+const scriptsOfPage = (file: string): string[] =>
+    [
+        ...readFileSync(join(DIST, file), 'utf8').matchAll(
+            /<(?:script|link)[^>]*(?:src|href)="(\/assets\/[^"]+\.js)"/g
+        ),
+    ].flatMap(([, path]) => (path ? [path] : []));
+
+/** The source files a page's scripts hold. */
+const sourcesOfPage = (file: string): Set<string> => {
+    const scripts = builtScripts();
+    return new Set(scriptsOfPage(file).flatMap((path) => scripts.get(path) ?? []));
+};
+
+const WEBSITE_SCREENS: readonly string[] = [
+    SCREEN_FILES.start,
+    SCREEN_FILES.about,
+    SCREEN_FILES.install,
+];
+
+test("builds each screen and each game's round entry into a file of its own", () => {
+    const scripts = builtScripts();
+    for (const file of OWN_FILES) {
+        const holder = scriptHolding(file);
+        expect(holder, file).toBeDefined();
+        const others = (scripts.get(holder ?? '') ?? []).filter(
+            (source) => source !== file && (OWN_FILES.includes(source) || source === FRAME_FILE)
+        );
+        expect(others, file).toEqual([]);
+    }
+});
+
+test('has each page fetch the shell and its own screen, and no other screen', () => {
+    for (const route of ROUTES) {
+        const page = route.path === '/' ? 'index.html' : `${route.path.slice(1)}index.html`;
+        const sources = sourcesOfPage(page);
+        const own = SCREEN_FILES[route.name];
+        expect(sources.has(own), `${page} fetches ${own}`).toBe(true);
+        for (const file of OWN_FILES.filter((other) => other !== own))
+            expect(sources.has(file), `${page} fetches ${file}`).toBe(false);
+        if (inApp(route)) {
+            expect(sources.has(FRAME_FILE), `${page} fetches the app's frame`).toBe(true);
+            for (const file of WEBSITE_SCREENS) expect(sources.has(file), page).toBe(false);
+        } else {
+            // The website's pages hold no part of the app's screens or its games. The about page
+            // loads the store for its backup.
+            const app = [...sources].filter((source) => /^src\/(?:app|play)\//.test(source));
+            expect(app, `${page} fetches the app's code`).toEqual([]);
+        }
+    }
+    const notFound = [...sourcesOfPage(NOT_FOUND_FILE)];
+    expect(
+        notFound.filter((source) => OWN_FILES.includes(source) || source === FRAME_FILE)
+    ).toEqual([]);
+});
+
+/**
+ * The most each file built on its own may send, compressed, in bytes: what the split build sent,
+ * with room for the screen to grow. The app's frame shares its file with the parts the app's
+ * screens share.
+ */
+const FILE_BUDGET: Readonly<Record<string, number>> = {
+    [SCREEN_FILES.start]: 1750,
+    [SCREEN_FILES.about]: 3500,
+    [SCREEN_FILES.install]: 1750,
+    [SCREEN_FILES.play]: 1750,
+    [SCREEN_FILES.new]: 3500,
+    [SCREEN_FILES.game]: 1750,
+    [SCREEN_FILES.scores]: 1000,
+    [SCREEN_FILES.recap]: 2000,
+    [SCREEN_FILES.history]: 1250,
+    [SCREEN_FILES.players]: 1250,
+    [SCREEN_FILES.player]: 2000,
+    [ENTRY_FILES['flip-7']]: 2500,
+    [ENTRY_FILES.skyjo]: 5000,
+    [ENTRY_FILES.wizard]: 5500,
+    [FRAME_FILE]: 17_000,
+};
+
+test('keeps each file built on its own to a budget of its own', () => {
+    for (const [source, budget] of Object.entries(FILE_BUDGET)) {
+        const path = scriptHolding(source);
+        expect(path, source).toBeDefined();
+        const size = gzipSync(readFileSync(join(DIST, path ?? ''))).length;
+        expect(size, `${source} in ${path ?? ''}`).toBeLessThanOrEqual(budget);
+    }
+    // Every file built on its own has a budget.
+    expect(Object.keys(FILE_BUDGET).sort()).toEqual([...OWN_FILES, FRAME_FILE].sort());
 });

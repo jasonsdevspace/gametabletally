@@ -5,9 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FORMAT_VERSION } from '../store/format.js';
 import { NEWER_DATABASE, openStore } from '../store/store.js';
-import { page, watchUpdates } from '../update.js';
-import { AppFrame, useToast } from './AppFrame.js';
+import { page, screenFound, screenMissing, watchUpdates } from '../update.js';
+import { AppFrame } from './AppFrame.js';
 import { noWakeLock, setShown } from './awake.testing.js';
+import { useToast } from './frame-places.js';
 import { act, appLine, render, screen, waitFor } from './render.testing.js';
 
 /*
@@ -443,5 +444,50 @@ describe('a page another tab updated', () => {
         setShown(true);
         setShown(false);
         expect(reload).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('a page whose screen did not load', () => {
+    const MISSING =
+        'This screen could not load. Reload this page to keep scoring. Reload is available.';
+
+    afterEach(() => {
+        act(() => {
+            screenFound();
+        });
+    });
+
+    it("offers a reload at once, the round's screen too, and keeps it once the worker is found", async () => {
+        // A page left by another test's replaced build starts afresh.
+        watched(null);
+        render(frameAt('game', '?id=g-1'));
+        act(() => {
+            screenMissing();
+        });
+        await waitFor(() => {
+            expect(toastLine()).toHaveTextContent(MISSING);
+        });
+        act(() => {
+            watched(null);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(toastLine()).toHaveTextContent(MISSING);
+    });
+
+    it('takes the reload away once a screen loads after all', async () => {
+        watched(null);
+        render(frameAt('history'));
+        act(() => {
+            screenMissing();
+        });
+        await waitFor(() => {
+            expect(toastLine()).toHaveTextContent(MISSING);
+        });
+        act(() => {
+            screenFound();
+        });
+        await waitFor(() => {
+            expect(shownNow()).not.toContain('This screen could not load.');
+        });
     });
 });

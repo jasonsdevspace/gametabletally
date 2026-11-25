@@ -1,4 +1,4 @@
-import { hearNewer } from './store/store.js';
+import { hearNewer } from './store/newer.js';
 
 /**
  * A newer build of the app, which the service worker installs beside the one running and keeps
@@ -16,10 +16,12 @@ import { hearNewer } from './store/store.js';
 
 /**
  * What the page has to offer, the most pressing first: a reload, once a newer build has closed
- * the database under it or taken over from another tab, a reload or the waiting build where the
- * phone's games were saved by a newer one, the waiting build, or nothing.
+ * the database under it or taken over from another tab, or once a screen's file did not load, a
+ * reload or the waiting build where the phone's games were saved by a newer one, the waiting
+ * build, or nothing.
  */
-export type UpdateState = 'closed' | 'replaced' | 'reload' | 'needed' | 'ready' | 'none';
+export type UpdateState =
+    'closed' | 'replaced' | 'missing' | 'reload' | 'needed' | 'ready' | 'none';
 
 /** What the page reads of a worker. */
 interface Worker extends EventTarget {
@@ -52,7 +54,7 @@ let waiting: Worker | null = null;
 let needed = false;
 let applying = false;
 /** How the build this page runs was replaced, where it was. */
-let outdated: 'closed' | 'replaced' | null = null;
+let outdated: 'closed' | 'replaced' | 'missing' | null = null;
 const listeners = new Set<() => void>();
 
 const notify = () => {
@@ -127,7 +129,9 @@ export const watchUpdates = (
     waiting = null;
     needed = false;
     applying = false;
-    outdated = null;
+    // A screen whose file did not load before the worker's registration was found still offers
+    // its reload.
+    if (outdated !== 'missing') outdated = null;
     // A first visit's worker taking charge is no newer build, so only a change from one in charge
     // is. The page that agreed reloads into it, and any other is told.
     let controlled = Boolean(container.controller);
@@ -153,6 +157,23 @@ export const updateNeeded = (): void => {
     if (needed) return;
     needed = true;
     check();
+    notify();
+};
+
+/**
+ * Marks a screen's file as one that did not load with the browser online, as when a newer build
+ * took it off the server or the connection let it down, so the page offers a reload.
+ */
+export const screenMissing = (): void => {
+    if (outdated !== null) return;
+    outdated = 'missing';
+    notify();
+};
+
+/** Takes the reload away once a screen has loaded after all, as on the next move. */
+export const screenFound = (): void => {
+    if (outdated !== 'missing') return;
+    outdated = null;
     notify();
 };
 

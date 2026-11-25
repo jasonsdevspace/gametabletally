@@ -4,6 +4,7 @@ import { renderToString } from 'react-dom/server';
 import { App } from './App.js';
 import { drawAt } from './navigation.js';
 import { NOT_FOUND_FILE, ROUTES, titleOf } from './routes.js';
+import { filesAt, loadEveryScreen } from './screens.js';
 
 /**
  * Each page as the build writes it, drawn ahead of time so it reads with no script. The client
@@ -15,6 +16,8 @@ export interface Prerendered {
     readonly file: string;
     readonly title: string;
     readonly markup: string;
+    /** The source files of the page's own code, whose built files it fetches beside the shell. */
+    readonly files: readonly string[];
 }
 
 const draw = (path: string): string => {
@@ -26,16 +29,24 @@ const draw = (path: string): string => {
     );
 };
 
-/** Every page the build writes: one for each address, and the not-found page. */
-export const prerender = (): Prerendered[] => [
-    ...ROUTES.map((route) => ({
-        file: route.path === '/' ? 'index.html' : `${route.path.slice(1)}index.html`,
-        title: titleOf(route.title),
-        markup: draw(route.path),
-    })),
-    {
-        file: NOT_FOUND_FILE,
-        title: titleOf('Nothing at this address'),
-        markup: draw(`/${NOT_FOUND_FILE}`),
-    },
-];
+/**
+ * Every page the build writes: one for each address, and the not-found page. Every screen's code is
+ * loaded first, so each page is drawn whole rather than with its loading line.
+ */
+export const prerender = async (): Promise<Prerendered[]> => {
+    await loadEveryScreen();
+    return [
+        ...ROUTES.map((route) => ({
+            file: route.path === '/' ? 'index.html' : `${route.path.slice(1)}index.html`,
+            title: titleOf(route.title),
+            markup: draw(route.path),
+            files: filesAt(route),
+        })),
+        {
+            file: NOT_FOUND_FILE,
+            title: titleOf('Nothing at this address'),
+            markup: draw(`/${NOT_FOUND_FILE}`),
+            files: [],
+        },
+    ];
+};

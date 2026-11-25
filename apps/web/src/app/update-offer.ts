@@ -7,6 +7,7 @@ import { applyUpdate, page, subscribeUpdate, type UpdateState, updateState } fro
 const OFFER = 'A new version of the app is ready.';
 const RELOAD_ONLY = 'The games on this phone need a newer version of the app.';
 const REPLACED = 'The app was updated in another tab. Reload this page to keep scoring.';
+const MISSING = 'This screen could not load. Reload this page to keep scoring.';
 
 /** What the toast offers for a state, and where. */
 interface Offer {
@@ -23,6 +24,8 @@ const OFFERS: Readonly<Record<UpdateState, Offer | null>> = {
     // Nothing on the page can save once its database is closed, so it says so at once.
     closed: { words: REPLACED, update: false, anywhere: true, first: true },
     replaced: { words: REPLACED, update: false, anywhere: false, first: false },
+    // A screen that could not load has nothing else to show, so it says so at once, anywhere.
+    missing: { words: MISSING, update: false, anywhere: true, first: true },
     reload: { words: RELOAD_ONLY, update: false, anywhere: true, first: false },
     needed: { words: OFFER, update: true, anywhere: true, first: false },
     ready: { words: OFFER, update: true, anywhere: false, first: false },
@@ -92,7 +95,9 @@ const actionOf = (offer: Offer, say: (words: string) => void): ToastAction =>
  * offer is made on whatever screen is open, as a reload where no newer worker is waiting. A page
  * whose build another tab replaced says so with a Reload, where the offer would be made, or at once
  * on any screen where its database was closed. Closed, that is said again on the next arrival, and
- * the page reloads once it is next hidden, with no one reading it.
+ * the page reloads once it is next hidden, with no one reading it. A page whose screen's file did
+ * not load with the browser online says so at once with a Reload, on any screen, until a screen
+ * loads after all.
  */
 export const useUpdateOffer = ({
     screen,

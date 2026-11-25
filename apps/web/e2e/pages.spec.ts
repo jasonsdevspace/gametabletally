@@ -17,6 +17,8 @@ test.describe('with no script', () => {
             expect(response?.status()).toBe(200);
             await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
             await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+            // Every screen's code was in when the page was drawn, so it holds no loading line.
+            await expect(page.locator('[aria-busy="true"], .dk-loading')).toHaveCount(0);
         });
 
     test('an address that is not one serves the not-found page, with a 404 and a way to the start', async ({

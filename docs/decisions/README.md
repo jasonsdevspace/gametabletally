@@ -11,3 +11,5 @@ choice costs, and the test behind it. Each is written when the decision is made.
 3. [Rule options belong to the scoring package, and the published rule is the
    default](0003-rule-options-belong-to-the-scoring-package.md): an option's meaning is fixed
    within a version of a rule set, and an option or a value added stays in it.
+4. [Screens load on demand](0004-screens-load-on-demand.md): a page sends the shell and its own
+   screen's code, and a new screen adds only its own file.

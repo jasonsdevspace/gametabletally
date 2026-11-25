@@ -1,6 +1,5 @@
 import { DOMAIN, KEPT, MOST_KEPT } from '../src/analytics.js';
-import { newGameOf } from '../src/app/PlayStart.js';
-import { hrefOf } from '../src/routes.js';
+import { hrefOf, newGameOf } from '../src/routes.js';
 import type { SavedPlayer } from '../src/store/format.js';
 import { buildGame, expect, type Page, seed, test } from './support.js';
 
