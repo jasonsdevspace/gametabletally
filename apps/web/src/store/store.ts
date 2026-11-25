@@ -8,6 +8,7 @@ import {
     type SavedGame,
     type SavedPlayer,
 } from './format.js';
+import { tell } from './newer.js';
 
 /**
  * Where players and games are kept on the phone: the one module the rest of the app calls.
@@ -39,26 +40,6 @@ export const NEWER_DATABASE =
 /** What a page shows when another tab of the app keeps a newer build from opening the games. */
 export const BLOCKED_DATABASE =
     'Another tab of the app is open on an older version. Close it, then open the app again.';
-
-/** How a newer build has the database: it refused this page, or closed the store under it. */
-export type Newer = 'refused' | 'closed';
-
-const hearing = new Set<(how: Newer) => void>();
-
-/**
- * Hears each time a newer build has the database, refusing a page that opens it or closing a store
- * as it upgrades, so the app can offer that build or reload into it. Returns what stops hearing.
- */
-export const hearNewer = (listener: (how: Newer) => void): (() => void) => {
-    hearing.add(listener);
-    return () => {
-        hearing.delete(listener);
-    };
-};
-
-const tell = (how: Newer) => {
-    for (const listener of hearing) listener(how);
-};
 
 /** A request's result, once it has one. */
 const settled = <Result>(request: IDBRequest<Result>): Promise<Result> =>

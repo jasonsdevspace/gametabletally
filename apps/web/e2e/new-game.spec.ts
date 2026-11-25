@@ -1,8 +1,7 @@
 import { GAMES } from '@gametabletally/scoring';
 import { THEME_KEY } from '@jasonsdevspace/design-kit/theme';
 
-import { newGameOf } from '../src/app/PlayStart.js';
-import { hrefOf } from '../src/routes.js';
+import { hrefOf, newGameOf } from '../src/routes.js';
 import type { SavedPlayer } from '../src/store/format.js';
 import {
     appLine,

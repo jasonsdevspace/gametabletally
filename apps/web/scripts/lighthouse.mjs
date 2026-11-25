@@ -4,14 +4,12 @@
  *   npm run lighthouse
  *
  * Runs after a build, in two passes. Every address, and the not-found page, must score a hundred
- * for accessibility. Then the website's pages, the start screen the installed app opens to, the new
- * game screen, a page about one thing and the not-found page are measured as a phone on a slow
- * network loads them on a first visit: each must score at least ninety for performance, paint its
- * largest content within the time a visit counts as good, shift its layout no more than that
- * either, and carry no more script or style than its budget. Every page loads the one script the
- * build writes, so those three screens stand for the screens for keeping score, and the pass stays
- * within the job's time. One trace on a shared machine can be slow for reasons of its own, so a
- * page that misses on performance is measured twice more and judged on the middle of the three.
+ * for accessibility. Then each of them is measured as a phone on a slow network loads it on a first
+ * visit: each must score at least ninety for performance, paint its largest content within the time
+ * a visit counts as good, shift its layout no more than that either, and carry no more script or
+ * style than its budget. Every page loads the shell and its own screen's code, so each is measured
+ * on its own. One trace on a shared machine can be slow for reasons of its own, so a page that
+ * misses on performance is measured twice more and judged on the middle of the three.
  *
  * Lighthouse will not audit a page that answers with a 404, so the not-found page is audited at
  * its own file, which is served as any file is.
@@ -20,7 +18,7 @@ import { chromium } from '@playwright/test';
 import { launch } from 'chrome-launcher';
 import lighthouse from 'lighthouse';
 
-import { NOT_FOUND_FILE, ROUTES } from '../src/routes.ts';
+import { inApp, NOT_FOUND_FILE, routeAt, ROUTES } from '../src/routes.ts';
 import { serve } from './serve.mjs';
 
 const PORT = 4182;
@@ -32,24 +30,21 @@ const LARGEST_PAINT_MS = 2500;
 /** The layout shift past which a visit no longer counts as good. */
 const LAYOUT_SHIFT = 0.1;
 /**
- * The most script and style a page may carry, in bytes sent over the network. Every screen ships
- * in the one script, so its budget leaves room above what the build sends for the screens that
- * keep score. It was raised with the player's record, and again with the rule options and the count
- * of games, and holds until each screen loads its own code, when it is set from the first load.
+ * The most script and style a page may carry on its first load, in bytes sent over the network. A
+ * page sends the shell and its own screen's code, and a screen of the app the app's frame as well,
+ * so the website's pages and the app's each have a budget of their own, set from what the split
+ * build sends with room for a screen to grow.
  */
-const BUDGET = { Script: 126_000, Stylesheet: 30_000 };
+const BUDGET = { WebsiteScript: 108_000, AppScript: 124_000, Stylesheet: 30_000 };
+
+/** The script a page may carry, by whether it is one of the app's or the website's. */
+const scriptBudgetOf = (path) => (inApp(routeAt(path)) ? BUDGET.AppScript : BUDGET.WebsiteScript);
 /** How many traces a page that misses is judged on. */
 const TRACES = 3;
 
 const NOT_FOUND = `/${NOT_FOUND_FILE}`;
 /** Every page, for accessibility. */
 const PAGES = [...ROUTES.map(({ path }) => path), NOT_FOUND];
-/**
- * The pages measured for performance: the website's pages, which load the serif and, on the
- * start, the photograph, the start screen the installed app opens to, the new game screen, a page
- * about one thing, and the not-found page.
- */
-const MEASURED = ['/', '/install/', '/about/', '/play/', '/new/', '/game/', NOT_FOUND];
 
 /** What a report measures of one visit. */
 const measureOf = (report) => {
@@ -88,14 +83,14 @@ const middle = (measures) => {
 };
 
 /** What a page misses of the gate, each in a few words, or nothing when it passes. */
-const missed = (m) => [
+const missed = (path, m) => [
     ...(m.accessibility < 1
         ? [`accessibility ${Math.round(m.accessibility * 100)} (${m.findings.join(', ')})`]
         : []),
     ...(m.performance < PERFORMANCE ? [`performance ${Math.round(m.performance * 100)}`] : []),
     ...(m.paint > LARGEST_PAINT_MS ? [`largest paint ${Math.round(m.paint)} ms`] : []),
     ...(m.shift > LAYOUT_SHIFT ? [`layout shift ${m.shift.toFixed(3)}`] : []),
-    ...(m.script > BUDGET.Script ? [`script ${m.script} bytes`] : []),
+    ...(m.script > scriptBudgetOf(path) ? [`script ${m.script} bytes`] : []),
     ...(m.style > BUDGET.Stylesheet ? [`style ${m.style} bytes`] : []),
 ];
 
@@ -134,7 +129,7 @@ try {
         if (accessibility < 1)
             failures.push(`${path} (accessibility ${Math.round(accessibility * 100)}${detail})`);
     }
-    for (const path of MEASURED) {
+    for (const path of PAGES) {
         const measures = [await run(path, ['performance'])];
         // A page that misses is traced until there are three, and judged on the middle one.
         if (timing(measures[0]).length > 0)
@@ -143,7 +138,7 @@ try {
         console.log(
             `${path} on a first visit: performance ${Math.round(judged.performance * 100)}, largest paint ${Math.round(judged.paint)} ms, layout shift ${judged.shift.toFixed(3)}, script ${judged.script} bytes, style ${judged.style} bytes${measures.length > 1 ? `, the middle of ${measures.length}` : ''}`
         );
-        const misses = missed({ ...judged, accessibility: 1 });
+        const misses = missed(path, { ...judged, accessibility: 1 });
         if (misses.length > 0) failures.push(`${path} (${misses.join(', ')})`);
     }
 } finally {

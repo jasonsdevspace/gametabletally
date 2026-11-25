@@ -9,6 +9,8 @@ import { knowsGame } from '../play/steps.js';
  */
 export interface Continuing {
     readonly id: string;
+    /** Which game it is, by the scoring package's id. */
+    readonly game: string;
     /** The game's name, as the scoring package gives it. */
     readonly name: string;
     /** The round being entered, counted from one. */
@@ -62,6 +64,7 @@ export const inPlayOf = (
         )
         .map((game) => ({
             id: game.saved.id,
+            game: game.saved.game,
             name: gameNameOf(game.saved.game),
             round: (game.draft?.index ?? game.saved.rounds.length) + 1,
             turn: turnOf(game, names),

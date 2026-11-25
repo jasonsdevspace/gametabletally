@@ -5,8 +5,9 @@ import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { answered, noWakeLock, wakeLockBrowser } from './awake.testing.js';
+import { leadWords, placeWords, standingsOf } from './game-tables.js';
 import { render, screen, waitFor, within } from './render.testing.js';
-import { leadWords, placeWords, ScoresScreen, standingsOf } from './ScoresScreen.js';
+import { ScoresScreen } from './ScoresScreen.js';
 
 /* The scores of a game in play in the app's frame, over a database in memory, and their words. */
 

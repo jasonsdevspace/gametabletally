@@ -107,3 +107,26 @@ export const titleAt = (route: Route, search: string): string => {
         ? `Changing round ${String(round)}`
         : route.title;
 };
+
+/** Where starting a game of one kind leads: the new game screen, with the game picked. */
+export const newGameOf = (game: string): string =>
+    `${hrefOf('new')}?${new URLSearchParams({ game }).toString()}`;
+
+/** The top-level places the tab bar reaches. */
+export type Section = 'play' | 'history' | 'players';
+
+/** The section each screen for keeping score sits under, which its tab marks. */
+export const SECTION_OF: Readonly<Record<string, Section>> = {
+    play: 'play',
+    new: 'play',
+    game: 'play',
+    scores: 'play',
+    recap: 'play',
+    history: 'history',
+    players: 'players',
+    player: 'players',
+};
+
+/** Whether an address is one of the app's, drawn in the app's frame, rather than the website's. */
+export const inApp = (route: Route | null): boolean =>
+    route !== null && Object.hasOwn(SECTION_OF, route.name);

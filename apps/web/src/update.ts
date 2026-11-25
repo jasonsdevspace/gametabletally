@@ -1,4 +1,4 @@
-import { hearNewer } from './store/store.js';
+import { hearNewer } from './store/newer.js';
 
 /**
  * A newer build of the app, which the service worker installs beside the one running and keeps
@@ -16,10 +16,12 @@ import { hearNewer } from './store/store.js';
 
 /**
  * What the page has to offer, the most pressing first: a reload, once a newer build has closed
- * the database under it or taken over from another tab, a reload or the waiting build where the
- * phone's games were saved by a newer one, the waiting build, or nothing.
+ * the database under it, taken over from another tab, or taken a screen's file off the server, a
+ * reload or the waiting build where the phone's games were saved by a newer one, the waiting
+ * build, or nothing.
  */
-export type UpdateState = 'closed' | 'replaced' | 'reload' | 'needed' | 'ready' | 'none';
+export type UpdateState =
+    'closed' | 'replaced' | 'missing' | 'reload' | 'needed' | 'ready' | 'none';
 
 /** What the page reads of a worker. */
 interface Worker extends EventTarget {
@@ -52,7 +54,7 @@ let waiting: Worker | null = null;
 let needed = false;
 let applying = false;
 /** How the build this page runs was replaced, where it was. */
-let outdated: 'closed' | 'replaced' | null = null;
+let outdated: 'closed' | 'replaced' | 'missing' | null = null;
 const listeners = new Set<() => void>();
 
 const notify = () => {
@@ -153,6 +155,16 @@ export const updateNeeded = (): void => {
     if (needed) return;
     needed = true;
     check();
+    notify();
+};
+
+/**
+ * Marks the build this page runs as gone from the server, as when a screen's file it asked for did
+ * not arrive with the browser online, so the page offers a reload into the newer build.
+ */
+export const screenMissing = (): void => {
+    if (outdated !== null) return;
+    outdated = 'missing';
     notify();
 };
 

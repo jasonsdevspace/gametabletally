@@ -1,12 +1,16 @@
 import { GAMES } from '@gametabletally/scoring';
 import { act, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App.js';
 import { navigate } from './navigation.js';
 import { hrefOf, ROUTES } from './routes.js';
+import { loadEveryScreen } from './screens.js';
 import { listenForInstall } from './website/install-prompt.js';
 import { NOT_AFFILIATED } from './website/Website.js';
+
+// Every screen's code is in before the tests draw, as it is on a page the app has taken over.
+beforeAll(loadEveryScreen);
 
 afterEach(() => {
     window.history.pushState(null, '', '/');

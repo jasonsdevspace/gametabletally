@@ -6,8 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FORMAT_VERSION } from '../store/format.js';
 import { NEWER_DATABASE, openStore } from '../store/store.js';
 import { page, watchUpdates } from '../update.js';
-import { AppFrame, useToast } from './AppFrame.js';
+import { AppFrame } from './AppFrame.js';
 import { noWakeLock, setShown } from './awake.testing.js';
+import { useToast } from './frame-places.js';
 import { act, appLine, render, screen, waitFor } from './render.testing.js';
 
 /*

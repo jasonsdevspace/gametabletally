@@ -42,6 +42,11 @@ against the built script in a runtime that is not Node.
   that shape and restores from one. Its addresses are one list in
   `apps/web/src/routes.ts`, and the build writes each as a page drawn ahead of time, so every
   address reads with no script, with `404.html` for any other path, as GitHub Pages serves it.
+  Each screen's code loads when the screen is first opened, as
+  [record 4](docs/decisions/0004-screens-load-on-demand.md) sets out. A new screen is a module of
+  its own under `apps/web/src/app`, or `apps/web/src/website` for a page of the website, named by
+  its route in `apps/web/src/own-files.ts` and loaded by `import()` in
+  `apps/web/src/screens.tsx`, and never imported directly, which a test holds.
   The app installs from its manifest, and its service worker, built from `apps/web/worker`,
   caches every file of the build on the first visit and answers every page from that cache after,
   so the app opens with no connection. A newer build's worker installs and waits for the visitor
@@ -68,9 +73,9 @@ game in play and its tab bar, a game of each kind started from the new game scre
 added, renamed and removed with Undo, a backup saved in one browser and restored in another, and
 every address opening with the connection off after one visit. Service workers are blocked in every
 browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
-holds every page to a hundred for accessibility, and the website's pages, the start screen, the new
-game screen, a page about one game and the not-found page to ninety for performance, a good largest
-paint and layout shift, and a budget for the script and style each carries.
+holds every page to a hundred for accessibility, and to ninety for performance, a good largest
+paint and layout shift, and a budget for the script and style its first load carries, one for the
+website's pages and one for the app's.
 
 A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
 passed, and a merge that fails one is not deployed. The live address counts page views with

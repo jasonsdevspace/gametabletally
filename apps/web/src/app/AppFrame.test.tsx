@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AppFrame, currentOf, Dock, useToast } from './AppFrame.js';
+import { AppFrame, currentOf } from './AppFrame.js';
+import { Dock, useToast } from './frame-places.js';
 import { act, appLine, render, screen, waitFor, within } from './render.testing.js';
 
 /*

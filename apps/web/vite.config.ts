@@ -3,8 +3,14 @@ import react from '@vitejs/plugin-react';
 import { defaultClientConditions, defaultServerConditions, defineConfig } from 'vite';
 
 import { SOURCE_CONDITION } from '../../source-condition.js';
+import { OWN_FILES } from './src/own-files.js';
 
-export default defineConfig({
+/** Whether a module is a part of the app that its screens share, rather than a file built on its own. */
+const isSharedAppPart = (id: string): boolean =>
+    /\/apps\/web\/src\/(?:app|play)\//.test(id) &&
+    !OWN_FILES.some((file) => id.endsWith(`/${file}`));
+
+export default defineConfig(({ isSsrBuild }) => ({
     // The design kit's theme script, put inline at the marker in the page's head, so the theme is
     // set before anything paints.
     plugins: [react(), themeScriptPlugin()],
@@ -20,5 +26,24 @@ export default defineConfig({
         // Source maps are served beside the scripts for reading a failure back to the source, and
         // the service worker leaves them out of what it caches on a phone.
         sourcemap: true,
+        // The list of what each source file became, which the prerender reads to have each page
+        // fetch its own code beside the shell, and then removes.
+        manifest: true,
+        rolldownOptions: isSsrBuild
+            ? {}
+            : {
+                  preserveEntrySignatures: 'allow-extension',
+                  output: {
+                      strictExecutionOrder: true,
+                      codeSplitting: {
+                          groups: [
+                              {
+                                  name: (id: string) => (isSharedAppPart(id) ? 'app' : null),
+                                  includeDependenciesRecursively: false,
+                              },
+                          ],
+                      },
+                  },
+              },
     },
-});
+}));

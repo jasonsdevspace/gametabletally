@@ -1,13 +1,14 @@
 import { GAMES } from '@gametabletally/scoring';
 import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { Link } from '../navigation.js';
 import type { Play } from '../play/play.js';
-import { changingRoundOf, hrefOf } from '../routes.js';
+import { changingRoundOf, hrefOf, newGameOf } from '../routes.js';
 import { openStore, refusalOf, type Store } from '../store/store.js';
 import { cardOf, playersOf } from '../website/games.js';
 import { NOT_AFFILIATED } from '../website/Website.js';
+import { fetchGameAhead } from './entries.js';
 import { type Continuing, inPlayOf } from './in-play.js';
 import { WithGames } from './opened-game.js';
 import { useDiscard } from './summary.js';
@@ -17,10 +18,6 @@ import { useDiscard } from './summary.js';
  * to start a new one of. The games in play are read from the phone once the screen is running,
  * never in the prerender, so the prerendered page holds only what every visitor sees.
  */
-
-/** Where starting a game of one kind leads: the new game screen, with the game picked. */
-export const newGameOf = (game: string): string =>
-    `${hrefOf('new')}?${new URLSearchParams({ game }).toString()}`;
 
 /**
  * One game in play, to continue or discard. A game with a saved round opened to change is
@@ -40,6 +37,10 @@ const GamePanel = ({
     readonly onLetGo: () => void;
 }) => {
     const discardButton = useBusy<HTMLButtonElement>();
+    // What the game moves between is fetched as it is offered, so continuing it never waits.
+    useEffect(() => {
+        fetchGameAhead(game.game);
+    }, [game.game]);
     return (
         <li className="dk-panel dk-panel-raised gtt-continue">
             <p className="dk-split gtt-continue-game">

@@ -233,10 +233,12 @@ test('draws the six modifier cards in two even rows of three on the narrowest ph
 }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await open(page);
-    const tops = await page
-        .getByRole('toolbar', { name: 'Modifier cards' })
-        .getByRole('button')
-        .evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().top)));
+    const cards = page.getByRole('toolbar', { name: 'Modifier cards' }).getByRole('button');
+    // The round's keys are drawn once the game's entry has loaded.
+    await expect(cards).toHaveCount(6);
+    const tops = await cards.evaluateAll((all) =>
+        all.map((card) => Math.round(card.getBoundingClientRect().top))
+    );
     expect(tops).toHaveLength(6);
     expect(tops.filter((top) => top === tops[0])).toHaveLength(3);
     expect(tops.filter((top) => top === tops[5])).toHaveLength(3);

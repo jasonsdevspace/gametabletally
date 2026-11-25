@@ -1,21 +1,12 @@
 import { attachToast, type ShowToast } from '@jasonsdevspace/design-kit/controls';
 import { SkipLink, Toast } from '@jasonsdevspace/design-kit/react';
-import {
-    createContext,
-    type ReactNode,
-    useCallback,
-    useContext,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
-import { createPortal } from 'react-dom';
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 
 import { Link } from '../navigation.js';
-import { fromHistory, hrefOf, type RouteName } from '../routes.js';
+import { fromHistory, hrefOf, type RouteName, type Section, SECTION_OF } from '../routes.js';
 import { TallyMark } from '../website/Website.js';
 import { AwakeProvider, useAwakeHolder } from './awake.js';
+import { DockContext, ToastContext } from './frame-places.js';
 import { Icon } from './icon.js';
 import { GamesProvider } from './opened-game.js';
 import { useUpdateOffer } from './update-offer.js';
@@ -26,9 +17,6 @@ import { useUpdateOffer } from './update-offer.js';
  * dock for a screen's main button where it has one, and the tab bar at the bottom edge, under the
  * thumb.
  */
-
-/** The top-level places the tab bar reaches. */
-export type Section = 'play' | 'history' | 'players';
 
 const TABS = [
     {
@@ -69,18 +57,6 @@ const TABS = [
     readonly icon: ReactNode;
 }[];
 
-/** The section each screen for keeping score sits under, which its tab marks. */
-export const SECTION_OF: Readonly<Record<string, Section>> = {
-    play: 'play',
-    new: 'play',
-    game: 'play',
-    scores: 'play',
-    recap: 'play',
-    history: 'history',
-    players: 'players',
-    player: 'players',
-};
-
 /**
  * How a tab marks the place the visitor is in: `page` on the section's own screen, `true` on a
  * screen beneath it, and nothing on another section's. A recap sits under the history where its
@@ -112,36 +88,6 @@ const TabBar = ({ screen, search }: { readonly screen: string; readonly search: 
         </ul>
     </nav>
 );
-
-/** What a screen outside the frame is given: a toast that shows nothing. */
-const ToastContext = createContext<ShowToast>(() => () => undefined);
-
-/** The function a screen shows a toast with, in the frame's one place for it. */
-export const useToast = (): ShowToast => useContext(ToastContext);
-
-/** Where a screen draws its main button: the frame's dock, and a way to say a screen holds it. */
-interface DockPlace {
-    readonly element: HTMLElement | null;
-    /**
-     * Marks the dock as held while a screen's dock is drawn, and returns the function that lets it
-     * go.
-     */
-    readonly hold: () => () => void;
-}
-
-const DockContext = createContext<DockPlace>({ element: null, hold: () => () => undefined });
-
-/**
- * A screen's main button, or two, drawn in the frame's dock under the thumb, which the screen
- * keeps in its own state like anything in its body. The dock is in the frame, so a screen's
- * dock is drawn into it once the frame is on the page, and never in the prerender, where nothing
- * on a screen for keeping score works yet.
- */
-export const Dock = ({ children }: { readonly children: ReactNode }) => {
-    const { element, hold } = useContext(DockContext);
-    useLayoutEffect(hold, [hold]);
-    return element ? createPortal(children, element) : null;
-};
 
 /** The bar's one action on a screen that has one, after the title. */
 const actionOf = (screen: string): ReactNode => {

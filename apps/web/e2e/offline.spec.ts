@@ -40,6 +40,9 @@ test('after one visit, every address opens with the connection off', async ({ pa
         expect(response?.fromServiceWorker(), path).toBe(true);
         expect(response?.status(), path).toBe(200);
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+        // The screen's own code came from the cache too, so the app took the page over whole.
+        await expect(page.locator('html'), path).toHaveAttribute('data-ready', 'true');
+        await expect(page.getByText(/could not be shown/), path).toHaveCount(0);
     }
     const missing = await page.goto('/no-such-page/');
     expect(missing?.fromServiceWorker()).toBe(true);
@@ -47,6 +50,23 @@ test('after one visit, every address opens with the connection off', async ({ pa
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nothing at this address');
     // The app's script came from the cache too, so the page is taken over offline.
     await page.waitForFunction(() => document.documentElement.dataset['ready'] === 'true');
+});
+
+test("after one visit, a move to a screen not yet opened draws it from the worker's cache", async ({
+    page,
+    context,
+}) => {
+    await visitOnce(page);
+    await context.setOffline(true);
+    await page.goto('/play/');
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    const tabs = page.getByRole('navigation', { name: 'Sections' });
+    for (const name of ['History', 'Players']) {
+        await tabs.getByRole('link', { name, exact: true }).click();
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+        await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
+        await expect(page.getByText(/could not be shown/)).toHaveCount(0);
+    }
 });
 
 test('a navigation is answered by the worker and never reaches the network', async ({ page }) => {
