@@ -361,6 +361,15 @@ describe('a round of Wizard', () => {
         expect(screen.getByRole('spinbutton', { name: 'Ben, bid' })).toBeTruthy();
     });
 
+    it('requires every count, and words its error without the player, whom the kit names first', async () => {
+        await draw(wizard(at({ part: 'bid', player: 'ann' })));
+        expect(count('bid-ann')).toBeRequired();
+        expect(count('bid-ben')).toBeRequired();
+        expect(document.getElementById('bid-ann-range')).toHaveTextContent(
+            /^Error: ?Enter a bid from 0 to 1\.$/
+        );
+    });
+
     it('asks a player put back once the bids are saved for their bid, keeping the others', async () => {
         await draw(
             wizard(

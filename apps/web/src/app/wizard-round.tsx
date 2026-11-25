@@ -127,7 +127,9 @@ const RoundTitle = ({
  * One player's count, a bid or tricks, on the kit's stepper, its label to the left with the player's
  * name first, its buttons named for the player and what is counted, and stopping at nothing and at
  * the cards dealt. What is typed in its field is kept as it is typed, so a count can be typed over
- * and the kit can say a count outside its limits is refused.
+ * and the kit can say a count outside its limits is refused. Every count is required, so a blank
+ * one shows its error too. The kit says the field's name before the error, so the error's own words
+ * leave the player out.
  */
 const Count = ({
     id,
@@ -188,10 +190,11 @@ const Count = ({
                 </>
             }
             subject={`${name}'s ${what}`}
+            required
             min={0}
             max={max}
             value={text}
-            rangeError={`${name}'s ${what === 'bid' ? 'bid' : 'tricks'} can be from 0 to ${String(max)}.`}
+            rangeError={`Enter ${what === 'bid' ? 'a bid' : 'the tricks taken'} from 0 to ${String(max)}.`}
             onChange={(event) => {
                 // A press while the round is saving is let go, as every key's is.
                 if (!off) onText(event.currentTarget.value);

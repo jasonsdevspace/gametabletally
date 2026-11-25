@@ -1,7 +1,7 @@
 import { newGameOf } from '../src/app/PlayStart.js';
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, buildGame, expect, type Page, seed, test } from './support.js';
+import { appLine, audit, buildGame, expect, type Page, seed, test } from './support.js';
 
 /*
  * A game of Wizard, as deployed: the one test that plays a game through on a phone, with six
@@ -131,4 +131,36 @@ test('opens a saved round again with its bids and its tricks, and saves a change
     // Ann and Ben now each miss their bid by one, so Cat, who made hers, leads.
     await expect(page.getByText('Cat leads with 20.')).toBeVisible();
     await audit(page);
+});
+
+test('shows the error of a count typed past its range and of one left blank, with the field named first', async ({
+    page,
+}) => {
+    const ids = ['ann', 'ben', 'cat'];
+    const fresh = await buildGame({
+        id: 'g-1',
+        game: 'wizard',
+        rules: 1,
+        options: {},
+        players: ids,
+    });
+    await page.goto('/');
+    await seed(page, [fresh], ['Ann', 'Ben', 'Cat'].map(player));
+    await page.goto(hrefOf('game', 'g-1'));
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    const ann = page.locator('#bid-ann');
+    await ann.fill('7');
+    await ann.press('Tab');
+    await expect(page.locator('#bid-ann-range')).toBeVisible();
+    await expect(appLine(page)).toHaveText('Ann deals, bid: Error: Enter a bid from 0 to 1.');
+    // Every count is required, so a blank one is wrong as well.
+    const ben = page.locator('#bid-ben');
+    await ben.fill('');
+    await ben.press('Tab');
+    await expect(page.locator('#bid-ben-range')).toBeVisible();
+    await expect(page.locator('#bid-cat-range')).toBeHidden();
+    await expect(dock(page).getByRole('button', { name: 'Save the bids' })).toHaveAttribute(
+        'aria-disabled',
+        'true'
+    );
 });
