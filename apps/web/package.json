@@ -10,7 +10,8 @@
         "dev": "vite",
         "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && vite build --config vite.worker.config.ts && node scripts/precache.mjs",
         "e2e": "playwright test --config e2e/playwright.config.ts",
-        "lighthouse": "node scripts/lighthouse.mjs"
+        "lighthouse": "node scripts/lighthouse.mjs",
+        "icons": "node scripts/icons.mjs"
     },
     "dependencies": {
         "@gametabletally/scoring": "0.0.0",

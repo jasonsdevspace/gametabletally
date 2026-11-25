@@ -2,6 +2,7 @@ import { GAMES } from '@gametabletally/scoring';
 import { DemoFooter, PortfolioStrip, SkipLink } from '@jasonsdevspace/design-kit/react';
 import type { ReactNode } from 'react';
 
+import { MARK } from '../mark.js';
 import { Link } from '../navigation.js';
 import { hrefOf, type RouteName } from '../routes.js';
 import { listOf } from './games.js';
@@ -46,12 +47,12 @@ export const TallyMark = ({
         className={[className, 'gtt-mark'].filter(Boolean).join(' ')}
         width={size}
         height={size}
-        viewBox="0 0 64 64"
+        viewBox={`0 0 ${String(MARK.box)} ${String(MARK.box)}`}
         aria-hidden="true"
         focusable="false"
     >
-        <rect width="64" height="64" rx="14" />
-        <path d="M20 16v32M28 16v32M36 16v32M44 16v32M12 40l42-14" />
+        <rect width={MARK.box} height={MARK.box} rx={MARK.corners} />
+        <path d={MARK.strokes} strokeWidth={MARK.strokeWidth} />
     </svg>
 );
 
