@@ -184,22 +184,38 @@ export interface ScoreResult {
 /** A value an option can take: a number, such as a target score, or on and off. */
 export type OptionValue = number | boolean;
 
-/**
- * A rule a table may change for a game, as an app offers it. The game's published rule is its
- * default, so a game given no options is played by the book.
- */
-export interface GameOption {
-    /** What a game's options name it by. It never changes once a game has been saved with it. */
+/** What every option has, whatever its kind. */
+interface OptionBase {
+    /** What a game's options name it by. It never changes within a version of a rule set. */
     readonly id: string;
-    /** What a player calls it. */
+    /** What a player calls it, in the package's English. Not part of the contract. */
     readonly name: string;
-    /** What it changes, in a plain sentence. */
+    /** What it changes, in a plain sentence in the package's English. Not part of the contract. */
     readonly description: string;
-    /** The value of the published rule, which a game not given the option is played by. */
-    readonly default: OptionValue;
-    /** Every value it can take, the default among them, in the order an app offers them. */
-    readonly values: readonly OptionValue[];
 }
+
+/** An option that takes one of a list of whole numbers, such as a target score. */
+export interface NumberOption extends OptionBase {
+    readonly kind: 'number';
+    /** The value of the published rule, which a game not given the option is played by. */
+    readonly default: number;
+    /** Every value it can take, the default among them, in the order an app offers them. */
+    readonly values: readonly number[];
+}
+
+/** An option that is on or off. */
+export interface SwitchOption extends OptionBase {
+    readonly kind: 'switch';
+    /** Whether the published rule has it on, which a game not given the option is played by. */
+    readonly default: boolean;
+}
+
+/**
+ * A rule a table may change for a game, as an app offers it. Narrowing on its kind gives its
+ * default's type and, for a number, its values. The game's published rule is its default, so a game
+ * given no options is played by the book.
+ */
+export type GameOption = NumberOption | SwitchOption;
 
 /** A game the package knows, as an app lists it. */
 export interface Game {

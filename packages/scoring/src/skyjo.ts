@@ -1,6 +1,7 @@
 import {
     bestAmong,
     contenders,
+    declare,
     isRecord,
     isWhole,
     numberOption,
@@ -14,7 +15,7 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
-import type { GameOption } from './types.js';
+import type { NumberOption } from './types.js';
 
 /**
  * Skyjo, as published. A round ends when one player has turned every card face up, and each
@@ -55,7 +56,8 @@ const HIGHEST_CARD = 12;
 const MOST_CARDS = 12;
 
 /** The total that ends the game, one hundred by the published rules. */
-const TARGET: GameOption = {
+const TARGET: NumberOption = {
+    kind: 'number',
     id: 'target-score',
     name: 'Target score',
     description: 'The game ends with the round in which a player reaches this total.',
@@ -211,7 +213,7 @@ export const SKYJO: Rules = {
     ahead: 'lowest',
     minPlayers: 2,
     maxPlayers: 8,
-    options: [TARGET],
+    options: declare(TARGET),
     scoreRound,
     winners,
 };

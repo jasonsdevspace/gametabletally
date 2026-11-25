@@ -4890,6 +4890,34 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "an option given as null is not given, whatever its name",
+            "input": {
+                "game": "flip-7",
+                "rules": 1,
+                "options": {
+                    "target": null,
+                    "target-score": null
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "flip-7",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
         }
     ]
 }

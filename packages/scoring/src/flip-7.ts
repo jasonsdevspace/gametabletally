@@ -1,6 +1,7 @@
 import {
     bestAmong,
     contenders,
+    declare,
     isRecord,
     isWhole,
     numberOption,
@@ -13,7 +14,7 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
-import type { GameOption } from './types.js';
+import type { NumberOption } from './types.js';
 
 /**
  * Flip 7, as published. A player ends a round holding number cards and modifier cards, or
@@ -66,7 +67,8 @@ const FLIP = FLIP_7_BONUS.numbers;
 const BONUS = FLIP_7_BONUS.points;
 
 /** The total that ends the game, two hundred by the published rules. */
-const TARGET: GameOption = {
+const TARGET: NumberOption = {
+    kind: 'number',
     id: 'target-score',
     name: 'Target score',
     description: 'The game ends with the round in which a player reaches this total.',
@@ -188,7 +190,7 @@ export const FLIP_7: Rules = {
     minPlayers: 3,
     maxPlayers: null,
     ahead: 'highest',
-    options: [TARGET],
+    options: declare(TARGET),
     scoreRound,
     winners,
 };

@@ -1,12 +1,14 @@
 import type {
     Game,
     GameOption,
+    NumberOption,
     OneProblem,
     OptionValue,
     Plain,
     Problem,
     ProblemCode,
     ProblemData,
+    SwitchOption,
 } from './types.js';
 
 /**
@@ -226,10 +228,26 @@ export const readEntries = (
 };
 
 /** The number an option is set to in a game, or its default when it is not a number. */
-export const numberOption = (options: Settled, option: GameOption): number => {
+export const numberOption = (options: Settled, option: NumberOption): number => {
     const value = options[option.id];
-    return typeof value === 'number' ? value : Number(option.default);
+    return typeof value === 'number' ? value : option.default;
 };
 
 /** Whether an option that is on or off is on in a game. */
-export const isOn = (options: Settled, option: GameOption): boolean => options[option.id] === true;
+export const isOn = (options: Settled, option: SwitchOption): boolean =>
+    options[option.id] === true;
+
+/**
+ * A game's options, frozen with their values, so a caller holding `GAMES` cannot change what
+ * `score` accepts.
+ */
+export const declare = (...options: readonly GameOption[]): readonly GameOption[] =>
+    Object.freeze(
+        options.map((option) =>
+            Object.freeze(
+                option.kind === 'number'
+                    ? { ...option, values: Object.freeze([...option.values]) }
+                    : { ...option }
+            )
+        )
+    );

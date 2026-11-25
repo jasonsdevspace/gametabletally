@@ -10,6 +10,7 @@ export type { SkyjoEntry, SkyjoRound } from './skyjo.js';
 export type {
     Game,
     GameOption,
+    NumberOption,
     OptionValue,
     Plain,
     Problem,
@@ -19,5 +20,6 @@ export type {
     RoundResult,
     ScoreInput,
     ScoreResult,
+    SwitchOption,
 } from './types.js';
 export { type WizardEntry, type WizardRound, wizardRounds } from './wizard.js';

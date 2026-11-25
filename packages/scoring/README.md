@@ -65,19 +65,32 @@ options.
 ## Options
 
 A table that plays by a house rule says so in `options`, which holds a value for each option it
-changes, by the option's id. Each game in `GAMES` lists its options, each with its `id`, its `name`,
-a plain `description`, its `default` and the `values` it allows, so an app offers them from here and
-the screen and the rules cannot disagree. The default is the published rule, so a game given no
-options, or an option given as null, is played by the book and scores as it always has, under the
-same version of its rule set.
+changes, by the option's id. Each game in `GAMES` lists its options, so an app offers them from here
+and the screen and the rules cannot disagree. The default is the published rule, so a game given no
+options, or an option given as null, whatever its id, is played by the book and scores as it always
+has, under the same version of its rule set.
+
+Each option has an `id`, a `kind`, a `name`, a `description` and a `default`. Its `kind` is
+`number`, for one of a list of whole numbers, which it holds as `values`, or `switch`, for on and
+off, which is `true` or `false`. In TypeScript a `GameOption` is typed by its kind, so narrowing on
+`kind` gives its `default` its type and a number option its `values`. The `name` and the
+`description` are this package's English and may change, so a caller keys on the `id`, and words an
+option itself where it needs to. An app built against an older version that meets a kind it does
+not know hides the option, and the game is played by its default, which is the published rule, as
+a code it does not know is worded by the sentence it kept.
 
 The options hold for the whole game. `score` is handed them with everything else each time, and
 scores every round by them, so a game whose options are changed is scored again from the start by
-the new ones. A caller saves them with the game.
+the new ones. A caller saves them with the game. Within a version of a rule set an option's id, its
+kind, its default and what each value means never change, and an option or a value can be added,
+which [the decision record on rule
+options](../../docs/decisions/0003-rule-options-belong-to-the-scoring-package.md) sets out. The
+options in `GAMES` are frozen, so what `score` accepts cannot be changed through them.
 
 An option the game does not have is refused, and so is a value the option does not allow, and a
 game refused for either is read no further. These come after anything wrong with the players,
-sorted by the option's id. Each game's options are under its own heading below.
+sorted by the option's id. A refused value carries no list of the values allowed, since `GAMES`
+from the same build holds them. Each game's options are under its own heading below.
 
 ## What comes back
 
@@ -147,7 +160,7 @@ with it any code it does not handle.
 | `too-few-players`   | The game takes more players                                                                         | `min`, the fewest it takes, and `given`, how many were listed                                                                                                                                                 |
 | `too-many-players`  | The game takes fewer players                                                                        | `max`, the most it takes, and `given`, how many were listed                                                                                                                                                   |
 | `player-twice`      | A player is listed more than once. Raised once for each such player, named by `player`              | empty                                                                                                                                                                                                         |
-| `unknown-option`    | The game has no such option                                                                         | `option`, its name                                                                                                                                                                                            |
+| `unknown-option`    | The game has no such option                                                                         | `option`, its id                                                                                                                                                                                              |
 | `value-not-allowed` | An option is given a value it does not allow                                                        | `option`, its id, and `value`, the value given when it is text, a number or true or false, and null for anything else                                                                                         |
 | `not-a-round`       | A round does not hold its entries, or lists its players out by something other than their ids       | `part`, `out` when it is the list of players out. Empty when the round does not hold its entries                                                                                                              |
 | `unknown-out`       | A round names as out somebody not in the game, named by `player`                                    | empty                                                                                                                                                                                                         |
@@ -196,7 +209,7 @@ wins, or among everyone when every player has missed one. A tie at the top of th
 it, whatever a player who missed a round holds, and the game goes on by whole rounds until one
 player leads.
 
-Its one option is `target-score`, the total that ends the game: 100, 150, 200, 250 or 300, and 200
+Its one option is `target-score`, a number, the total that ends the game: 100, 150, 200, 250 or 300, and 200
 by the published rules. The game is over at the end of the round in which a total reaches it, and
 goes on by whole rounds past a tie at the top, as it does at 200.
 
@@ -220,7 +233,7 @@ a player reaches one hundred, whoever's total it is, and the lowest total of the
 missed no round wins, or of everyone when every player has missed one. Players level on it share the
 win.
 
-Its one option is `target-score`, the total that ends the game: 50, 100, 150 or 200, and 100 by the
+Its one option is `target-score`, a number, the total that ends the game: 50, 100, 150 or 200, and 100 by the
 published rules. The game is over at the end of the round in which a total reaches it.
 
 A round is `open` while a player has yet to count, whether or not it names its ender, so long as
@@ -249,8 +262,8 @@ tricks are in. Once every player in the round has given their tricks, the tricks
 A player out of a round changes neither the cards it deals nor the number of rounds, which are both
 fixed when the game starts, and the tricks of the players in it come to the cards dealt. A bid made by a player who is then out of the round is passed over, since a bid with no tricks behind it is nobody's score. That is an entry that would be taken as a bid with no tricks yet. Any other entry for a player out of a round is refused, as it is in every game.
 
-Its one option is `plus-minus-one`, the published variant Plus or minus one, which is `true` or
-`false` and off by the published rules. With it on, the bids of a round may not add up to the cards
+Its one option is `plus-minus-one`, the published variant Plus or minus one, a switch that is off
+by the published rules. With it on, the bids of a round may not add up to the cards
 dealt to each player, so at least one player misses. Once every player in the round has bid, a round
 whose bids come to the cards dealt is refused, with the count, whether or not its tricks are in, and
 what each bid came to still stands in its `scores`. Only the bids of the players in the round are

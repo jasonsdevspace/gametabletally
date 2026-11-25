@@ -13,7 +13,16 @@ import {
     type Settled,
 } from './rules.js';
 import { SKYJO } from './skyjo.js';
-import type { Game, Problem, ProblemData, RoundResult, ScoreInput, ScoreResult } from './types.js';
+import type {
+    Game,
+    GameOption,
+    OptionValue,
+    Problem,
+    ProblemData,
+    RoundResult,
+    ScoreInput,
+    ScoreResult,
+} from './types.js';
 import { WIZARD } from './wizard.js';
 
 /**
@@ -97,10 +106,27 @@ const playerProblems = (rules: Rules, players: readonly string[]): readonly Prob
     ];
 };
 
+/** Whether an option takes a value: one of its numbers, or on or off. */
+const allows = (option: GameOption, value: unknown): value is OptionValue =>
+    option.kind === 'number'
+        ? option.values.some((allowed) => allowed === value)
+        : typeof value === 'boolean';
+
+/** Why a value an option does not take is refused, naming the value where it can be written. */
+const notAllowed = (rules: Rules, option: GameOption, value: unknown): Refusal => {
+    const given = plain(value);
+    const what = given === null ? 'take the value given' : `be ${JSON.stringify(given)}`;
+    return refusal('value-not-allowed', `${option.name} cannot ${what} in ${rules.name}.`, {
+        option: option.id,
+        value: given,
+    });
+};
+
 /**
  * What is wrong with the options a game is given, if anything: each one the game does not have,
- * and each value an option does not allow, sorted by name, since the order an object's keys come
- * in is one runtime's own. An option given as null is one not given, as a part is anywhere else.
+ * and each value an option does not allow, sorted by id, since the order an object's keys come in
+ * is one runtime's own. An option given as null is one not given, whatever its id, as a part is
+ * anywhere else.
  */
 const optionProblems = (
     rules: Rules,
@@ -110,6 +136,7 @@ const optionProblems = (
         .sort()
         .flatMap((id) => {
             const value = options[id] ?? null;
+            if (value === null) return [];
             const option = rules.options.find((declared) => declared.id === id);
             if (!option)
                 return [
@@ -121,25 +148,15 @@ const optionProblems = (
                         )
                     ),
                 ];
-            if (value === null || option.values.some((allowed) => allowed === value)) return [];
-            return [
-                problemAt(
-                    refusal(
-                        'value-not-allowed',
-                        `${option.name} cannot be ${JSON.stringify(plain(value))} in ${rules.name}.`,
-                        { option: id, value: plain(value) }
-                    )
-                ),
-            ];
+            return allows(option, value) ? [] : [problemAt(notAllowed(rules, option, value))];
         });
 
 /** The game's options as it is played, with the published rule's for each one not given. */
 const settle = (rules: Rules, options: Readonly<Record<string, unknown>>): Settled =>
     Object.fromEntries(
-        rules.options.map(({ id, default: published, values }) => {
-            const given = options[id];
-            const chosen = values.find((allowed) => allowed === given);
-            return [id, chosen ?? published];
+        rules.options.map((option) => {
+            const given = options[option.id];
+            return [option.id, allows(option, given) ? given : option.default];
         })
     );
 

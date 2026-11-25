@@ -1,0 +1,7 @@
+{
+    "game": "skyjo",
+    "rules": 1,
+    "options": [
+        { "id": "target-score", "kind": "number", "default": 100, "values": [50, 100, 150, 200] }
+    ]
+}

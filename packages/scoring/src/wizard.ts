@@ -1,6 +1,7 @@
 import {
     bestAmong,
     contenders,
+    declare,
     isOn,
     isRecord,
     isWhole,
@@ -13,7 +14,7 @@ import {
     type Rules,
     type Standing,
 } from './rules.js';
-import type { GameOption } from './types.js';
+import type { SwitchOption } from './types.js';
 
 /**
  * Wizard, as published. Each round deals one card more than the round before, starting from one,
@@ -57,13 +58,13 @@ const DECK = 60;
  * The published variant Plus or minus one, off by the published rules: the bids of a round may not
  * add up to the cards dealt to each player, so at least one player misses.
  */
-const PLUS_MINUS_ONE: GameOption = {
+const PLUS_MINUS_ONE: SwitchOption = {
+    kind: 'switch',
     id: 'plus-minus-one',
     name: 'Plus or minus one',
     description:
         'The bids may not add up to the cards dealt to each player, so somebody misses their bid.',
     default: false,
-    values: [false, true],
 };
 
 /**
@@ -224,7 +225,7 @@ export const WIZARD: Rules = {
     ahead: 'highest',
     minPlayers: 3,
     maxPlayers: 6,
-    options: [PLUS_MINUS_ONE],
+    options: declare(PLUS_MINUS_ONE),
     scoreRound,
     winners,
 };
