@@ -361,6 +361,34 @@ describe('a round of Wizard', () => {
         expect(screen.getByRole('spinbutton', { name: 'Ben, bid' })).toBeTruthy();
     });
 
+    it('requires every count, and words its error without the player, whom the kit names first', async () => {
+        await draw(wizard(at({ part: 'bid', player: 'ann' })));
+        expect(count('bid-ann')).toBeRequired();
+        expect(count('bid-ben')).toBeRequired();
+        expect(document.getElementById('bid-ann-range')).toHaveTextContent(
+            /^Error: ?Enter a number from 0 to 1\.$/
+        );
+    });
+
+    it('requires every count of tricks, and words its error as it words a bid', async () => {
+        await draw(
+            wizard(
+                at(
+                    { part: 'tricks', player: 'ann' },
+                    { entries: { ann: { bid: 1 }, ben: { bid: 0 }, cat: { bid: 0 } } },
+                    1
+                ),
+                [saved({ ann: [1, 1], ben: [0, 0], cat: [0, 0] })]
+            )
+        );
+        fireEvent.click(dockButton('Enter the tricks'));
+        const tricks = await screen.findByRole('spinbutton', { name: 'Ann bid 1, tricks taken' });
+        expect(tricks).toBeRequired();
+        expect(document.getElementById('tricks-ann-range')).toHaveTextContent(
+            /^Error: ?Enter a number from 0 to 2\.$/
+        );
+    });
+
     it('asks a player put back once the bids are saved for their bid, keeping the others', async () => {
         await draw(
             wizard(

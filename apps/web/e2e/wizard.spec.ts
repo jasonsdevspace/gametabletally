@@ -1,14 +1,15 @@
 import { newGameOf } from '../src/app/PlayStart.js';
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
-import { audit, buildGame, expect, type Page, seed, test } from './support.js';
+import { appLine, audit, buildGame, expect, type Page, seed, test } from './support.js';
 
 /*
  * A game of Wizard, as deployed: the one test that plays a game through on a phone, with six
  * players, which makes it the shortest game, from starting it to its recap, the bids set on the
  * steppers, shown through the hand and kept through a reload, the tricks started at the bids and
  * saved once they add up, and the audit on every screen of the first round and the recap. And,
- * from a seeded game, a saved round opened again with its bids and its tricks.
+ * from a seeded game, a saved round opened again with its bids and its tricks, and the errors of a
+ * bid typed past its range and of one left blank, each said after its field's name.
  */
 
 const NAMES = ['Ann', 'Ben', 'Cat', 'Dee', 'Eve', 'Fay'];
@@ -131,4 +132,39 @@ test('opens a saved round again with its bids and its tricks, and saves a change
     // Ann and Ben now each miss their bid by one, so Cat, who made hers, leads.
     await expect(page.getByText('Cat leads with 20.')).toBeVisible();
     await audit(page);
+});
+
+test('shows the error of a count typed past its range and of one left blank, with the field named first', async ({
+    page,
+}) => {
+    const ids = ['ann', 'ben', 'cat'];
+    const fresh = await buildGame({
+        id: 'g-1',
+        game: 'wizard',
+        rules: 1,
+        options: {},
+        players: ids,
+    });
+    await page.goto('/');
+    await seed(page, [fresh], ['Ann', 'Ben', 'Cat'].map(player));
+    await page.goto(hrefOf('game', 'g-1'));
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    const ann = page.getByRole('spinbutton', { name: 'Ann deals, bid', exact: true });
+    await ann.fill('7');
+    await ann.press('Tab');
+    await expect(page.locator('#bid-ann-range')).toBeVisible();
+    await expect(appLine(page)).toHaveText('Ann deals, bid: Error: Enter a number from 0 to 1.');
+    // Every count is required, so a blank one is wrong as well.
+    const ben = page.getByRole('spinbutton', { name: 'Ben, bid', exact: true });
+    await ben.fill('');
+    await ben.press('Tab');
+    await expect(page.locator('#bid-ben-range')).toBeVisible();
+    await expect(appLine(page)).toHaveText('Ben, bid: Error: Enter a number from 0 to 1.');
+    await expect(page.locator('#bid-cat-range')).toBeHidden();
+    await audit(page);
+    // With Ann's bid put right, the blank alone holds the round.
+    await ann.fill('1');
+    const save = dock(page).getByRole('button', { name: 'Save the bids' });
+    await expect(save).toHaveAttribute('aria-disabled', 'true');
+    await expect(save).toHaveAccessibleDescription("Ben's bid can be from 0 to 1.");
 });
