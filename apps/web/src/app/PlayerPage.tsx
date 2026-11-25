@@ -14,14 +14,15 @@ import { openStore, refusalOf, type Store, withStore } from '../store/store.js';
 import { useToast } from './AppFrame.js';
 import { Failure } from './failure.js';
 import { NAME_LENGTH, usePlayersRead, useRunning } from './player-parts.js';
-import { gamesOf, nameRefusal, playersChanged, readPlayers } from './players.js';
+import { PlayerRecord } from './PlayerRecord.js';
+import { nameRefusal, playersChanged, readPlayers } from './players.js';
 import { cleanName } from './seats.js';
 
 /**
- * A player's own page, named by `?id=`: their name, how many games they have played, the field
- * that renames them, saved as it is left, and the button that removes them. A removal acts at once
- * and goes back to the players screen, with a toast that offers Undo, which puts the player back
- * as they were. The player is read once the page is running, never in the prerender.
+ * A player's own page, named by `?id=`: their name, their record for each game they have finished,
+ * the field that renames them, saved as it is left, and the button that removes them. A removal
+ * acts at once and goes back to the players screen, with a toast that offers Undo, which puts the
+ * player back as they were. The player is read once the page is running, never in the prerender.
  */
 
 export interface PlayerPageProps {
@@ -219,7 +220,7 @@ export const PlayerPage = ({ open = openStore, go = goInPlace }: PlayerPageProps
     return (
         <>
             <h2 className="gtt-player-name">{player.name}</h2>
-            <p>{played === 0 ? 'No games yet.' : `${gamesOf(played)} played.`}</p>
+            <PlayerRecord player={player} games={read.games} />
             <RenameField key={player.id} player={player} players={read.players} onRename={rename} />
             <div className="dk-actions">
                 <Button

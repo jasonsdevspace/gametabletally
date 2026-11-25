@@ -12,6 +12,8 @@ export interface PlayersRead {
     /** Every player, the removed ones among them, in the order they were added. */
     readonly players: readonly SavedPlayer[];
     readonly played: ReadonlyMap<string, number>;
+    /** Every saved game, in play or finished, which a player's record is worked out from. */
+    readonly games: readonly SavedGame[];
 }
 
 /** How many games each player has played, by id. */
@@ -26,7 +28,7 @@ export const playedOf = (games: readonly SavedGame[]): ReadonlyMap<string, numbe
 export const readPlayers = (open: () => Promise<Store>): Promise<PlayersRead> =>
     withStore(open, async (store) => {
         const [players, games] = await Promise.all([store.players(), store.games()]);
-        return { players, played: playedOf(games) };
+        return { players, played: playedOf(games), games };
     });
 
 /** How many games a player has played, in words. */

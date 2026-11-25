@@ -2,12 +2,21 @@ import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { openPlay } from '../play/play.js';
-import type { SavedPlayer } from '../store/format.js';
+import type { SavedGame, SavedPlayer } from '../store/format.js';
 import { openStore, type Store } from '../store/store.js';
 import { AppFrame } from './AppFrame.js';
 import { PlayerPage } from './PlayerPage.js';
 import { PLAYERS_CHANGED } from './players.js';
-import { act, appLine, fireEvent, render, screen, waitFor, within } from './render.testing.js';
+import {
+    act,
+    appLine,
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+    within,
+} from './render.testing.js';
 import { heard, refused, refusedInPlace } from './status.testing.js';
 
 /* A player's own page in the app's frame, over a database in memory. */
@@ -23,7 +32,8 @@ const player = (id: string, name: string, removed = false): SavedPlayer => ({
 const draw = async (
     id: string,
     wrap: (open: () => Promise<Store>) => () => Promise<Store> = (open) => open,
-    navigates = false
+    navigates = false,
+    games: readonly SavedGame[] = []
 ) => {
     window.history.replaceState(null, '', `/player/?id=${id}`);
     const factory = new IDBFactory();
@@ -37,6 +47,7 @@ const draw = async (
         options: {},
         players: ['ann', 'ben'],
     });
+    for (const game of games) await store.saveGame(game);
     store.close();
     const open = () => openStore(factory);
     const went: string[] = [];
@@ -57,6 +68,53 @@ const draw = async (
     return { open, went };
 };
 
+/** A finished game as the store saves it, between the players given. */
+const finished = (
+    id: string,
+    game: string,
+    players: readonly string[],
+    rounds: readonly unknown[]
+): SavedGame => ({
+    id,
+    game,
+    rules: 1,
+    options: {},
+    players,
+    rounds,
+    draft: null,
+    started: '2026-11-20T19:00:00Z',
+    changed: '2026-11-20T21:00:00Z',
+});
+
+/** Skyjo in two rounds, which Cat wins on 32 as Ben passes a hundred. */
+const SKYJO = finished(
+    's-1',
+    'skyjo',
+    ['cat', 'ben'],
+    [
+        { entries: { cat: { total: 20 }, ben: { total: 55 } }, ender: 'cat' },
+        { entries: { cat: { total: 12 }, ben: { total: 48 } }, ender: 'cat' },
+    ]
+);
+
+const SEVEN = [12, 11, 10, 9, 8, 7, 6];
+const hand = (numbers: number[], modifiers: string[] = []) => ({ numbers, modifiers, bust: false });
+
+/** Flip 7 in two rounds, which Cat wins on 229. */
+const FLIP_7 = finished(
+    'f-1',
+    'flip-7',
+    ['cat', 'ben', 'ann'],
+    [hand(SEVEN, ['x2', '+10']), hand(SEVEN)].map((strong) => ({
+        entries: { cat: strong, ben: hand([1]), ann: hand([2]) },
+    }))
+);
+
+/** A game this build has no rules for, which the record cannot score. */
+const UNKNOWN = finished('u-1', 'no-such-game', ['cat', 'ben'], []);
+
+const IN_PLAY = 'A game in play counts once it ends.';
+
 const players = async (open: () => ReturnType<typeof openStore>) => {
     const store = await open();
     const saved = await store.players();
@@ -75,11 +133,59 @@ afterEach(() => {
 });
 
 describe("a player's page", () => {
-    it('names the player and how many games they have played', async () => {
+    it('names the player, and counts a game they have in play in no record', async () => {
         await draw('ann');
         expect(await screen.findByRole('heading', { name: 'Ann' })).toBeVisible();
-        expect(screen.getByText('1 game played.')).toBeVisible();
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(screen.getByText(/^No finished games yet\./)).toHaveTextContent(
+            'A game in play counts once it ends.'
+        );
         expect(nameField()).toHaveValue('Ann');
+    });
+
+    it('says what will appear for a player who has played nothing, and how to start a game', async () => {
+        await draw('cat');
+        await screen.findByRole('heading', { name: 'Cat' });
+        expect(screen.getByText(/^No finished games yet\./)).toHaveTextContent(
+            'No finished games yet. Once Cat finishes a game, how many Cat has played and won, the best total and the average show here, game by game.'
+        );
+        expect(screen.getByText(/^No finished games yet\./)).not.toHaveTextContent('in play');
+        expect(screen.getByRole('link', { name: 'Start a game' })).toHaveAttribute(
+            'href',
+            '/play/'
+        );
+    });
+
+    it('says under the record that a game in play counts once it ends, while the player has one', async () => {
+        await draw('ann', undefined, false, [FLIP_7]);
+        const table = await screen.findByRole('table', { name: 'Record' });
+        expect(screen.getByText(IN_PLAY)).toBeVisible();
+        expect(table).not.toContainElement(screen.getByText(IN_PLAY));
+        expect(table).toHaveClass('dk-table', 'dk-table-pinned');
+    });
+
+    it('says nothing of a game in play under the record of a player who has none', async () => {
+        await draw('cat', undefined, false, [FLIP_7]);
+        await screen.findByRole('table', { name: 'Record' });
+        expect(screen.queryByText(IN_PLAY)).toBeNull();
+    });
+
+    it('takes no game the record cannot score for a game in play', async () => {
+        await draw('cat', undefined, false, [UNKNOWN]);
+        await screen.findByText(/^No finished games yet\./);
+        expect(screen.getByText(/^No finished games yet\./)).not.toHaveTextContent('in play');
+    });
+
+    it('describes the record by its note where the lowest total wins a game in it, and only there', async () => {
+        await draw('cat', undefined, false, [SKYJO]);
+        expect(await screen.findByRole('table', { name: 'Record' })).toHaveAccessibleDescription(
+            'In Skyjo the lowest total wins, so the best there is the lowest.'
+        );
+        cleanup();
+        await draw('cat', undefined, false, [FLIP_7]);
+        expect(await screen.findByRole('table', { name: 'Record' })).not.toHaveAttribute(
+            'aria-describedby'
+        );
     });
 
     it('renames the player as the field is left, and says so', async () => {

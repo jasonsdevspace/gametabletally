@@ -1,5 +1,7 @@
+import type { ScoreResult } from '@gametabletally/scoring';
+
 import type { GameInPlay } from '../play/play.js';
-import { compareInstants } from '../store/format.js';
+import { compareInstants, type SavedGame } from '../store/format.js';
 import { listOf } from '../website/games.js';
 import { gameNameOf } from './in-play.js';
 import { nameIn } from './opened-game.js';
@@ -54,10 +56,18 @@ export const wonBy = (winners: readonly string[], total: number): string => {
 
 /**
  * Whether the rules have ended a game and no saved round of it is open to change, which would put
- * it back in play until it is saved or let go, as the start screen offers it then.
+ * it back in play until it is saved or let go, as the start screen offers it then. It reads the
+ * game as saved and the scoring package's answer for it, so a player's record counts the same
+ * games the history lists.
  */
-const isFinished = ({ result, draft, saved }: GameInPlay): boolean =>
-    result.state === 'over' && (draft === null || draft.index >= saved.rounds.length);
+export const isFinished = ({
+    result,
+    saved,
+}: {
+    readonly result: ScoreResult;
+    readonly saved: SavedGame;
+}): boolean =>
+    result.state === 'over' && (saved.draft === null || saved.draft.index >= saved.rounds.length);
 
 /**
  * The newest first, by the moment each was started, which nothing done to a game later changes,
