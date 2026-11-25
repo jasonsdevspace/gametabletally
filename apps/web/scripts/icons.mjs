@@ -10,20 +10,25 @@
  * to the mark as it stands, so an icon not drawn again after a change fails the build's tests.
  */
 import { createHash } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { chromium } from '@playwright/test';
 
-import { ICO_SIZES, ICONS, markSvg } from '../src/mark.ts';
+import { FAVICON, ICO_SIZES, ICONS, markSvg } from '../src/mark.ts';
 
 const PUBLIC = fileURLToPath(new URL('../public', import.meta.url));
 
-/** What every icon was drawn from, as the test reads it back. */
+/**
+ * What every icon was drawn from, as the test reads it back: each icon's drawing, the `.ico`'s
+ * sizes, and this script, which draws them.
+ */
 export const drawnFrom = () =>
     createHash('sha256')
         .update(JSON.stringify(ICONS.map((icon) => [icon, markSvg(icon)])))
+        .update(JSON.stringify(ICO_SIZES))
+        .update(readFileSync(fileURLToPath(import.meta.url)))
         .digest('hex')
         .slice(0, 16);
 
@@ -48,7 +53,8 @@ const icoOf = (pngs) => {
     return Buffer.concat([header, ...entries, ...pngs.map(({ png }) => png)]);
 };
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Run as a script, by whatever path it was named by, a link to the folder among them.
+if (realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url))) {
     const browser = await chromium.launch();
     const page = await browser.newPage({ deviceScaleFactor: 1 });
     /** The mark drawn as a PNG at a size, with what lies outside its corners left clear. */
@@ -67,7 +73,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             writeFileSync(path, icon.size === null ? svg : await draw(svg, icon.size));
             console.log(`drew ${icon.file}`);
         }
-        const favicon = markSvg({ corners: true, scale: 1 });
+        const favicon = markSvg(FAVICON);
         const pngs = [];
         for (const size of ICO_SIZES) pngs.push({ size, png: await draw(favicon, size) });
         writeFileSync(join(PUBLIC, 'favicon.ico'), icoOf(pngs));

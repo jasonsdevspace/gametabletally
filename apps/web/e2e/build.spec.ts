@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 import { drawnFrom } from '../scripts/icons.mjs';
 import { precacheOf } from '../scripts/precache.mjs';
-import { ICO_SIZES, ICONS, markSvg } from '../src/mark.js';
+import { ICO_SIZES, ICONS, MARK, markSvg } from '../src/mark.js';
 import { ENTRY_FILES, FRAME_FILE, OWN_FILES, SCREEN_FILES } from '../src/own-files.js';
 import { inApp, NOT_FOUND_FILE, ROUTES } from '../src/routes.js';
 import { installCacheOf, readPrecache } from '../worker/answer.js';
@@ -115,6 +115,14 @@ test("draws every icon from the mark's source as it stands, at the size it is na
     );
     // Drawn again after the mark last changed, by `npm run icons`.
     expect(drawn).toEqual({ source: drawnFrom() });
+    // One blue: the mark's ground, the manifest's color and the kit's accent the header takes.
+    const manifest: unknown = JSON.parse(readFileSync(join(DIST, 'manifest.webmanifest'), 'utf8'));
+    expect(manifest).toMatchObject({ theme_color: MARK.ground });
+    const kit = readFileSync(
+        fileURLToPath(import.meta.resolve('@jasonsdevspace/design-kit/tokens.css')),
+        'utf8'
+    );
+    expect(kit).toContain(`--dk-accent: light-dark(${MARK.ground},`);
     for (const icon of ICONS)
         if (icon.size === null)
             expect(readFileSync(join(DIST, icon.file), 'utf8'), icon.file).toBe(markSvg(icon));
