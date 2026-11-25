@@ -16,7 +16,7 @@ import { hearNewer } from './store/newer.js';
 
 /**
  * What the page has to offer, the most pressing first: a reload, once a newer build has closed
- * the database under it, taken over from another tab, or taken a screen's file off the server, a
+ * the database under it or taken over from another tab, or once a screen's file did not load, a
  * reload or the waiting build where the phone's games were saved by a newer one, the waiting
  * build, or nothing.
  */
@@ -129,7 +129,9 @@ export const watchUpdates = (
     waiting = null;
     needed = false;
     applying = false;
-    outdated = null;
+    // A screen whose file did not load before the worker's registration was found still offers
+    // its reload.
+    if (outdated !== 'missing') outdated = null;
     // A first visit's worker taking charge is no newer build, so only a change from one in charge
     // is. The page that agreed reloads into it, and any other is told.
     let controlled = Boolean(container.controller);
@@ -159,12 +161,19 @@ export const updateNeeded = (): void => {
 };
 
 /**
- * Marks the build this page runs as gone from the server, as when a screen's file it asked for did
- * not arrive with the browser online, so the page offers a reload into the newer build.
+ * Marks a screen's file as one that did not load with the browser online, as when a newer build
+ * took it off the server or the connection let it down, so the page offers a reload.
  */
 export const screenMissing = (): void => {
     if (outdated !== null) return;
     outdated = 'missing';
+    notify();
+};
+
+/** Takes the reload away once a screen has loaded after all, as on the next move. */
+export const screenFound = (): void => {
+    if (outdated !== 'missing') return;
+    outdated = null;
     notify();
 };
 

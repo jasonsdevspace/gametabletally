@@ -2,7 +2,7 @@ import { ENTRY_FILES, SCREEN_FILES } from '../src/own-files.js';
 import { hrefOf } from '../src/routes.js';
 import type { SavedGame, SavedPlayer } from '../src/store/format.js';
 import { scriptHolding } from './built.js';
-import { audit, expect, type Page, seed, test } from './support.js';
+import { appLine, audit, expect, type Page, seed, test } from './support.js';
 
 /*
  * Each screen's code loads when the screen is first opened: a game loads its own round entry and
@@ -93,7 +93,6 @@ test('fetches the game in play and its round entry as the start screen offers it
 test('holds a screen whose code is on its way with its title and a loading line, then moves focus to it', async ({
     page,
 }) => {
-    await openPlay(page);
     let release = (): void => undefined;
     const held = new Promise<void>((resolve) => {
         release = resolve;
@@ -102,6 +101,9 @@ test('holds a screen whose code is on its way with its title and a loading line,
         await held;
         await route.continue();
     });
+    // The route is in place before the page loads, since a page with no worker loads
+    // every screen's code once it has loaded.
+    await openPlay(page);
     await tab(page, 'History').click();
     const loading = page.locator('main [aria-busy="true"] .dk-loading');
     await expect(loading).toHaveText('Loading the screen.');
@@ -116,15 +118,77 @@ test('holds a screen whose code is on its way with its title and a loading line,
 test('offers a reload where a screen asks for a file the newer version took off the server', async ({
     page,
 }) => {
-    await openPlay(page);
     await page.route(`**${scriptOf(SCREEN_FILES.history)}`, (route) =>
         route.fulfill({ status: 404, body: 'Not found' })
     );
+    // The route is in place before the page loads, since a page with no worker loads
+    // every screen's code once it has loaded.
+    await openPlay(page);
     await tab(page, 'History').click();
     await expect(page.getByText('This screen could not be shown.')).toBeVisible();
     const toast = page.locator('.dk-toast');
     await expect(toast).toContainText(
-        'A newer version of the app is out. Reload this page to keep scoring.'
+        'This screen could not load. Reload this page to keep scoring.'
     );
+    // The page is titled as failed, by the screen's own boundary.
+    await expect(page).toHaveTitle('Something went wrong, Game Table Tally');
     await expect(toast.getByRole('button', { name: 'Reload' })).toBeVisible();
+});
+
+test("loads a screen's file afresh on the next move once one load failed, and takes the reload away", async ({
+    page,
+}) => {
+    let refusing = true;
+    await page.route(`**${scriptOf(SCREEN_FILES.history)}`, async (route) => {
+        if (refusing) await route.fulfill({ status: 404, body: 'Not found' });
+        else await route.continue();
+    });
+    await openPlay(page);
+    await tab(page, 'History').click();
+    await expect(page.getByText('This screen could not be shown.')).toBeVisible();
+    refusing = false;
+    await tab(page, 'Play').click();
+    await tab(page, 'History').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('History');
+    await expect(page.getByText('This screen could not be shown.')).toHaveCount(0);
+    await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
+    await expect(page.locator('.dk-toast[data-shown]')).toHaveCount(0);
+    await expect(page).toHaveTitle('History, Game Table Tally');
+});
+
+test("shows the error page with focus on it where the app's frame did not load from the website", async ({
+    page,
+}) => {
+    await page.route(`**${scriptOf('src/app/AppFrame.tsx')}`, (route) =>
+        route.fulfill({ status: 404, body: 'Not found' })
+    );
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-ready', 'true');
+    await page.getByRole('link', { name: 'Open the app' }).first().click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Something went wrong');
+    await expect(page).toHaveTitle('Something went wrong, Game Table Tally');
+    await expect(page.locator('#main')).toBeFocused();
+});
+
+test('keeps focus on the main region while a screen opened from a link in the body loads, and says so once the wait is long', async ({
+    page,
+}) => {
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    await page.route(`**${scriptOf(SCREEN_FILES.new)}`, async (route) => {
+        await held;
+        await route.continue();
+    });
+    // The route is in place before the page loads, since a page with no worker loads
+    // every screen's code once it has loaded.
+    await openPlay(page);
+    await page.locator('a[data-game="flip-7"]').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('New game');
+    await expect(page.locator('#main')).toBeFocused();
+    await expect(appLine(page)).toHaveText('Loading the screen.');
+    release();
+    await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
+    await expect(page.locator('#main')).toBeFocused();
 });

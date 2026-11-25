@@ -1,5 +1,5 @@
 import { Button, useBusy, useStatus } from '@jasonsdevspace/design-kit/react';
-import { type ReactNode, use, useEffect, useState } from 'react';
+import { type ReactNode, Suspense, use, useEffect, useState } from 'react';
 
 import { Link, navigate, usePlace } from '../navigation.js';
 import type { Play } from '../play/play.js';
@@ -117,14 +117,24 @@ const Entry = ({
                 </Dock>
             </>
         );
+    // The round's entry is a file of the game's own, which holds its own place while it loads, so
+    // the screen around it stays drawn.
     return (
-        <RoundFor
-            play={play}
-            game={{ ...game, draft }}
-            names={names}
-            summary={summary}
-            actions={<GameActions play={play} id={id} gameName={gameName} />}
-        />
+        <Suspense
+            fallback={
+                <div aria-busy="true">
+                    <p className="dk-loading">Loading the round.</p>
+                </div>
+            }
+        >
+            <RoundFor
+                play={play}
+                game={{ ...game, draft }}
+                names={names}
+                summary={summary}
+                actions={<GameActions play={play} id={id} gameName={gameName} />}
+            />
+        </Suspense>
     );
 };
 

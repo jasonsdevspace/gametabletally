@@ -6,7 +6,7 @@
  * A load that fails is marked as a module that did not arrive, so the screen that asked can say
  * why. The failure is kept until the screen has said so, since React asks again as it draws the
  * failure, and then forgotten, so the next ask, such as the next move to the screen, loads it
- * afresh. One fetched ahead that fails is forgotten at once, since no screen has asked for it.
+ * afresh. One fetched ahead that fails is forgotten at once where no screen has asked for it yet.
  */
 
 /** A promise with the state React's `use` reads, so one already settled is read at once. */
@@ -14,6 +14,8 @@ type Tracked<T> = Promise<T> & {
     status?: 'pending' | 'fulfilled' | 'rejected';
     value?: T;
     reason?: unknown;
+    /** Whether a screen has asked for it, so its failure waits for the screen to say so. */
+    asked?: boolean;
 };
 
 /** A module that did not arrive, as when the build that listed it has gone from the server. */
@@ -25,14 +27,14 @@ export class NotLoaded extends Error {
 export interface Loader<T> {
     /** The module's promise, started on the first ask. */
     readonly load: () => Promise<T>;
-    /** Starts the load where it has not started, and lets a failure go, to be tried on the next ask. */
+    /** Starts the load if it has not started, and lets a failure go, so the next ask tries again. */
     readonly prefetch: () => void;
 }
 
 /** Each loader's way to forget a load that failed. */
 const forgetters = new Set<() => void>();
 
-/** Forgets every load that failed, once the screen that asked has said so, so the next ask retries. */
+/** Forgets each failed load once the screen that asked has said so, so the next ask retries. */
 export const forgetFailedLoads = (): void => {
     for (const forget of forgetters) forget();
 };
@@ -68,11 +70,15 @@ export const loader = <T>(load: () => Promise<T>): Loader<T> => {
         return promise;
     };
     return {
-        load: start,
+        load: () => {
+            const promise = start();
+            promise.asked = true;
+            return promise;
+        },
         prefetch: () => {
             const promise = start();
             promise.catch(() => {
-                forget(promise);
+                if (!promise.asked) forget(promise);
             });
         },
     };

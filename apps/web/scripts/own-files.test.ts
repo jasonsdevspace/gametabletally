@@ -29,9 +29,12 @@ const fileOf = (from: string, path: string): string | null => {
     return named;
 };
 
-/** What a file imports directly, leaving out imports of types alone, which leave no code behind. */
+/**
+ * What a file imports directly, or exports from another file, leaving out imports and exports of
+ * types alone, which leave no code behind.
+ */
 const directImports = (file: string, text: string): string[] =>
-    [...text.matchAll(/^import\s+(?:([^'";]*?)\s+from\s+)?'([^']+)';/gms)].flatMap(
+    [...text.matchAll(/^(?:import|export)\s+(?:([^'";]*?)\s+from\s+)?'([^']+)';/gms)].flatMap(
         ([, names, path]) => {
             if (path === undefined) return [];
             const typesOnly =
@@ -77,7 +80,7 @@ describe('the files loaded on demand', () => {
         );
     });
 
-    it('would catch a screen imported directly, or a frame imported for more than its types', () => {
+    it('would catch a screen imported or exported directly, or a frame for more than its types', () => {
         expect(
             directImports('src/screens.tsx', "import { PlayStart } from './app/PlayStart.js';")
         ).toEqual([SCREEN_FILES.play]);
@@ -86,6 +89,12 @@ describe('the files loaded on demand', () => {
         ).toEqual([FRAME_FILE]);
         expect(
             directImports('src/screens.tsx', "import type { AppFrame } from './app/AppFrame.js';")
+        ).toEqual([]);
+        expect(
+            directImports('src/app/round.tsx', "export { Flip7Keys } from './flip7-round.js';")
+        ).toEqual([ENTRY_FILES['flip-7']]);
+        expect(
+            directImports('src/app/round.tsx', "export type { Flip7Keys } from './flip7-round.js';")
         ).toEqual([]);
     });
 });

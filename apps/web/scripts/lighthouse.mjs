@@ -7,9 +7,10 @@
  * for accessibility. Then each of them is measured as a phone on a slow network loads it on a first
  * visit: each must score at least ninety for performance, paint its largest content within the time
  * a visit counts as good, shift its layout no more than that either, and carry no more script or
- * style than its budget. Every page loads the shell and its own screen's code, so each is measured
- * on its own. One trace on a shared machine can be slow for reasons of its own, so a page that
- * misses on performance is measured twice more and judged on the middle of the three.
+ * style than its budget. Each page loads the shell and its own screen's code, so every page is
+ * measured rather than a few standing for the rest. One trace on a shared machine can be slow for
+ * reasons of its own, so a page that misses on performance is measured twice more and judged on the
+ * middle of the three.
  *
  * Lighthouse will not audit a page that answers with a 404, so the not-found page is audited at
  * its own file, which is served as any file is.

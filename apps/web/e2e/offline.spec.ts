@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'node:url';
 
 import { precacheOf } from '../scripts/precache.mjs';
+import { SCREEN_FILES } from '../src/own-files.js';
 import { ROUTES } from '../src/routes.js';
+import { scriptHolding } from './built.js';
 import { expect, type Page, test } from './support.js';
 
 /*
@@ -67,6 +69,31 @@ test("after one visit, a move to a screen not yet opened draws it from the worke
         await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
         await expect(page.getByText(/could not be shown/)).toHaveCount(0);
     }
+});
+
+test('once the worker serves the page, a move to a screen not yet opened draws with no loading line', async ({
+    page,
+}) => {
+    const asked: string[] = [];
+    page.on('request', (request) => {
+        if (request.resourceType() === 'script') asked.push(new URL(request.url()).pathname);
+    });
+    await page.goto('/play/');
+    // Each screen's code is loaded once the worker has taken the page.
+    for (const source of [SCREEN_FILES.history, SCREEN_FILES.players])
+        await expect.poll(() => asked).toContain(scriptHolding(source));
+    await page.evaluate(() => {
+        new MutationObserver(() => {
+            if (document.querySelector('.dk-loading'))
+                document.documentElement.dataset['sawLoading'] = 'true';
+        }).observe(document.body, { childList: true, subtree: true });
+    });
+    const tabs = page.getByRole('navigation', { name: 'Sections' });
+    for (const name of ['History', 'Players']) {
+        await tabs.getByRole('link', { name, exact: true }).click();
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+    }
+    await expect(page.locator('html')).not.toHaveAttribute('data-saw-loading');
 });
 
 test('a navigation is answered by the worker and never reaches the network', async ({ page }) => {

@@ -12,7 +12,8 @@ a game.
 
 The pages are drawn ahead of time and the app takes each one over, so whatever loads a screen's
 code has to leave the page drawn whole, with no flash of a loading line, both in the prerender and
-in the page's first draw.
+in the page's first draw. A tab still running an older build has to recover when a file it asks for
+has gone.
 
 ## Options
 
@@ -20,15 +21,18 @@ in the page's first draw.
 every move between screens is instant. Every page pays for every screen, and the cost grows with
 each one.
 
-**Split by screen with `React.lazy`.** The usual way to load a route's code on demand. A lazy
-component suspends the first time it draws even when its code has arrived, so the prerender draws
-its loading line in place of the screen, and the page's first draw waits a turn before the app
-takes the page over.
+**Split by screen with `React.lazy`.** The usual way to load a route's code on demand. The
+prerender would have to move from `renderToString`, which draws the loading line of any part that
+waits, to React's static prerender, which waits. A lazy component keeps a failed import for the
+life of the page, so a screen whose file failed once never loads again until a reload, and its load
+cannot be started and settled ahead of the draw that needs it.
 
 **Split by screen, with a loader of our own read by React's `use`.** Each screen's `import()`
-gives a promise that carries its own state, which `use` reads at once once it has settled. The
-prerender loads every screen first and draws each page whole, and the page loads its own screen
-before the app takes it over, so neither waits.
+gives a promise that carries its own state, which `use` reads with no wait once it has settled. The
+prerender loads every screen first and draws each page whole with `renderToString`, the page loads
+its own screen before the app takes it over, a load can be started early through the same promise,
+and a failed load is forgotten once the screen has said so, so the next move tries again. It leans
+on React reading the state a promise carries, the convention React's own lazy components use.
 
 ## Decision
 
@@ -36,50 +40,68 @@ before the app takes it over, so neither waits.
 by `use`.** `apps/web/src/screens.tsx` holds a loader for each screen and the frame, and
 `apps/web/src/app/entries.ts` one for each game's entry, so a table loads Flip 7's cards, Skyjo's
 pad or Wizard's bids and no other game's. `apps/web/src/own-files.ts` lists the files loaded on
-demand, and the screens' loaders, the build and the prerender all read it.
+demand, the screens' loaders and the build read it, and a test holds the entries' loaders to it.
 
 - **A page sends the shell and its own code.** The shell holds the router, the status line, the
-  watch for a newer build and the website's frame. A page of the app adds the app's frame and the parts its
-  screens share, in one file, and its own screen. A page of the website adds its own page and none
-  of the app. The prerender has each page fetch its own files beside the shell, read from the
-  build's manifest and source maps.
-- **The service worker fetches every other file once the first page has loaded,** as it always
-  has, and takes charge of the page, so a move never waits on the network and every screen opens
-  with no connection after the first visit. No idle fetch of our own repeats it.
-- **Opening a game fetches its screen, its round entry and the scores,** from the start screen's
-  game in play, the new game screen and the game's own screen, for the moment before the worker has
-  finished.
-- **A screen still loading holds its place** with its title and the kit's loading line in a region
-  marked busy, and focus moves to the screen once it draws.
-- **A screen whose file did not arrive with the browser online** shows that it could not be shown,
-  and the frame offers the reload into the newer version, since the build that listed the file has
-  gone from the server. The failure is forgotten once said, so the next move to the screen loads
-  its file afresh.
-- **No screen, entry or frame is imported directly,** only by `import()`, and a test fails where
-  one is. A module that does its work as it loads, such as the install offer's listener, is
-  imported by the shell, so it runs on every page.
+  watch for a newer build and the website's frame. A page of the app adds the app's frame and the
+  parts its screens share, in one file, and its own screen. A page of the website adds its own page
+  and none of the app's screens or its frame. The prerender has each page fetch its own files
+  beside the shell, read from the build's manifest and source maps.
+- **Every screen's code is loaded once the service worker serves the page,** so a move to a screen
+  not yet opened draws at once, from the phone, rather than holding its loading line. The worker
+  fetches every file once the first page has loaded, as it always has, so this costs no network. A
+  browser with no worker loads every screen's code once the page has loaded instead.
+- **A first visit, before the worker has taken the page, fetches each screen on its first open.** A
+  move fetches the frame's file and the screen's together, and opening a game fetches its screen,
+  its round entry and the scores, from the start screen's game in play, the new game screen and the
+  game's own screen.
+- **A move starts as a page load would.** Focus moves to the main region at once, as the bar names
+  the new screen. A screen still loading holds its place with the kit's loading line in a region
+  marked busy, a wait that outlasts the kit's loading delay is said on the status line, and focus
+  moves to the screen once it draws where the move left it elsewhere. A game's round entry holds a
+  place of its own inside the game's screen.
+- **A screen whose file did not load** shows that it could not be shown, and, with no connection,
+  that it needs one the first time it opens. With the browser online, the frame offers a reload, on
+  any screen, since a newer build may have taken the file off the server and a connection that let
+  it down is answered by a reload too. The failure is forgotten once said, so the next move to the
+  screen loads its file afresh, and a screen that loads takes the reload away. Where the frame's own
+  file or a page of the website is the one missing, the error page takes focus and its link loads
+  the page afresh, and the next move tries the frame again.
+- **No screen, entry or frame is imported or exported directly,** only loaded by `import()`, and a
+  test fails where one is. A module that does its work as it loads, such as the install offer's
+  listener, is imported by the shell, so it runs on every page.
 
 ## Consequences
 
-- The website's pages send about a fifth less script, and the app's pages a little less. A new
-  screen adds only its own file, to the pages that show it.
-- A page of the app fetches a few files rather than one. On a slow first visit over HTTP/1.1, as
-  the local audit serves it, a page that draws from the phone's games paints its largest content
-  about a sixth of a second later than the one script did. GitHub Pages serves HTTP/2, which fetches
-  them at once. The parts the app's screens share are kept in one file to hold the count down,
-  which takes the bundler's strict execution order and a little more script in return.
-- The scoring rules stay in the shell, since the website names the games. Splitting them by game
-  is a change of its own.
+- On a first visit in the local audit, the website's pages send about 101 KB of script rather than
+  125 KB, and the app's pages 118 to 121 KB. A new screen adds only its own file, to the pages that
+  show it.
+- A page of the app fetches a few files rather than one. Over HTTP/1.1, as the local audit serves
+  it, a page that draws from the phone's games paints its largest content at about 2250 ms rather
+  than 2100 ms. Measured once over HTTP/2, as GitHub Pages serves it, the same pages paint sooner
+  than with the one script.
+- The parts the app's screens share are kept in one file with the frame, to hold the count of files
+  down, which takes the bundler's strict execution order and about 5 KB more script on every page.
+  The budget for that file in `apps/web/e2e/build.spec.ts` covers the frame and those parts
+  together, so a helper only one screen uses, put under `apps/web/src/app`, reaches every page of
+  the app, and that budget is what catches it.
+- The scoring rules stay in the shell, since the website names the games, so every page carries
+  every game's rules.
 
 ## How it is tested
 
-- `apps/web/scripts/own-files.test.ts` fails when any file of the app imports a screen, an entry
-  or the frame directly, and when a loader names a file the list does not.
-- `apps/web/e2e/build.spec.ts` holds each file loaded on demand to a file of its own and a budget
-  of its own, and each page to fetching the shell and its own code and no other screen's.
-- `apps/web/e2e/split.spec.ts` holds a game to loading its own entry and fetching the scores, a
-  screen still loading to its title, loading line, axe audit and focus, and a missing file to the
-  reload notice. `apps/web/e2e/offline.spec.ts` opens every page and moves between screens with
-  the connection off.
-- `npm run lighthouse` measures every page's first load, the website's and the app's each against
-  a script budget of its own.
+- `apps/web/scripts/own-files.test.ts` fails when any file of the app imports or exports a screen,
+  an entry or the frame directly, and when a loader names a file the list does not.
+- `apps/web/src/loader.test.ts` holds a module to loading once, a failure to waiting until the
+  screen has said it, and the next ask after that to loading afresh.
+- `apps/web/e2e/build.spec.ts` holds each screen and each game's round entry to a file of its own,
+  every file loaded on demand to a budget of its own, and each page to fetching its own code and no
+  other screen's. `apps/web/e2e/pages.spec.ts` holds every prerendered page to holding no loading
+  line.
+- `apps/web/e2e/split.spec.ts` holds a game to loading its own entry, a screen still loading to its
+  title, loading line, axe audit, status line and focus, a missing file to the reload notice and
+  to loading afresh on the next move, and a missing frame to the error page with focus on it.
+  `apps/web/e2e/offline.spec.ts` opens every page and moves between screens with the connection
+  off, and moves to screens not yet opened with no loading line once the worker serves the page.
+- `npm run lighthouse` measures every page's first load, against one script budget for the
+  website's pages and another for the app's.

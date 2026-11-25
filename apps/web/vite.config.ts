@@ -5,7 +5,7 @@ import { defaultClientConditions, defaultServerConditions, defineConfig } from '
 import { SOURCE_CONDITION } from '../../source-condition.js';
 import { OWN_FILES } from './src/own-files.js';
 
-/** Whether a module is a part of the app that its screens share, rather than a file built on its own. */
+/** Whether a module is one of the parts the app's screens share, not a file built on its own. */
 const isSharedAppPart = (id: string): boolean =>
     /\/apps\/web\/src\/(?:app|play)\//.test(id) &&
     !OWN_FILES.some((file) => id.endsWith(`/${file}`));
@@ -29,6 +29,11 @@ export default defineConfig(({ isSsrBuild }) => ({
         // The list of what each source file became, which the prerender reads to have each page
         // fetch its own code beside the shell, and then removes.
         manifest: true,
+        // The parts the app's screens share go in one file with the app's frame, so a page of the
+        // app fetches a few files rather than one for each part, as record 4 sets out. A group that
+        // leaves out its modules' imports takes strict execution order, so the modules in that
+        // file run in the order they are imported, and entry signatures that may be extended. The
+        // server build draws the pages ahead of time and is never split.
         rolldownOptions: isSsrBuild
             ? {}
             : {

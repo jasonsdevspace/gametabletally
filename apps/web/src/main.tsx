@@ -23,10 +23,10 @@ const app = (
     </StrictMode>
 );
 const route = routeAt(location.pathname);
-// The page's own screen is loaded first, which the build has the browser fetch beside this script,
-// so the app takes over a page already whole. A built page holds its screen already, which the app
-// takes over. The dev server's does not. A screen that does not load is said by the screen's
-// boundary as the app draws.
+// The page's own screen is loaded before the app draws, from the files the build has the browser
+// fetch beside this script, so the app takes over a built page whole and draws the dev server's
+// empty page with no loading line. A screen that does not load is said by the screen's boundary as
+// the app draws.
 void loadScreen(route)
     .catch(() => undefined)
     .then(() => {

@@ -18,10 +18,9 @@ import { Website } from './website/Website.js';
  * Each screen's code is a file of its own, loaded the first time the screen is opened, so a page
  * sends only the shell and the screen it shows. The app's frame is loaded with the app's first
  * screen, so the website's pages send none of the app. Every screen is imported here by `import()`
- * alone, which a test holds. The build marks the files of a page's own code to fetch beside the
- * shell, from the source files named here. The service worker fetches every other file once the
- * first page has loaded, and serves them from then on, so a move never waits on the network and a
- * screen opened with no connection draws at once.
+ * alone, which a test holds. The prerender has each page fetch its own code beside the shell, from
+ * the files `filesAt` names. Once the service worker serves the page, every screen's code is loaded
+ * from the phone, so a move to a screen not yet opened draws at once, with no connection too.
  */
 
 /**
@@ -92,7 +91,7 @@ const APP_SCREENS: readonly RouteName[] = ROUTES.map(({ name }) => name).filter(
 /** Whether a name is a route's, so its screen can be found. */
 const isRouteName = (name: string): name is RouteName => Object.hasOwn(SCREENS, name);
 
-/** The files of the code an address draws: the app's frame for a screen of the app, and its screen. */
+/** The files an address draws from: the app's frame for a screen of the app, and its screen. */
 export const filesAt = (route: Route): string[] => [
     ...(inApp(route) ? [FRAME.file] : []),
     ...(isRouteName(route.name) ? [SCREENS[route.name].file] : []),
@@ -107,9 +106,24 @@ export const loadScreen = async (route: Route | null): Promise<void> => {
     ]);
 };
 
-/** Loads the code of every screen and the app's frame, as the prerender and the tests draw them all. */
+/** Loads every screen's code and the app's frame, as the prerender and the tests draw them all. */
 export const loadEveryScreen = async (): Promise<void> => {
     await Promise.all([FRAME, ...Object.values(SCREENS)].map(({ code }) => code.load()));
+};
+
+/** Fetches the code a place draws, the frame's and the screen's together, as a move starts. */
+export const fetchAt = (route: Route): void => {
+    if (inApp(route)) FRAME.code.prefetch();
+    if (isRouteName(route.name)) SCREENS[route.name].code.prefetch();
+};
+
+/**
+ * Fetches every screen's code and the app's frame, once the service worker serves them from the
+ * phone, so a move to a screen not yet opened draws at once rather than holding its loading line.
+ */
+export const warmScreens = (): void => {
+    FRAME.code.prefetch();
+    for (const { code } of Object.values(SCREENS)) code.prefetch();
 };
 
 /** Fetches a screen's code now, as a screen that leads to it is opened. */
@@ -124,8 +138,8 @@ export const Frame = (props: FrameProps) => use(FRAME.code.load())(props);
 const Loaded = ({ name }: { readonly name: RouteName }) => use(SCREENS[name].code.load())();
 
 /**
- * What a screen for keeping score holds, inside the app's frame, which the app draws around it. A
- * screen with nothing of its own holds nothing, and the frame's bar names it.
+ * What a screen for keeping score holds, inside the app's frame, which the app draws around it, once
+ * its code is in.
  */
 export const AppScreen = ({ route }: { readonly route: Route }) => {
     const { name } = route;
@@ -155,12 +169,16 @@ export const ScreenLoading = ({ route }: { readonly route: Route }) => (
 );
 
 /**
- * What a screen for keeping score that failed shows in the frame's body. Its way back is a plain
- * link, which loads the start screen afresh, since whatever failed may still be held in memory.
+ * What a screen for keeping score that failed shows in the frame's body, and why where its code did
+ * not load with no connection. Its way back is a plain link, which loads the start screen afresh,
+ * since whatever failed may still be held in memory.
  */
-export const ScreenFailed = () => (
+export const ScreenFailed = ({ offline = false }: { readonly offline?: boolean }) => (
     <>
         <p>This screen could not be shown. Your saved games are still on this phone.</p>
+        {offline ? (
+            <p>It needs a connection the first time it opens. Connect, then try again.</p>
+        ) : null}
         <p>
             <a href={hrefOf('play')}>Back to the start screen</a>
         </p>

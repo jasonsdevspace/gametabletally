@@ -1,6 +1,7 @@
 /*
- * Word of a newer build of the app that has the database, kept apart from the store so the page
- * can listen for it without loading the store's code, which only the app's screens need.
+ * Word of a newer build of the app that has the database, kept apart from the store so every page
+ * can listen for it without loading the store's code, which only the app's screens and the about
+ * page's backup need.
  */
 
 /** How a newer build has the database: it refused this page, or closed the store under it. */

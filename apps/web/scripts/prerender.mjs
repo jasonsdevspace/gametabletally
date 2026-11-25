@@ -7,11 +7,11 @@
  * the not-found page is written as `404.html`, which Pages serves for any other path with a 404
  * status. So every address reads with no script, as it is deployed.
  *
- * Each page also has the browser fetch its own files, the app's frame for a screen of the app and
- * the screen's own, with the files they import, beside the shell, so the screen arrives with the
- * shell rather than after it. The files are read
- * from the client build's manifest, which is removed once the pages are written, since no page
- * fetches it.
+ * Each page also has the browser fetch its own files beside the shell, the app's frame for a screen
+ * of the app and the screen's own, with the files they import, so the screen arrives with the shell
+ * rather than after it. The built file each source went into is read from the build's source maps,
+ * and what each built file imports from its manifest, which is removed once the pages are written,
+ * since no page fetches it.
  */
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';

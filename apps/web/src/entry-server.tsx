@@ -16,7 +16,7 @@ export interface Prerendered {
     readonly file: string;
     readonly title: string;
     readonly markup: string;
-    /** The source files of the page's own code, whose built files the page fetches beside the shell. */
+    /** The source files of the page's own code, whose built files it fetches beside the shell. */
     readonly files: readonly string[];
 }
 

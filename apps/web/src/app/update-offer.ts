@@ -7,7 +7,7 @@ import { applyUpdate, page, subscribeUpdate, type UpdateState, updateState } fro
 const OFFER = 'A new version of the app is ready.';
 const RELOAD_ONLY = 'The games on this phone need a newer version of the app.';
 const REPLACED = 'The app was updated in another tab. Reload this page to keep scoring.';
-const MISSING = 'A newer version of the app is out. Reload this page to keep scoring.';
+const MISSING = 'This screen could not load. Reload this page to keep scoring.';
 
 /** What the toast offers for a state, and where. */
 interface Offer {
@@ -95,8 +95,9 @@ const actionOf = (offer: Offer, say: (words: string) => void): ToastAction =>
  * offer is made on whatever screen is open, as a reload where no newer worker is waiting. A page
  * whose build another tab replaced says so with a Reload, where the offer would be made, or at once
  * on any screen where its database was closed. Closed, that is said again on the next arrival, and
- * the page reloads once it is next hidden, with no one reading it. A page that asked for a screen's
- * file the newer version took off the server says so at once with a Reload, on any screen.
+ * the page reloads once it is next hidden, with no one reading it. A page whose screen's file did
+ * not load with the browser online says so at once with a Reload, on any screen, until a screen
+ * loads after all.
  */
 export const useUpdateOffer = ({
     screen,

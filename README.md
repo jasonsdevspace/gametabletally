@@ -45,8 +45,8 @@ against the built script in a runtime that is not Node.
   Each screen's code loads when the screen is first opened, as
   [record 4](docs/decisions/0004-screens-load-on-demand.md) sets out. A new screen is a module of
   its own under `apps/web/src/app`, or `apps/web/src/website` for a page of the website, named by
-  its route in `apps/web/src/own-files.ts` and loaded by `import()` in
-  `apps/web/src/screens.tsx`, and never imported directly, which a test holds.
+  its route in `apps/web/src/own-files.ts`, loaded by `import()` in `apps/web/src/screens.tsx`,
+  given a budget in `apps/web/e2e/build.spec.ts`, and never imported directly, which a test holds.
   The app installs from its manifest, and its service worker, built from `apps/web/worker`,
   caches every file of the build on the first visit and answers every page from that cache after,
   so the app opens with no connection. A newer build's worker installs and waits for the visitor
@@ -70,12 +70,13 @@ npm run lighthouse
 served as GitHub Pages serves them: every address with no script, the not-found page and its 404,
 an axe audit and a target size check of each page, the move between screens, the start screen's
 game in play and its tab bar, a game of each kind started from the new game screen, a player
-added, renamed and removed with Undo, a backup saved in one browser and restored in another, and
+added, renamed and removed with Undo, a backup saved in one browser and restored in another, each
+page fetching only its own screen's code, a screen still loading and one whose file is gone, and
 every address opening with the connection off after one visit. Service workers are blocked in every
 browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
 holds every page to a hundred for accessibility, and to ninety for performance, a good largest
-paint and layout shift, and a budget for the script and style its first load carries, one for the
-website's pages and one for the app's.
+paint and layout shift, and a budget for the style and the script its first load carries, with one
+script budget for the website's pages and another for the app's.
 
 A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
 passed, and a merge that fails one is not deployed. The live address counts page views with
