@@ -486,6 +486,7 @@ describe('skipping a player for a round', () => {
                 'true'
             );
         });
+        expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
         press('Skip Ben this round');
         await heard(
             appLine(),
