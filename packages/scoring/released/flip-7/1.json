@@ -1,0 +1,468 @@
+{
+    "game": "flip-7",
+    "rules": 1,
+    "answers": [
+        {
+            "name": "a round's score is its number cards added up",
+            "input": "97ce20ba989eb178",
+            "answer": "4aaf5d1eb01129d0",
+            "liftable": false
+        },
+        {
+            "name": "the x2 card doubles the number cards, and the plus cards are added after",
+            "input": "d76c98803578494f",
+            "answer": "1d2804c285934143",
+            "liftable": false
+        },
+        {
+            "name": "every plus card held is added",
+            "input": "711b8b41d502616f",
+            "answer": "d6d32eb7b9c5e73b",
+            "liftable": false
+        },
+        {
+            "name": "seven different numbers add fifteen, which the x2 card never doubles",
+            "input": "69d5e5fde745057d",
+            "answer": "dad571a7b4932b37",
+            "liftable": false
+        },
+        {
+            "name": "a bust scores nothing whatever is held",
+            "input": "528404f70d47470d",
+            "answer": "ec510e0e902ca18e",
+            "liftable": false
+        },
+        {
+            "name": "a hand with the same number twice is refused, since it is a bust",
+            "input": "e980901265776c21",
+            "answer": "144f890806aef50c",
+            "liftable": false
+        },
+        {
+            "name": "a card the deck does not hold is refused",
+            "input": "6717658623ef2200",
+            "answer": "9333945d6f42bd66",
+            "liftable": false
+        },
+        {
+            "name": "a card entered in the wrong list is refused, and named by the list it was in",
+            "input": "3ca11d32f6a0f569",
+            "answer": "be716447a849ec64",
+            "liftable": false
+        },
+        {
+            "name": "an action card in a hand is refused, since an entry holds only the cards that score",
+            "input": "049a2fb877512980",
+            "answer": "b8356c448b74492d",
+            "liftable": false
+        },
+        {
+            "name": "a modifier held twice is refused, since the deck has one of each",
+            "input": "f0cb7bcb9760b9ea",
+            "answer": "3fea517de3f591f4",
+            "liftable": false
+        },
+        {
+            "name": "more than seven numbers is refused, since the round ends at seven",
+            "input": "f415e56b3bef752e",
+            "answer": "28009cf89d78eeba",
+            "liftable": false
+        },
+        {
+            "name": "an entry that is not an entry is refused",
+            "input": "239c6a10fc5490c2",
+            "answer": "5eec95fce2910556",
+            "liftable": false
+        },
+        {
+            "name": "an entry that lacks a list of cards is refused, and names the list",
+            "input": "95d793288f40bd66",
+            "answer": "36a7415999cce066",
+            "liftable": false
+        },
+        {
+            "name": "an entry for nobody in the game is refused",
+            "input": "e074e66ceac9a437",
+            "answer": "4260588e7e93a39c",
+            "liftable": false
+        },
+        {
+            "name": "a round that does not hold its entries is refused",
+            "input": "ddc9ff5c048b53da",
+            "answer": "5a2afec5f2abe5ed",
+            "liftable": false
+        },
+        {
+            "name": "a round that is an object and holds no entries is not a round",
+            "input": "7b159c372496427a",
+            "answer": "5a2afec5f2abe5ed",
+            "liftable": false
+        },
+        {
+            "name": "a round still being played counts toward no total",
+            "input": "4ea1e1af5030af6c",
+            "answer": "474d26cd533ac9c8",
+            "liftable": false
+        },
+        {
+            "name": "a round entered behind an unfinished one is passed over, so no total has a round missing",
+            "input": "8ac5d63612dd6d5f",
+            "answer": "a84fb5e0e28fbd1b",
+            "liftable": false
+        },
+        {
+            "name": "a round entered behind a refused one is passed over, so nobody wins on it",
+            "input": "bff02b0fcbc3b732",
+            "answer": "404704988b9e4a86",
+            "liftable": false
+        },
+        {
+            "name": "a player whose id is a name every object has is still waited for",
+            "input": "f67a5bd5bf0c0c1a",
+            "answer": "d723f29bec19033b",
+            "liftable": false
+        },
+        {
+            "name": "the game goes on while the round a player reaches two hundred in is still being played",
+            "input": "64cb85b694a998c2",
+            "answer": "4004294c8578a23b",
+            "liftable": false
+        },
+        {
+            "name": "the game is over at the end of the round in which a player reaches two hundred",
+            "input": "51c7135198187011",
+            "answer": "97e34b743b30e8d7",
+            "liftable": false
+        },
+        {
+            "name": "reaching exactly two hundred ends the game",
+            "input": "fc51b03d952008bf",
+            "answer": "9cdabf5aa75719a5",
+            "liftable": false
+        },
+        {
+            "name": "the highest total wins when more than one player passes two hundred",
+            "input": "d02b8e46ea363241",
+            "answer": "a0b2a5ef49f3a5cd",
+            "liftable": false
+        },
+        {
+            "name": "a tie at the top at two hundred or more does not end the game",
+            "input": "ba07e69a4fd97684",
+            "answer": "a41536ace6ed02c5",
+            "liftable": false
+        },
+        {
+            "name": "a tied game goes on by whole rounds until one player leads",
+            "input": "0dc5887facda210b",
+            "answer": "e9144f66f3b7c815",
+            "liftable": false
+        },
+        {
+            "name": "a round entered after the game is over is refused",
+            "input": "e33eee410a931f38",
+            "answer": "953a7afd02503811",
+            "liftable": false
+        },
+        {
+            "name": "a game with fewer than three players is refused",
+            "input": "69f619c66af74789",
+            "answer": "72d646f2539b2f3e",
+            "liftable": false
+        },
+        {
+            "name": "a player in the game twice is refused",
+            "input": "a1eada63b6318c86",
+            "answer": "6f59772e0abda9fd",
+            "liftable": false
+        },
+        {
+            "name": "each player listed more than once is named once, in seat order",
+            "input": "c50905b18423c3bf",
+            "answer": "9c8190dadef53c7e",
+            "liftable": false
+        },
+        {
+            "name": "a rule set the game does not have is refused",
+            "input": "8abfebc473c0ab14",
+            "answer": "1feb4d41cbef5a3b",
+            "liftable": false
+        },
+        {
+            "name": "an option the game does not have is refused",
+            "input": "81ce024a9da0db2f",
+            "answer": "aed132cfdc876d5a",
+            "liftable": true
+        },
+        {
+            "name": "a game with nothing entered is in play with every player level",
+            "input": "3f6991a7162634f0",
+            "answer": "80e4d6a40e1b9309",
+            "liftable": false
+        },
+        {
+            "name": "a game takes more than three players, and those ahead are named in seat order",
+            "input": "ab4e19db5748087f",
+            "answer": "e0e3ae09ed07ce27",
+            "liftable": false
+        },
+        {
+            "name": "a number card below zero, written as text or left empty is refused",
+            "input": "30cb6b79aff485c0",
+            "answer": "ae5c08188b7d9170",
+            "liftable": false
+        },
+        {
+            "name": "an entry is refused once, for the first thing wrong with it, and the players' in seat order",
+            "input": "92bd4b208faf8842",
+            "answer": "b0f5025ddbc2aa7c",
+            "liftable": false
+        },
+        {
+            "name": "a bust is still refused for a card the deck does not hold, and for nothing else",
+            "input": "388e38eb6abc314d",
+            "answer": "411043bad780dab9",
+            "liftable": false
+        },
+        {
+            "name": "entries for nobody in the game are reported first, sorted by id, before the players'",
+            "input": "262e3d781136fa10",
+            "answer": "e5f0440bb06d1404",
+            "liftable": false
+        },
+        {
+            "name": "a game the package does not know is refused, and nothing in it is read",
+            "input": "ea96c11ade343f95",
+            "answer": "38d89917b515b1b9",
+            "liftable": false
+        },
+        {
+            "name": "what a game, a round or an entry holds beyond what the rules read is passed over",
+            "input": "868a6d7c1b2c4796",
+            "answer": "4aaf5d1eb01129d0",
+            "liftable": false
+        },
+        {
+            "name": "a player behind a tie at the top can pass it and win",
+            "input": "6901416a1534528f",
+            "answer": "93cbfca58d190990",
+            "liftable": false
+        },
+        {
+            "name": "a tie that holds through another round keeps the game going",
+            "input": "720b97668399ec57",
+            "answer": "d94bcb0659589583",
+            "liftable": false
+        },
+        {
+            "name": "everything wrong with the game as a whole is reported, the players before the options",
+            "input": "830da32f327a50fd",
+            "answer": "41a32d61ec240752",
+            "liftable": false
+        },
+        {
+            "name": "every modifier held with seven different numbers",
+            "input": "28f945baf3c0b77f",
+            "answer": "49cbf5acf0c20902",
+            "liftable": false
+        },
+        {
+            "name": "a round nobody has played yet is open",
+            "input": "5ddba699f03c7262",
+            "answer": "65885b1dd05ae048",
+            "liftable": false
+        },
+        {
+            "name": "text that is not JSON is answered with a problem",
+            "input": "a2b5d5929f6c2158",
+            "answer": "3a15199a009319d5",
+            "liftable": false
+        },
+        {
+            "name": "JSON that is not an object is not a game",
+            "input": "3f8b6cf21531151e",
+            "answer": "664fb4b1b5e7731f",
+            "liftable": false
+        },
+        {
+            "name": "a game that does not hold its options is not a game",
+            "input": "a56e1e803e4acc55",
+            "answer": "3b761e99d6441700",
+            "liftable": false
+        },
+        {
+            "name": "a game whose rule set is not a whole number is not a game",
+            "input": "93e0224bf1af6e8c",
+            "answer": "31b88c3c11dd6e9d",
+            "liftable": false
+        },
+        {
+            "name": "a game with a player named by a number is not a game",
+            "input": "268dce3437ea8cae",
+            "answer": "f64966f7a41cbd72",
+            "liftable": false
+        },
+        {
+            "name": "a game that does not list its rounds is not a game",
+            "input": "dd8990ddb7a141ff",
+            "answer": "c3a51a82a4af42c6",
+            "liftable": false
+        },
+        {
+            "name": "a round is scored with a player out of it, for the two still in, in a game that takes three to start",
+            "input": "9c2231c4dd605b89",
+            "answer": "33ba7c0c99d21487",
+            "liftable": false
+        },
+        {
+            "name": "a player out of one round scores in the next, and is not ahead while the others have missed none, though their total is the highest",
+            "input": "e54a9589e684fcc4",
+            "answer": "aa4b9ee1e9916436",
+            "liftable": false
+        },
+        {
+            "name": "a round names its players out in seat order, whatever order they were listed in",
+            "input": "43d08f180f72e855",
+            "answer": "8452fb3b262a0955",
+            "liftable": false
+        },
+        {
+            "name": "an entry for a player out of the round is refused",
+            "input": "f67ed9ec167fdc70",
+            "answer": "fd573d616e4c8798",
+            "liftable": false
+        },
+        {
+            "name": "a player named as out twice is refused, and the round is read no further",
+            "input": "f8548693fa7741f8",
+            "answer": "2fdbcb77d7f52603",
+            "liftable": false
+        },
+        {
+            "name": "naming as out somebody not in the game is refused",
+            "input": "67cd000a8f9ff371",
+            "answer": "3c49ae92649be80e",
+            "liftable": false
+        },
+        {
+            "name": "a list of players out that is not a list of ids is refused",
+            "input": "39bcd619d40e8d42",
+            "answer": "1fa3c8a9404af81c",
+            "liftable": false
+        },
+        {
+            "name": "a round with one player in it is refused, naming how many a round takes and how many were in it",
+            "input": "68578c722031893d",
+            "answer": "3fce9e737c968acc",
+            "liftable": false
+        },
+        {
+            "name": "a player who missed a round ends the game at two hundred and does not win it",
+            "input": "fb55a33290cb85fe",
+            "answer": "d87c37150bf9b905",
+            "liftable": false
+        },
+        {
+            "name": "a tie among the players who missed no round plays on, whatever a player who missed one holds",
+            "input": "b62ed460c6a75224",
+            "answer": "9b337d210a4cdcff",
+            "liftable": false
+        },
+        {
+            "name": "when every player has missed a round, the highest total of all is ahead and wins",
+            "input": "43ea9084fe3f138f",
+            "answer": "56f3ff8260cb61cd",
+            "liftable": false
+        },
+        {
+            "name": "a list of players out given as null names nobody",
+            "input": "d5117d828dc87e3e",
+            "answer": "c6a27a63bf50f816",
+            "liftable": false
+        },
+        {
+            "name": "a round waiting on an entry with a player out is open, and nobody has missed it yet",
+            "input": "e88bd5908511a0c9",
+            "answer": "fc8f9afcae11652a",
+            "liftable": false
+        },
+        {
+            "name": "a round left unfinished with a player out is refused and still names who was out, and a round after it is passed over with nobody out",
+            "input": "f4c6003fb59133dd",
+            "answer": "54987c94984afafe",
+            "liftable": false
+        },
+        {
+            "name": "a round with every player out is refused, naming none in it",
+            "input": "c18086b353d47faa",
+            "answer": "b4efa64d2c016c81",
+            "liftable": false
+        },
+        {
+            "name": "what is wrong with a round's players out comes in order: nobody in the game by id, then players named twice in seat order, then too few in the round",
+            "input": "ec5342c0e3a56ddb",
+            "answer": "59137aee3e8816d6",
+            "liftable": false
+        },
+        {
+            "name": "an entry for a player out comes before an entry for nobody in the game, and both before an entry refused for its cards",
+            "input": "e23e2b5844a35c38",
+            "answer": "284aecd6ab49cbcb",
+            "liftable": false
+        },
+        {
+            "name": "a total held by a player out of the round ends the game once the tie among the others is broken",
+            "input": "dd7eb8ca34e48b43",
+            "answer": "edd913d75743656d",
+            "liftable": false
+        },
+        {
+            "name": "with the target score at one hundred, the game is over at the end of the round in which a total reaches it",
+            "input": "25c6c16c53af15a5",
+            "answer": "798098ca6082537b",
+            "liftable": false
+        },
+        {
+            "name": "with the target score at two hundred and fifty, a total past two hundred leaves the game in play",
+            "input": "27152c65ee7a1988",
+            "answer": "7cb8900fc72cbd34",
+            "liftable": false
+        },
+        {
+            "name": "the target score given as two hundred plays to the published two hundred",
+            "input": "fcdc544c3ec6608a",
+            "answer": "006614d26aba1b3a",
+            "liftable": false
+        },
+        {
+            "name": "the target score given as null is not given, and the game plays to the published two hundred",
+            "input": "9fe660dcb5886cf4",
+            "answer": "006614d26aba1b3a",
+            "liftable": false
+        },
+        {
+            "name": "a target score the option does not allow is refused",
+            "input": "60ee86d550c6070f",
+            "answer": "981b7082498e283a",
+            "liftable": true
+        },
+        {
+            "name": "a target score given as text is refused, and names the text",
+            "input": "bb30a690fa17ec7f",
+            "answer": "b79b5a1f442382f6",
+            "liftable": true
+        },
+        {
+            "name": "the options refused are reported sorted by name",
+            "input": "d156c9ed89c7e25a",
+            "answer": "4c397e526da30b7b",
+            "liftable": true
+        },
+        {
+            "name": "an option given as null is not given, whatever its name",
+            "input": "ed53c0dfb97905aa",
+            "answer": "80e4d6a40e1b9309",
+            "liftable": false
+        }
+    ]
+}

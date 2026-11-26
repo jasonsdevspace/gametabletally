@@ -17,6 +17,7 @@
     "scripts": {
         "type-check": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
         "build": "tsc -b tsconfig.build.json && vite build",
-        "cases:outside-node": "node scripts/cases-outside-node.mjs"
+        "cases:outside-node": "node scripts/cases-outside-node.mjs",
+        "pin-cases": "node scripts/pin-cases.mjs"
     }
 }

@@ -1,0 +1,360 @@
+{
+    "game": "wizard",
+    "rules": 1,
+    "answers": [
+        {
+            "name": "a bid met exactly scores twenty and ten for each trick taken, and a bid of nothing met scores twenty",
+            "input": "4681b2e55bc5b242",
+            "answer": "e198e4373f9edb93",
+            "liftable": false
+        },
+        {
+            "name": "a bid missed loses ten for each trick over or under",
+            "input": "e67b7d8509a03bdc",
+            "answer": "e4f59abf695852b9",
+            "liftable": false
+        },
+        {
+            "name": "a round with every bid in and no tricks is open and scores nothing yet",
+            "input": "426923dc0a503fd6",
+            "answer": "67eb94ef50332d12",
+            "liftable": false
+        },
+        {
+            "name": "a round is open while a player has yet to bid",
+            "input": "08da8eb39f22c6ef",
+            "answer": "67eb94ef50332d12",
+            "liftable": false
+        },
+        {
+            "name": "a round with some tricks in is open, and shows what stands for those whose tricks are in",
+            "input": "d2bce1534cf9101f",
+            "answer": "92ce64480b59ba73",
+            "liftable": false
+        },
+        {
+            "name": "tricks given as nothing are not given",
+            "input": "9732b0a817dedcbc",
+            "answer": "89e94c40b5022d52",
+            "liftable": false
+        },
+        {
+            "name": "a played round whose tricks come to more than the cards dealt is refused, and counts toward no total",
+            "input": "0e848a0781419e8b",
+            "answer": "db2b90f32df16120",
+            "liftable": false
+        },
+        {
+            "name": "a played round whose tricks come to fewer than the cards dealt is refused",
+            "input": "7347de22eb86f912",
+            "answer": "2be289bdc7fd43f7",
+            "liftable": false
+        },
+        {
+            "name": "tricks that already come to more than the cards dealt refuse a round still being played",
+            "input": "17c2d3569a0349ea",
+            "answer": "4e34888804f463c8",
+            "liftable": false
+        },
+        {
+            "name": "tricks that come to the cards dealt before every player has given theirs leave the round open",
+            "input": "233b6e044596b2d2",
+            "answer": "73633536cac4889a",
+            "liftable": false
+        },
+        {
+            "name": "a bid below nothing or above the cards dealt is refused, for each player in seat order",
+            "input": "3a99ea8acda0c822",
+            "answer": "061f454fb81480a0",
+            "liftable": false
+        },
+        {
+            "name": "tricks below nothing or above the cards dealt are refused",
+            "input": "a91f8612f730e215",
+            "answer": "10644f5dc729a292",
+            "liftable": false
+        },
+        {
+            "name": "the cards dealt grow by one each round, and a bid or tricks of all of them is taken",
+            "input": "5b0a42e51b68f31f",
+            "answer": "aac308f868f9805e",
+            "liftable": false
+        },
+        {
+            "name": "a refused entry is reported, and the tricks are not added up beside it",
+            "input": "fc835cfe7669495a",
+            "answer": "cb686b3f969e7a1d",
+            "liftable": false
+        },
+        {
+            "name": "an entry that is not an entry is refused, and names the part at fault",
+            "input": "ecb903b94e8fcfe7",
+            "answer": "ab55c876dd5a95fc",
+            "liftable": false
+        },
+        {
+            "name": "a round entered behind one still being bid is skipped, and the first is reported",
+            "input": "0db4948b3cb9a656",
+            "answer": "6c23f69f542e953a",
+            "liftable": false
+        },
+        {
+            "name": "three players play 20 rounds, and the game is over after the last with the highest total the winner",
+            "input": "c3dfa7978e9406d5",
+            "answer": "ab27510abdd3b07b",
+            "liftable": false
+        },
+        {
+            "name": "four players play 15 rounds, and the game is over after the last with the highest total the winner",
+            "input": "f2fd348e85145657",
+            "answer": "7de6550ae7301d48",
+            "liftable": false
+        },
+        {
+            "name": "five players play 12 rounds, and the game is over after the last with the highest total the winner",
+            "input": "a6c1ed16e8c15f2a",
+            "answer": "6ffffb3edaccb494",
+            "liftable": false
+        },
+        {
+            "name": "six players play 10 rounds, and the game is over after the last with the highest total the winner",
+            "input": "1842135dfbf744df",
+            "answer": "052aa1ea6e2c7a40",
+            "liftable": false
+        },
+        {
+            "name": "three players go on after nineteen rounds",
+            "input": "036ba7d40b312caa",
+            "answer": "424a74249837b1f8",
+            "liftable": false
+        },
+        {
+            "name": "a round entered after the last is skipped",
+            "input": "a5dd8eddec493129",
+            "answer": "442d937acf1610de",
+            "liftable": false
+        },
+        {
+            "name": "players level on the highest total after the last round share the win, in seat order",
+            "input": "7732c1e8da809901",
+            "answer": "eead545184b5435a",
+            "liftable": false
+        },
+        {
+            "name": "a player out of a round has no score for it, and the round is dealt by its number",
+            "input": "5aeb7209b3187aa5",
+            "answer": "ac441fa212854dbf",
+            "liftable": false
+        },
+        {
+            "name": "a bid made by a player who is then out of the round is passed over, and the round scores the others",
+            "input": "5fd1d651720bf271",
+            "answer": "3bad5d86ebd30dff",
+            "liftable": false
+        },
+        {
+            "name": "tricks for a player out of the round are refused",
+            "input": "a41318370f40876d",
+            "answer": "275cc4cdd420a072",
+            "liftable": false
+        },
+        {
+            "name": "an entry for a player out of the round that is not an object is refused, and not passed over as a bid",
+            "input": "ee1c3bbfbdb918a2",
+            "answer": "275cc4cdd420a072",
+            "liftable": false
+        },
+        {
+            "name": "a bid from a player then out of the round, with tricks given as nothing, is passed over",
+            "input": "a56bef119c0b57cc",
+            "answer": "2842f0d7f8a4a9b0",
+            "liftable": false
+        },
+        {
+            "name": "a bid the round could not take, from a player out of it, is refused and not passed over",
+            "input": "2bf41855512afa65",
+            "answer": "275cc4cdd420a072",
+            "liftable": false
+        },
+        {
+            "name": "the tricks of the players in a round with a player out come to the cards dealt",
+            "input": "b0a375da6d58c4eb",
+            "answer": "4f50d752dcd71506",
+            "liftable": false
+        },
+        {
+            "name": "a round with one player in it is refused",
+            "input": "b275c6e82010e95c",
+            "answer": "af612f0988d8e3c5",
+            "liftable": false
+        },
+        {
+            "name": "a player out of a round leaves the number of rounds as it was, and does not win though their total is the highest",
+            "input": "cae7c1c9fddbfc8d",
+            "answer": "c42a5311429c0993",
+            "liftable": false
+        },
+        {
+            "name": "a game with nothing entered is in play with every player level",
+            "input": "4d0d486578f668e8",
+            "answer": "464f8f43ee6b9a56",
+            "liftable": false
+        },
+        {
+            "name": "a game with two players is refused",
+            "input": "94cb6385061bbf10",
+            "answer": "3d8231280a2429ac",
+            "liftable": false
+        },
+        {
+            "name": "a game with more than six players is refused",
+            "input": "70134070f972c6d0",
+            "answer": "d8b1086ac1840307",
+            "liftable": false
+        },
+        {
+            "name": "an option the game does not have is refused",
+            "input": "f2438c9eef44caf6",
+            "answer": "272f7a7e5f6164a2",
+            "liftable": true
+        },
+        {
+            "name": "with plus or minus one on, bids that add up to the cards dealt are refused, and name the count",
+            "input": "bdff390093d213b8",
+            "answer": "82f96e99054765dc",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, bids that do not add up to the cards dealt score as usual",
+            "input": "e60c2e6224915317",
+            "answer": "d65de4121fd232bd",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, bids that add up are refused once the tricks are in too, and what each came to stands",
+            "input": "634ac447b41333bd",
+            "answer": "e6ecf9870419fe97",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, a round with a bid still to come is open whatever the bids so far add up to",
+            "input": "208769488aeccfb9",
+            "answer": "67eb94ef50332d12",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, a player out of the round who made no bid adds nothing to the bids",
+            "input": "268cba733851c21b",
+            "answer": "f6895b9afabeabd4",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, the bid of a player then marked out of the round still counts, so bids that came to the cards dealt stay refused",
+            "input": "3e2f23d04906ef56",
+            "answer": "f6895b9afabeabd4",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, bids that did not come to the cards dealt stay accepted after the last bidder is marked out of the round",
+            "input": "b4f584ddf8bb5c57",
+            "answer": "b545857c2dfa6502",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, an entry refused is reported and the bids are not added up",
+            "input": "bae230683b647f69",
+            "answer": "28cce9545bf1829c",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one on, bids that add up are refused and tricks that do not come to the cards dealt are not checked",
+            "input": "de468ae650d0f87f",
+            "answer": "d8bce058f913f7be",
+            "liftable": false
+        },
+        {
+            "name": "with plus or minus one off, bids may add up to the cards dealt, as the published rules allow",
+            "input": "17ab3e12f4309c31",
+            "answer": "24d3929f127e8775",
+            "liftable": false
+        },
+        {
+            "name": "plus or minus one given as null is not given, and bids may add up to the cards dealt",
+            "input": "a84be6ad533fd796",
+            "answer": "24d3929f127e8775",
+            "liftable": false
+        },
+        {
+            "name": "a value plus or minus one does not allow is refused",
+            "input": "84829848e82f3ab0",
+            "answer": "c8146552e1196a11",
+            "liftable": true
+        },
+        {
+            "name": "with the Canadian rule on, the dealer with the highest score alone may not bid so the bids add up to the cards dealt",
+            "input": "22a9ac74dfd4ecf9",
+            "answer": "33ccbaef783f8282",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the dealer with the highest score alone may always bid nothing",
+            "input": "6e081f1507aae9f8",
+            "answer": "952302b573e1abd1",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the dealer may make the bids add up while another player has the highest score",
+            "input": "ba0399aae60eeec4",
+            "answer": "bbd5600b47263746",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the dealer may make the bids add up while the highest score is shared",
+            "input": "1e540af240cfa2c4",
+            "answer": "7afc6eaf20d234a8",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the first round is never barred, since every total starts level",
+            "input": "80b8c49f93b1fb3a",
+            "answer": "24d3929f127e8775",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the next seat in the round deals when the seat due to deal is out, and is barred while it has the highest score alone",
+            "input": "c4afb66c016fe917",
+            "answer": "3522c4bda0296fb6",
+            "liftable": false
+        },
+        {
+            "name": "the Canadian rule and plus or minus one are refused together, by their ids in the order the game declares them",
+            "input": "7c832ec0e97d5cfd",
+            "answer": "b603ce7bf061211b",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the highest score is every seat's total, so a dealer who missed a round is barred while theirs is highest alone",
+            "input": "0dbcdfbc623f1dba",
+            "answer": "f712f939ae3f4361",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, a player out of the round with the highest score alone leaves the dealer free to make the bids add up",
+            "input": "226c3168a30073ba",
+            "answer": "621d8595700a05ea",
+            "liftable": false
+        },
+        {
+            "name": "with the Canadian rule on, the seat after a skipped deal deals again in the next round, and is barred while it has the highest score alone",
+            "input": "1daafd699e80a00a",
+            "answer": "965f442df0b1cc6c",
+            "liftable": false
+        },
+        {
+            "name": "two switches on together are refused only where nothing else in the options is",
+            "input": "07b98db4a5e1c2ac",
+            "answer": "272f7a7e5f6164a2",
+            "liftable": true
+        }
+    ]
+}

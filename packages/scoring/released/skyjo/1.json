@@ -1,0 +1,444 @@
+{
+    "game": "skyjo",
+    "rules": 1,
+    "answers": [
+        {
+            "name": "a round's score is the total each player counted",
+            "input": "adede984dd7c2999",
+            "answer": "e79c367551e059b0",
+            "liftable": false
+        },
+        {
+            "name": "cards given in place of a total are added up, and a hand may hold none",
+            "input": "cb55a2281704c720",
+            "answer": "54335cf9bee5a13c",
+            "liftable": false
+        },
+        {
+            "name": "the player who ended the round is doubled when another holds less",
+            "input": "1c013b061f4b8559",
+            "answer": "150acf5a0fe7021f",
+            "liftable": false
+        },
+        {
+            "name": "the player who ended the round is doubled when another holds the same",
+            "input": "8346c273d6436fe6",
+            "answer": "373a9afbc7e1d54b",
+            "liftable": false
+        },
+        {
+            "name": "the player who ended the round keeps their score when they alone hold the least",
+            "input": "be1ea42cc83f93e9",
+            "answer": "708b672e7cdc0699",
+            "liftable": false
+        },
+        {
+            "name": "a score of zero is not doubled, though another holds less",
+            "input": "5a89f3e852b14b40",
+            "answer": "2f421b61b5ca465b",
+            "liftable": false
+        },
+        {
+            "name": "a score of one is doubled",
+            "input": "9d4f3e31c513bf21",
+            "answer": "12794b0ef824cd67",
+            "liftable": false
+        },
+        {
+            "name": "a doubled score may pass what a hand can come to",
+            "input": "8dfcf453c500dd14",
+            "answer": "6c0a49405f5c16a7",
+            "liftable": false
+        },
+        {
+            "name": "a score below zero is not doubled, though another holds less",
+            "input": "ba33665c13faea96",
+            "answer": "22cd80aba9747bad",
+            "liftable": false
+        },
+        {
+            "name": "totals can go below zero, and the same hands score by who ended the round",
+            "input": "7e4b9e3b5b5778d9",
+            "answer": "22efe3527a66657d",
+            "liftable": false
+        },
+        {
+            "name": "only the player who ended the round is doubled, whatever the others hold",
+            "input": "3d8c03026e3fcb32",
+            "answer": "99949b44e3f1ea89",
+            "liftable": false
+        },
+        {
+            "name": "a round every player has counted is refused until it says who ended it",
+            "input": "10bbc0a645be1b54",
+            "answer": "d88037c690e1518b",
+            "liftable": false
+        },
+        {
+            "name": "a missing ender is not reported beside another refusal",
+            "input": "7d1a6ff58e9b6182",
+            "answer": "4eb3816651a8cb7e",
+            "liftable": false
+        },
+        {
+            "name": "a round that names nobody as its ender in so many words is refused the same way",
+            "input": "a939ac87d596b16b",
+            "answer": "d88037c690e1518b",
+            "liftable": false
+        },
+        {
+            "name": "a round still being counted is open, and shows what each holds with nothing doubled",
+            "input": "e4e561c4ff99e2c5",
+            "answer": "6e67418e633f9610",
+            "liftable": false
+        },
+        {
+            "name": "a round is open while a player has yet to count, though it says who ended it",
+            "input": "5fbcf711f889cf14",
+            "answer": "6e67418e633f9610",
+            "liftable": false
+        },
+        {
+            "name": "a round ended by nobody in the game is refused",
+            "input": "8e847a57a0c946f7",
+            "answer": "01a85687a7a6ac44",
+            "liftable": false
+        },
+        {
+            "name": "an ender nobody in the game refuses a round still being counted",
+            "input": "5af341285fc0398c",
+            "answer": "d9a577df44dda1de",
+            "liftable": false
+        },
+        {
+            "name": "an ender nobody in the game is reported after the entries' refusals",
+            "input": "c4d73fd39305123e",
+            "answer": "03d43e55be31dc47",
+            "liftable": false
+        },
+        {
+            "name": "a refused round shows what the ender holds undoubled",
+            "input": "157fc51f210ecc0f",
+            "answer": "bad1d9a2bf98591a",
+            "liftable": false
+        },
+        {
+            "name": "an ender that is not an id is refused",
+            "input": "f2d4bc6d09df43be",
+            "answer": "ddbf7a0a7c274b0f",
+            "liftable": false
+        },
+        {
+            "name": "an ender named by empty text is nobody in the game",
+            "input": "15c482576a8b54c2",
+            "answer": "4de2cbd693730cd2",
+            "liftable": false
+        },
+        {
+            "name": "a card the deck does not hold is refused",
+            "input": "04e2a99c37592134",
+            "answer": "11080bda12821b08",
+            "liftable": false
+        },
+        {
+            "name": "the first card the deck does not hold is the one reported, before how many cards there are",
+            "input": "d2ac22aa53a8998d",
+            "answer": "82c89ec2071b882a",
+            "liftable": false
+        },
+        {
+            "name": "the lowest and the highest card are held",
+            "input": "43620dad6ef09d85",
+            "answer": "0f4a8bcddc4ee9ac",
+            "liftable": false
+        },
+        {
+            "name": "more cards than a grid holds is refused",
+            "input": "c6a9b9c1b5f5ccf0",
+            "answer": "70b04ea8e5577a96",
+            "liftable": false
+        },
+        {
+            "name": "more of a card than the deck holds is refused",
+            "input": "652ed523c9eb7912",
+            "answer": "539dcba375b614c9",
+            "liftable": false
+        },
+        {
+            "name": "as many of a card as the deck holds is taken",
+            "input": "52dac775ec1ac061",
+            "answer": "37ad84c4c2c52512",
+            "liftable": false
+        },
+        {
+            "name": "the most and the least a full grid can come to are added up, and the most ends the game in one round",
+            "input": "32bed98c61678c48",
+            "answer": "8ac9e59feb35146f",
+            "liftable": false
+        },
+        {
+            "name": "a total no hand can come to is refused",
+            "input": "041f30b15cb851c1",
+            "answer": "2e49cc3f18148fcc",
+            "liftable": false
+        },
+        {
+            "name": "the most and the least a hand can come to are taken as totals",
+            "input": "095b17299e2fe674",
+            "answer": "af1a2daa45bd65b4",
+            "liftable": false
+        },
+        {
+            "name": "a total too large to hold exactly, or not a whole number, is refused",
+            "input": "31ffc113b07bc84e",
+            "answer": "35f99ac032089dbd",
+            "liftable": false
+        },
+        {
+            "name": "an entry that is not an entry is refused, and names the part at fault",
+            "input": "2d7381f4f746cce9",
+            "answer": "b12ff536e678a572",
+            "liftable": false
+        },
+        {
+            "name": "a total or cards given as nothing is not given, as an ender given as nothing is not",
+            "input": "4290e55a8714e4e4",
+            "answer": "d0501d2cbbc25490",
+            "liftable": false
+        },
+        {
+            "name": "an entry that is not an object is refused",
+            "input": "053f829ba8bd6612",
+            "answer": "988f2d3bbbd2ce09",
+            "liftable": false
+        },
+        {
+            "name": "an entry for nobody in the game is refused",
+            "input": "870700fb0ee65950",
+            "answer": "138dfc7df0e17088",
+            "liftable": false
+        },
+        {
+            "name": "a round that does not hold its entries is refused",
+            "input": "4be5705d6d2d1350",
+            "answer": "17f0552e969cbb3e",
+            "liftable": false
+        },
+        {
+            "name": "a round that names its ender and holds no entries is not a round",
+            "input": "674293bf23ad9310",
+            "answer": "17f0552e969cbb3e",
+            "liftable": false
+        },
+        {
+            "name": "the game goes on while the round a player reaches one hundred in is still being counted",
+            "input": "c4c7446e94b08dd7",
+            "answer": "a3925bf07f6e6630",
+            "liftable": false
+        },
+        {
+            "name": "the game is over at the end of the round in which a player reaches one hundred, and the lowest total wins",
+            "input": "b6b58e7d4fc64b3a",
+            "answer": "dff2f89cdc5d8f42",
+            "liftable": false
+        },
+        {
+            "name": "reaching exactly one hundred ends the game",
+            "input": "75471f8c8ce8f34b",
+            "answer": "df09506a386e71ad",
+            "liftable": false
+        },
+        {
+            "name": "the game goes on at ninety-nine",
+            "input": "38597c165fff39e9",
+            "answer": "405a3183feb9c048",
+            "liftable": false
+        },
+        {
+            "name": "the lowest total wins though it is past one hundred",
+            "input": "a6a489c36e92a5f8",
+            "answer": "e4e2cd6ea011cba4",
+            "liftable": false
+        },
+        {
+            "name": "a doubled score can be what reaches one hundred",
+            "input": "31c21b4a492139d0",
+            "answer": "2c7e220cd2eb39ab",
+            "liftable": false
+        },
+        {
+            "name": "players level on the lowest total at the end share the win, in seat order",
+            "input": "76a19322c65bc661",
+            "answer": "af793b15acbfe118",
+            "liftable": false
+        },
+        {
+            "name": "a round entered after the game is over is skipped",
+            "input": "5d6f40cc3576583a",
+            "answer": "108c0b28685ec52b",
+            "liftable": false
+        },
+        {
+            "name": "a round entered behind one with no ender is skipped, so no total has a round missing",
+            "input": "4dc118c170633ad3",
+            "answer": "1c7886a93ebe5517",
+            "liftable": false
+        },
+        {
+            "name": "a round entered behind one still being counted is skipped, and the first is reported",
+            "input": "a57e918d93aa92e0",
+            "answer": "6af1b9d127f27186",
+            "liftable": false
+        },
+        {
+            "name": "two can play",
+            "input": "59c5574720d8ae71",
+            "answer": "a81e0dde84562a2a",
+            "liftable": false
+        },
+        {
+            "name": "a game with more than eight players is refused",
+            "input": "f714e44e0b01f98b",
+            "answer": "4c4e032f5fbc94f3",
+            "liftable": false
+        },
+        {
+            "name": "a game with one player is refused",
+            "input": "01224e9caec98565",
+            "answer": "5920991cc9fb7eb4",
+            "liftable": false
+        },
+        {
+            "name": "eight can play",
+            "input": "3bcd287e37d07f12",
+            "answer": "db07718a424e11a2",
+            "liftable": false
+        },
+        {
+            "name": "a rule set the game does not have is refused",
+            "input": "f260cfc236ad6124",
+            "answer": "3fd31835805a0641",
+            "liftable": false
+        },
+        {
+            "name": "an option the game does not have is refused",
+            "input": "792331158257b7f9",
+            "answer": "10b3e6ce67a2401e",
+            "liftable": true
+        },
+        {
+            "name": "a game with nothing entered is in play with every player level",
+            "input": "762dce1324f56271",
+            "answer": "72e51e2e2f984658",
+            "liftable": false
+        },
+        {
+            "name": "a player out of a round has no score for it, and the ender is compared only with the players in it",
+            "input": "ebde7b5bf5937411",
+            "answer": "2ab672f13f2e6349",
+            "liftable": false
+        },
+        {
+            "name": "a round ended by a player out of it is refused",
+            "input": "5018cbb0fc17e823",
+            "answer": "1d294e8a6c0e6147",
+            "liftable": false
+        },
+        {
+            "name": "a player out of one round scores in the next, and is not ahead while the others have missed none, though their total is the lowest",
+            "input": "3d644d8ca5df5983",
+            "answer": "18f58a9c87e6aa4e",
+            "liftable": false
+        },
+        {
+            "name": "an entry for a player out of the round is refused, and nothing is doubled",
+            "input": "507a32842c9f9760",
+            "answer": "18f73c9fbb00ef91",
+            "liftable": false
+        },
+        {
+            "name": "a round with one player in it is refused",
+            "input": "3519a74167154eeb",
+            "answer": "7b24c5e6fbf98be7",
+            "liftable": false
+        },
+        {
+            "name": "naming as out somebody not in the game and a player twice are each refused, and nothing is doubled",
+            "input": "c4e69c0b9d539666",
+            "answer": "0f6f02cb0505bb21",
+            "liftable": false
+        },
+        {
+            "name": "a player who missed a round ends the game at one hundred, and the lowest of those who missed none wins",
+            "input": "0bd22fc908e87250",
+            "answer": "84c396458a5785ff",
+            "liftable": false
+        },
+        {
+            "name": "a player who missed a round does not win, though their total is the lowest",
+            "input": "609cd4960116c3b6",
+            "answer": "5d21da09581eefdd",
+            "liftable": false
+        },
+        {
+            "name": "when every player has missed a round, the lowest total of all is ahead and wins",
+            "input": "283d564eb9be7d3f",
+            "answer": "53f815ca9485961c",
+            "liftable": false
+        },
+        {
+            "name": "the ender is doubled when a player still in the round holds less, with another player out",
+            "input": "894ea875be903f55",
+            "answer": "96c3fbb695548a49",
+            "liftable": false
+        },
+        {
+            "name": "a round ended by a player out of it is refused while another player has yet to count",
+            "input": "bb11e24d15fd7fe7",
+            "answer": "861d9527216f528c",
+            "liftable": false
+        },
+        {
+            "name": "an entry for a player out and a refused entry come before the round's ender being out of it",
+            "input": "06ff3febd90642a7",
+            "answer": "5de406290ade229a",
+            "liftable": false
+        },
+        {
+            "name": "a round names its players out in seat order, whatever order they were listed in",
+            "input": "415b7cb88f62654a",
+            "answer": "aa28b8deed26c8c8",
+            "liftable": false
+        },
+        {
+            "name": "a list of players out that is not a list of ids is refused",
+            "input": "a4257644116c1ea8",
+            "answer": "016112595e5318e8",
+            "liftable": false
+        },
+        {
+            "name": "with the target score at fifty, the game is over at the end of the round in which a total reaches it",
+            "input": "08443b9f421d7bfd",
+            "answer": "795adbdabd44f080",
+            "liftable": false
+        },
+        {
+            "name": "with the target score at one hundred and fifty, a total past one hundred leaves the game in play",
+            "input": "3ef332a8ec46ed04",
+            "answer": "cf35781009f5fbf7",
+            "liftable": false
+        },
+        {
+            "name": "the target score given as null is not given, and the game plays to the published one hundred",
+            "input": "db95a6610757cf56",
+            "answer": "70d83cc3f19f4919",
+            "liftable": false
+        },
+        {
+            "name": "a target score the option does not allow is refused",
+            "input": "12f6860cc882abfd",
+            "answer": "b8a9a1819cf8f8d1",
+            "liftable": true
+        }
+    ]
+}
