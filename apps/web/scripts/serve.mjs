@@ -109,9 +109,15 @@ const certificate = () => {
                 ...['-nodes', '-keyout', key, '-out', cert, '-days', '1'],
                 ...['-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost'],
             ],
-            { stdio: 'ignore' }
+            // OpenSSL's own words reach the error where it fails.
+            { stdio: ['ignore', 'ignore', 'pipe'] }
         );
         return { key: readFileSync(key), cert: readFileSync(cert) };
+    } catch (error) {
+        const said = error instanceof Error && 'stderr' in error ? String(error.stderr) : '';
+        throw new Error(`OpenSSL could not make a certificate for localhost. ${said}`.trim(), {
+            cause: error,
+        });
     } finally {
         rmSync(folder, { recursive: true, force: true });
     }
@@ -159,7 +165,7 @@ export const serve = (port, { secure = false } = {}) =>
         // A browser keeps its connections open, and a server waits for those to end before it
         // closes, so they are ended first.
         const open = new Set();
-        server.on(secure ? 'session' : 'connection', (connection) => {
+        server.on(secure ? 'secureConnection' : 'connection', (connection) => {
             open.add(connection);
             connection.on('close', () => open.delete(connection));
         });

@@ -40,7 +40,8 @@ on React reading the state a promise carries, the convention React's own lazy co
 by `use`.** `apps/web/src/screens.tsx` holds a loader for each screen and the frame, and
 `apps/web/src/app/entries.ts` one for each game's entry, so a table loads Flip 7's cards, Skyjo's
 pad or Wizard's bids and no other game's. `apps/web/src/own-files.ts` lists the files loaded on
-demand, the screens' loaders and the build read it, and a test holds the entries' loaders to it.
+demand, the screens' loaders and the prerender read it, and a test holds the entries' loaders to
+it.
 
 - **A page sends the shell and its own code.** The shell holds the router, the status line, the
   watch for a newer build and the website's frame. A page of the app adds the app's frame, the
@@ -78,12 +79,16 @@ demand, the screens' loaders and the build read it, and a test holds the entries
   rather than 125 KB, and the app's pages 110 KB to 116 KB. A new screen adds only its own file, to
   the pages that show it.
 - A page of the app fetches several files rather than one. The audit serves the build over HTTP/2,
-  as GitHub Pages does, where they come down together, and a page that draws from the phone's
-  games paints its largest content at about 1650 ms. Over HTTP/1.1 each file cost a round trip, and
-  the build first kept the parts the screens share in one file to hold the count down, which took
-  the bundler's strict execution order and 4 KB to 8 KB more script on every page. Measured over
-  HTTP/2, the bundler's own split paints at the same moment with that script left out, so the build
-  splits as the bundler does.
+  as GitHub Pages does, and every file a page needs is fetched with the page, so they come down in
+  one burst, which a test holds. The build first kept the parts the screens share in one file, to
+  hold the count down over HTTP/1.1, which took the bundler's strict execution order and 3 KB to
+  8 KB more script on every page. The bundler's own split sends less script and runs it in less
+  time, so the build splits as the bundler does. The audit's model of HTTP/2 charges a file its
+  bytes and no round trip of its own, so an equal paint between the two builds is no measure of
+  what a file costs, and the test that every file comes in the one burst is what keeps it that way.
+- The parts the screens share have no budget of their own, and each page's budget for its first
+  load holds them. Pages sends a little more than the audit counts, its headers and compression
+  adding about 160 bytes a file, so the budgets are a floor on what a visitor gets.
 - The scoring rules stay in the shell, since the website names the games, so every page carries
   every game's rules.
 

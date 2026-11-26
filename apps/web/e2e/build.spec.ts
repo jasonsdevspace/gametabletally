@@ -203,6 +203,24 @@ const scriptsOfPage = (file: string): string[] =>
         ),
     ].flatMap(([, path]) => (path ? [path] : []));
 
+/** The scripts a built script imports as it loads, by address, leaving out what it loads on demand. */
+const importsOf = (path: string): string[] =>
+    [
+        ...readFileSync(join(DIST, path), 'utf8').matchAll(
+            /(?:\bfrom\s*|\bimport\s*)"\.\/([^"]+\.js)"/g
+        ),
+    ].flatMap(([, file]) => (file ? [`/assets/${file}`] : []));
+
+test('has each page fetch every script its scripts import, so they all come down at once', () => {
+    for (const page of listedFiles().filter((file) => file.endsWith('.html'))) {
+        const fetched = new Set(scriptsOfPage(page.slice(1)));
+        const missing = [...fetched]
+            .flatMap((path) => importsOf(path))
+            .filter((path) => !fetched.has(path));
+        expect([...new Set(missing)], page).toEqual([]);
+    }
+});
+
 /** The source files a page's scripts hold. */
 const sourcesOfPage = (file: string): Set<string> => {
     const scripts = builtScripts();

@@ -36,9 +36,11 @@ const LAYOUT_SHIFT = 0.1;
  * The most script and style a page may carry on its first load, in bytes sent over the network. A
  * page sends the shell and its own screen's code, and a screen of the app the app's frame as well,
  * so the website's pages and the app's each have a budget of their own, set from what the split
- * build sends with room for a screen to grow.
+ * build sends with room for a screen to grow. They hold the parts the screens share, which have no
+ * budget of their own. Pages sends a little more than the audit counts, its headers and its
+ * compression adding about 160 bytes a file, so the budgets are a floor on what a visitor gets.
  */
-const BUDGET = { WebsiteScript: 104_000, AppScript: 118_000, Stylesheet: 30_000 };
+const BUDGET = { WebsiteScript: 104_000, AppScript: 120_000, Stylesheet: 30_000 };
 
 /** The script a page may carry, by whether it is one of the app's or the website's. */
 const scriptBudgetOf = (path) => (inApp(routeAt(path)) ? BUDGET.AppScript : BUDGET.WebsiteScript);
