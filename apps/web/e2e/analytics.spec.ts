@@ -1,4 +1,4 @@
-import { DOMAIN, KEPT, MOST_KEPT } from '../src/analytics.js';
+import { DATABASE, DOMAIN, MOST_KEPT } from '../src/analytics.js';
 import { hrefOf, newGameOf } from '../src/routes.js';
 import type { SavedPlayer } from '../src/store/format.js';
 import { buildGame, expect, type Page, seed, test } from './support.js';
@@ -101,6 +101,48 @@ const onTheLiveAddress = async (page: Page, baseURL: string | undefined) => {
         },
     };
 };
+
+/**
+ * The events a page's origin keeps waiting, oldest first, each by its name and its game's name,
+ * read from the database the app keeps them in.
+ */
+const keptOn = (page: Page) =>
+    page.evaluate(
+        ({ name }) =>
+            new Promise<unknown[]>((resolve, reject) => {
+                void indexedDB.databases().then((all) => {
+                    if (!all.some((one) => one.name === name)) {
+                        resolve([]);
+                        return;
+                    }
+                    const opening = indexedDB.open(name);
+                    opening.onerror = () => {
+                        reject(opening.error ?? new Error('The counts could not be read.'));
+                    };
+                    opening.onsuccess = () => {
+                        const database = opening.result;
+                        if (!database.objectStoreNames.contains('kept')) {
+                            database.close();
+                            resolve([]);
+                            return;
+                        }
+                        const read = database.transaction('kept').objectStore('kept').getAll();
+                        read.onerror = () => {
+                            reject(read.error ?? new Error('The counts could not be read.'));
+                        };
+                        read.onsuccess = () => {
+                            database.close();
+                            resolve(
+                                read.result.map((entry: { n?: unknown; g?: unknown }) =>
+                                    entry.g === undefined ? [entry.n] : [entry.n, entry.g]
+                                )
+                            );
+                        };
+                    };
+                });
+            }),
+        { name: DATABASE }
+    );
 
 /** The page open and running at an address of the live site. */
 const open = async (page: Page, path: string) => {
@@ -224,15 +266,7 @@ test('keeps a game started with no connection on the phone, and sends it when th
     await seed(page, [], PLAYERS);
     await open(page, newGameOf('flip-7'));
     await plausible.connect(false);
-    const kept = () =>
-        page.evaluate((key) => {
-            const read: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
-            return Array.isArray(read)
-                ? read.map((entry: { n?: unknown; g?: unknown }) =>
-                      entry.g === undefined ? [entry.n] : [entry.n, entry.g]
-                  )
-                : [];
-        }, KEPT);
+    const kept = () => keptOn(page);
     for (const { name } of PLAYERS) await page.getByRole('button', { name: `Add ${name}` }).click();
     const start = page.getByRole('button', { name: 'Start the game' });
     await expect(start).not.toHaveAttribute('aria-disabled');
@@ -257,20 +291,33 @@ test('keeps events made with no connection up to the limit, and drops the newest
     await plausible.connect(false);
     // The phone holds as many events as it keeps already, each of a finished game of Skyjo.
     await page.evaluate(
-        ({ key, most }) => {
-            localStorage.setItem(
-                key,
-                JSON.stringify(
-                    Array.from({ length: most }, (_, at) => ({
-                        i: `e${at}`,
-                        n: 'Game finished',
-                        g: 'Skyjo',
-                    }))
-                )
-            );
-        },
-        { key: KEPT, most: MOST_KEPT }
+        ({ name, most }) =>
+            new Promise<void>((resolve, reject) => {
+                // Opened as the app opens it, so the store is made as the app makes it.
+                const opening = indexedDB.open(name, 1);
+                opening.onupgradeneeded = () => {
+                    opening.result.createObjectStore('kept', { autoIncrement: true });
+                };
+                opening.onerror = () => {
+                    reject(opening.error ?? new Error('The counts could not be opened.'));
+                };
+                opening.onsuccess = () => {
+                    const database = opening.result;
+                    const writing = database.transaction('kept', 'readwrite');
+                    for (let at = 0; at < most; at += 1)
+                        writing.objectStore('kept').add({ n: 'Game finished', g: 'Skyjo' });
+                    writing.oncomplete = () => {
+                        database.close();
+                        resolve();
+                    };
+                    writing.onerror = () => {
+                        reject(writing.error ?? new Error('The counts were not seeded.'));
+                    };
+                };
+            }),
+        { name: DATABASE, most: MOST_KEPT }
     );
+    await expect.poll(() => keptOn(page).then((kept) => kept.length)).toBe(MOST_KEPT);
     for (const { name } of PLAYERS) await page.getByRole('button', { name: `Add ${name}` }).click();
     const start = page.getByRole('button', { name: 'Start the game' });
     await expect(start).not.toHaveAttribute('aria-disabled');
@@ -284,7 +331,7 @@ test('keeps events made with no connection up to the limit, and drops the newest
     );
 });
 
-test('sends events kept by two open pages once each when the connection returns', async ({
+test('sends the events two open pages count at once with no connection, every one of them, each time', async ({
     page,
     baseURL,
 }) => {
@@ -292,24 +339,22 @@ test('sends events kept by two open pages once each when the connection returns'
     const other = await page.context().newPage();
     await open(page, hrefOf('install'));
     await open(other, hrefOf('about'));
-    await plausible.connect(false);
-    // Each page counts once the other's event is back on the list, since local storage reaches
-    // another page in its own time and a write made before then can miss it.
-    const waiting = (each: Page) =>
-        each.evaluate((key) => {
-            const read: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
-            return Array.isArray(read) ? read.length : 0;
-        }, KEPT);
-    for (const [at, each] of [page, other].entries()) {
-        await each.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
-        for (const reader of [page, other]) await expect.poll(() => waiting(reader)).toBe(at + 1);
+    for (let round = 1; round <= 3; round += 1) {
+        await plausible.connect(false);
+        // Both pages count in the same moment, so each writes as the other does.
+        await Promise.all(
+            [page, other].map((each) =>
+                each.evaluate(() => window.dispatchEvent(new Event('appinstalled')))
+            )
+        );
+        await expect.poll(() => keptOn(page)).toEqual([['Install'], ['Install']]);
+        await plausible.connect(true);
+        await expect.poll(() => plausible.events().length).toBe(2 * round);
+        await expect.poll(() => keptOn(page)).toEqual([]);
     }
-    await plausible.connect(true);
-    await expect.poll(plausible.events).toEqual([
-        { n: 'Install', p: undefined },
-        { n: 'Install', p: undefined },
-    ]);
-    // Neither page sends either event again once both have heard the connection is back.
+    // Neither page sends any event again once both have heard the connection is back.
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)));
-    expect(plausible.events()).toHaveLength(2);
+    expect(plausible.events()).toEqual(
+        Array.from({ length: 6 }, () => ({ n: 'Install', p: undefined }))
+    );
 });
