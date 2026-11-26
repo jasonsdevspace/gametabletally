@@ -1,4 +1,4 @@
-import { type Problem, score, wizardRounds } from '@gametabletally/scoring';
+import { dealerOf as dealerIn, type Problem, score, wizardRounds } from '@gametabletally/scoring';
 import { attachStepper } from '@jasonsdevspace/design-kit/controls';
 import {
     Button,
@@ -37,20 +37,15 @@ import type { Summary } from './summary.js';
  */
 
 /**
- * Who deals a round: the first seat in the first round and one seat on in each round after,
+ * Who deals a round, from the scoring package's `dealerOf`, so the screen shows the dealer the
+ * Canadian rule reads: the first seat in the first round and one seat on in each round after,
  * passing over a player out of it, or null where no one is in it.
  */
 export const dealerOf = (
     players: readonly string[],
     round: DraftRound,
     index: number
-): string | null => {
-    for (let seat = 0; seat < players.length; seat += 1) {
-        const one = players[(index + seat) % players.length];
-        if (one !== undefined && !round.out.includes(one)) return one;
-    }
-    return null;
-};
+): string | null => dealerIn(players, round.out, index);
 
 /** A player's bid and tricks as the round holds them, each a number or nothing yet. */
 export const countsOf = (
@@ -192,10 +187,13 @@ const barredNow = ({
     const entries = { ...round.entries, ...Object.fromEntries(bids) };
     const bid = barredBid(game.saved, index, { ...round, entries }, dealer);
     if (bid === null) return NONE_BARRED;
-    return {
-        words: `The bids may not add up to ${String(index + 1)}, the cards each player holds, so ${nameOf(dealer)}, bidding last, cannot bid ${String(bid)}.`,
-        blocked: countOf(dealer) === bid,
-    };
+    // The Canadian rule bars a bid only while the dealer has the highest score alone, so its
+    // sentence gives that reason.
+    const why =
+        game.saved.options['canadian'] === true
+            ? `${nameOf(dealer)} deals and has the highest score alone, so under the Canadian rule the bids may not add up to ${String(index + 1)}, the cards each player holds, and ${nameOf(dealer)} cannot bid ${String(bid)}.`
+            : `The bids may not add up to ${String(index + 1)}, the cards each player holds, so ${nameOf(dealer)}, bidding last, cannot bid ${String(bid)}.`;
+    return { words: why, blocked: countOf(dealer) === bid };
 };
 
 /**

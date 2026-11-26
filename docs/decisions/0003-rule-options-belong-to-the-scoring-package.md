@@ -38,9 +38,9 @@ in `GAMES` lists its options, with an id, a kind, a default and, for a number, t
 allows, so an app draws them from the package and the screen and the rules cannot disagree. A game
 given no options, or an option given as null, is played by the book.
 
-- **Within a version of a rule set, an option's id, its kind, its default and what each of its
-  values means are fixed.** Changing any of them is a new version, as any change to how a game
-  scores is.
+- **Within a version of a rule set, an option's id, its kind, its default, what each of its
+  values means and the switches it excludes are fixed.** Changing any of them is a new version, as
+  any change to how a game scores is.
 - **Adding an option, or a value to one, stays in the version,** under record 1's rule for
   additions: a game saved before it never gave the new option or value, so it scores as it did.
 - **An option holds for the whole game.** It is handed over with the rest of the game every time,
@@ -49,6 +49,22 @@ given no options, or an option given as null, is played by the book.
   a player then marked out of the round included. The bids after it were made knowing it, so
   marking a player out never changes whether the bids are refused. A table that bids again after a
   player leaves clears the stale bid, and the bids are added up without it.
+- **Wizard's Canadian rule is an option of its own beside Plus or minus one,** since some tables
+  play it instead of that wider rule, and like it the Canadian rule is off by the published
+  rules. The dealer may not make the bids add up to the cards dealt while they have the highest
+  score alone, and may always bid nothing. The highest score is the highest total over every
+  seat, as the published rule reads the score sheet, rather than the result's `leaders`, which
+  leave out a player who missed a round.
+- **Who deals is part of Wizard's first rule set,** since the Canadian rule depends on it. The
+  first seat deals the first round and the deal moves one seat on each round, passing over a
+  player out of it, as the app has always shown. A table that wants a different first dealer
+  seats that player first.
+- **Two switches that rule on the same thing name each other in `excludes`,** and a game given both
+  on is refused with `options-clash`, rather than played by whichever the package checks first.
+  What a switch excludes is fixed within a version, like its id, its kind and its default, since a
+  new exclusion between two options a game could already have had on would refuse that game. An
+  exclusion is an addition only where it names an option added in the same change, as Plus or
+  minus one's exclusion of the Canadian rule is.
 - **The name and description of an option are the package's English** and not part of the
   contract, as a refusal's sentence is not. A caller keys on the id.
 

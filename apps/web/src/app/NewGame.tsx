@@ -19,7 +19,7 @@ import { fetchGameAhead } from './entries.js';
 import { Failure } from './failure.js';
 import { Dock, useToast } from './frame-places.js';
 import { Icon } from './icon.js';
-import { optionsOf, shownOf } from './options.js';
+import { named, namedFirst, optionsOf, pickOption, shownOf } from './options.js';
 import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
@@ -422,10 +422,19 @@ export const NewGame = ({
                     game={game}
                     picked={picked[game.id] ?? {}}
                     onPick={(id, value) => {
+                        // The switches turned off are read from this render's picks, for the announcement,
+                        // and the picks are updated from the latest state, so two picks before a render both stick.
+                        const { off } = pickOption(game, picked[game.id] ?? {}, id, value);
                         setPicked((now) => ({
                             ...now,
-                            [game.id]: { ...now[game.id], [id]: value },
+                            [game.id]: pickOption(game, now[game.id] ?? {}, id, value).picked,
                         }));
+                        // A switch turned off by another is announced, since its box changed without being touched.
+                        const turnedOn = game.options.find((one) => one.id === id);
+                        for (const one of off)
+                            say(
+                                `${namedFirst(one)} is off, since it cannot be played with ${turnedOn ? named(turnedOn) : 'that rule'}.`
+                            );
                     }}
                 />
             ) : null}

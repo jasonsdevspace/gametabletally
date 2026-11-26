@@ -1,7 +1,15 @@
 import { type Game, type GameOption, GAMES, type SwitchOption } from '@gametabletally/scoring';
 import { describe, expect, it } from 'vitest';
 
-import { optionsOf, optionWords, playedWith, shownOf } from './options.js';
+import {
+    named,
+    namedFirst,
+    optionsOf,
+    optionWords,
+    pickOption,
+    playedWith,
+    shownOf,
+} from './options.js';
 
 /* A game's rule options as the app offers them, saves them and names them. */
 
@@ -39,6 +47,7 @@ describe("a game's rule options", () => {
         ]);
         expect(shownOf(gameOf('wizard')).map(({ id, kind }) => [id, kind])).toEqual([
             ['plus-minus-one', 'switch'],
+            ['canadian', 'switch'],
         ]);
     });
 
@@ -51,8 +60,37 @@ describe("a game's rule options", () => {
         expect(optionsOf(gameOf('skyjo'), { 'target-score': 50 })).toEqual({
             'target-score': 50,
         });
-        expect(optionsOf(gameOf('wizard'), {})).toEqual({ 'plus-minus-one': false });
+        expect(optionsOf(gameOf('wizard'), {})).toEqual({
+            'plus-minus-one': false,
+            canadian: false,
+        });
         expect(optionsOf(withNewKind, {})).toEqual({ 'target-score': 100, deal: 12 });
+    });
+
+    it('turn off a switch that cannot be on with one turned on, and say which', () => {
+        const wizard = gameOf('wizard');
+        const minus = pickOption(wizard, {}, 'plus-minus-one', true);
+        expect(minus).toEqual({ picked: { 'plus-minus-one': true }, off: [] });
+        const canadian = pickOption(wizard, minus.picked, 'canadian', true);
+        expect(canadian.picked).toEqual({ 'plus-minus-one': false, canadian: true });
+        expect(canadian.off.map(({ id }) => id)).toEqual(['plus-minus-one']);
+        // Turning a switch off turns nothing else off.
+        expect(pickOption(wizard, canadian.picked, 'canadian', false)).toEqual({
+            picked: { 'plus-minus-one': false, canadian: false },
+            off: [],
+        });
+    });
+
+    it('name the Canadian rule as a rule named for a place, in a sentence and at its start', () => {
+        const [minus, canadian] = shownOf(gameOf('wizard'));
+        if (!minus || !canadian) throw new Error('Wizard has no two switches.');
+        expect(named(canadian)).toBe('the Canadian rule');
+        expect(namedFirst(canadian)).toBe('The Canadian rule');
+        expect(named(minus)).toBe('plus or minus one');
+        expect(namedFirst(minus)).toBe('Plus or minus one');
+        expect(optionWords(gameOf('wizard'), { canadian: true })).toBe(
+            'Played with the Canadian rule.'
+        );
     });
 
     it('are named only where they differ from the published rules', () => {

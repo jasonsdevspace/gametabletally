@@ -25,6 +25,7 @@ const CODES = {
     'player-twice': true,
     'unknown-option': true,
     'value-not-allowed': true,
+    'options-clash': true,
     'not-a-round': true,
     'unknown-out': true,
     'out-twice': true,

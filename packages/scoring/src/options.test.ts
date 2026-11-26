@@ -16,6 +16,7 @@ interface Pinned {
     readonly kind: string;
     readonly default: number | boolean;
     readonly values?: readonly (number | boolean)[];
+    readonly excludes?: readonly string[];
 }
 
 /** The options one version of a game's rule set was released with. */
@@ -27,14 +28,32 @@ interface PinFile {
 
 /**
  * The options of each rule set as it was released. A game saved under a version names its options
- * by these ids and values, so within a version an id, its kind and its default are fixed and no
- * value is taken away. An option or a value added stays in the version, so it is not pinned until
- * a file is written again.
+ * by these ids and values, so within a version an id, its kind and its default are fixed, no value
+ * is taken away, and the switches a switch excludes stay as they are, since a new exclusion
+ * between two options a game could already have on would refuse that game. An option or a value
+ * added stays in the version and is not pinned until a file is written again, and so does an
+ * exclusion naming an option added with it.
  */
 const FILES: readonly PinFile[] = [flip7, skyjo, wizard];
 
 const placeOf = ({ game, rules }: Pick<PinFile, 'game' | 'rules'>): string =>
     `${game}/${rules}.json`;
+
+/**
+ * What a switch's exclusions break against its pin, as sentences: a pinned exclusion it dropped,
+ * and a new one naming a pinned option, which a saved game could already have had on with it.
+ */
+const exclusionBreaks = (pinned: readonly Pinned[], pin: Pinned, option: GameOption): string[] => {
+    const excludes: readonly string[] = option.kind === 'switch' ? (option.excludes ?? []) : [];
+    const lost = (pin.excludes ?? []).filter((other) => !excludes.includes(other));
+    const added = excludes.filter(
+        (other) => !(pin.excludes ?? []).includes(other) && pinned.some(({ id }) => id === other)
+    );
+    return [
+        ...lost.map((other) => `${pin.id} no longer excludes ${other}`),
+        ...added.map((other) => `${pin.id} now excludes ${other}`),
+    ];
+};
 
 /** What a pinned option's declaration breaks, if anything, as sentences. */
 const breaks = (pinned: readonly Pinned[], declared: readonly GameOption[]): string[] =>
@@ -47,7 +66,7 @@ const breaks = (pinned: readonly Pinned[], declared: readonly GameOption[]): str
         const values: readonly (number | boolean)[] = option.kind === 'number' ? option.values : [];
         for (const value of pin.values ?? [])
             if (!values.includes(value)) found.push(`${pin.id} lost the value ${String(value)}`);
-        return found;
+        return [...found, ...exclusionBreaks(pinned, pin, option)];
     });
 
 it('pins the options of every rule set of every game, in a file kept where it says', () => {
@@ -114,6 +133,43 @@ describe('the check of a rule set against its pinned options', () => {
         ).toEqual(['target-score changed its kind']);
         expect(breaks(pinned, [])).toEqual(['target-score is gone']);
     });
+
+    it('holds a switch to the switches it cannot be on with, but lets it exclude one added with it', () => {
+        const pins: readonly Pinned[] = [
+            { id: 'one', kind: 'switch', default: false, excludes: ['two'] },
+            { id: 'two', kind: 'switch', default: false, excludes: ['one'] },
+            { id: 'three', kind: 'switch', default: false },
+        ];
+        const switchOf = (id: string, excludes?: readonly string[]): GameOption => ({
+            kind: 'switch',
+            id,
+            name: id,
+            description: id,
+            default: false,
+            ...(excludes ? { excludes } : {}),
+        });
+        expect(
+            breaks(pins, [switchOf('one', ['two']), switchOf('two', ['one']), switchOf('three')])
+        ).toEqual([]);
+        expect(
+            breaks(pins, [switchOf('one'), switchOf('two', ['one']), switchOf('three')])
+        ).toEqual(['one no longer excludes two']);
+        expect(
+            breaks(pins, [
+                switchOf('one', ['two']),
+                switchOf('two', ['one']),
+                switchOf('three', ['one']),
+            ])
+        ).toEqual(['three now excludes one']);
+        expect(
+            breaks(pins, [
+                switchOf('one', ['two']),
+                switchOf('two', ['one']),
+                switchOf('three', ['four']),
+                switchOf('four', ['three']),
+            ])
+        ).toEqual([]);
+    });
 });
 
 describe('an option as GAMES declares it', () => {
@@ -130,7 +186,7 @@ describe('an option as GAMES declares it', () => {
             expect(option.values).toBeUndefined();
             return option.default ? 1 : 0;
         };
-        expect(GAMES.flatMap(({ options }) => options).map(either)).toEqual([200, 100, 0]);
+        expect(GAMES.flatMap(({ options }) => options).map(either)).toEqual([200, 100, 0, 0]);
     });
 
     it('cannot be changed through GAMES, so what score accepts stays the rules', () => {
@@ -139,6 +195,7 @@ describe('an option as GAMES declares it', () => {
             for (const option of options) {
                 expect(Object.isFrozen(option)).toBe(true);
                 if (option.kind === 'number') expect(Object.isFrozen(option.values)).toBe(true);
+                else if (option.excludes) expect(Object.isFrozen(option.excludes)).toBe(true);
             }
         }
         const [flip] = GAMES;

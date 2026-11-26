@@ -5387,7 +5387,7 @@
                 "game": "wizard",
                 "rules": 1,
                 "options": {
-                    "canadian": true
+                    "no-such-rule": true
                 },
                 "players": ["ann", "ben", "cat"],
                 "rounds": []
@@ -5409,7 +5409,7 @@
                     {
                         "code": "unknown-option",
                         "data": {
-                            "option": "canadian"
+                            "option": "no-such-rule"
                         },
                         "round": null,
                         "player": null
@@ -6090,6 +6090,836 @@
                         "data": {
                             "option": "plus-minus-one",
                             "value": "yes"
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the dealer with the highest score alone may not bid so the bids add up to the cards dealt",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "cat": {
+                                "bid": 0
+                            },
+                            "ben": {
+                                "bid": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 20,
+                    "ben": 30,
+                    "cat": 20
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 2
+                        },
+                        "round": 1,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the dealer with the highest score alone may always bid nothing",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 30
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 50,
+                    "ben": 50,
+                    "cat": 50
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the dealer may make the bids add up while another player has the highest score",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 60,
+                    "ben": 50,
+                    "cat": 40
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the dealer may make the bids add up while the highest score is shared",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": -10,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 30,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 20,
+                    "ben": 50,
+                    "cat": 40
+                },
+                "leaders": ["ben"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the first round is never barred, since every total starts level",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 20,
+                    "cat": 20
+                },
+                "leaders": ["ann"],
+                "winners": [],
+                "missed": [],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the next seat in the round deals when the seat due to deal is out, and is barred while it has the highest score alone",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    },
+                    {
+                        "out": ["ben"],
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "cat": {
+                                "bid": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 30
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": ["ben"]
+                    }
+                ],
+                "totals": {
+                    "ann": 20,
+                    "ben": 20,
+                    "cat": 30
+                },
+                "leaders": ["cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 2
+                        },
+                        "round": 1,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "the Canadian rule and plus or minus one are refused together, by their ids in the order the game declares them",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true,
+                    "plus-minus-one": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "options-clash",
+                        "data": {
+                            "options": ["plus-minus-one", "canadian"]
+                        },
+                        "round": null,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the highest score is every seat's total, so a dealer who missed a round is barred while theirs is highest alone",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "out": ["ann"],
+                        "entries": {
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 1
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 1
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ben": {
+                                "bid": 1
+                            },
+                            "cat": {
+                                "bid": 1
+                            },
+                            "ann": {
+                                "bid": 2
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ben": -10,
+                            "cat": -10
+                        },
+                        "out": ["ann"]
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": -10,
+                            "ben": -10,
+                            "cat": -10
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 20,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ben", "cat"],
+                "winners": [],
+                "missed": ["ann"],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 4
+                        },
+                        "round": 3,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "with the Canadian rule on, a player out of the round with the highest score alone leaves the dealer free to make the bids add up",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "out": ["ann"],
+                        "entries": {
+                            "ben": {
+                                "bid": 1,
+                                "tricks": 1
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 30,
+                            "ben": 20,
+                            "cat": 20
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ben": 30,
+                            "cat": 30
+                        },
+                        "out": ["ann"]
+                    }
+                ],
+                "totals": {
+                    "ann": 30,
+                    "ben": 50,
+                    "cat": 50
+                },
+                "leaders": ["ben", "cat"],
+                "winners": [],
+                "missed": ["ann"],
+                "problems": []
+            }
+        },
+        {
+            "name": "with the Canadian rule on, the seat after a skipped deal deals again in the next round, and is barred while it has the highest score alone",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": [
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "ben": {
+                                "bid": 0,
+                                "tricks": 0
+                            },
+                            "cat": {
+                                "bid": 1,
+                                "tricks": 1
+                            }
+                        }
+                    },
+                    {
+                        "out": ["ben"],
+                        "entries": {
+                            "ann": {
+                                "bid": 0,
+                                "tricks": 2
+                            },
+                            "cat": {
+                                "bid": 0,
+                                "tricks": 0
+                            }
+                        }
+                    },
+                    {
+                        "entries": {
+                            "ann": {
+                                "bid": 1
+                            },
+                            "ben": {
+                                "bid": 1
+                            },
+                            "cat": {
+                                "bid": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": 20,
+                            "ben": 20,
+                            "cat": 30
+                        },
+                        "out": []
+                    },
+                    {
+                        "state": "scored",
+                        "scores": {
+                            "ann": -20,
+                            "cat": 20
+                        },
+                        "out": ["ben"]
+                    },
+                    {
+                        "state": "refused",
+                        "scores": {},
+                        "out": []
+                    }
+                ],
+                "totals": {
+                    "ann": 0,
+                    "ben": 20,
+                    "cat": 50
+                },
+                "leaders": ["cat"],
+                "winners": [],
+                "missed": ["ben"],
+                "problems": [
+                    {
+                        "code": "bid-total",
+                        "data": {
+                            "dealt": 3
+                        },
+                        "round": 2,
+                        "player": null
+                    }
+                ]
+            }
+        },
+        {
+            "name": "two switches on together are refused only where nothing else in the options is",
+            "input": {
+                "game": "wizard",
+                "rules": 1,
+                "options": {
+                    "canadian": true,
+                    "plus-minus-one": true,
+                    "no-such-rule": true
+                },
+                "players": ["ann", "ben", "cat"],
+                "rounds": []
+            },
+            "expect": {
+                "game": "wizard",
+                "rules": 1,
+                "state": "in-play",
+                "rounds": [],
+                "totals": {
+                    "ann": 0,
+                    "ben": 0,
+                    "cat": 0
+                },
+                "leaders": ["ann", "ben", "cat"],
+                "winners": [],
+                "missed": [],
+                "problems": [
+                    {
+                        "code": "unknown-option",
+                        "data": {
+                            "option": "no-such-rule"
                         },
                         "round": null,
                         "player": null

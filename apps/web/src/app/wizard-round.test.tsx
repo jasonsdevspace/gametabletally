@@ -250,6 +250,40 @@ describe('a round of Wizard', () => {
         await heard(screenLine(), barredWords(0));
     });
 
+    /** Round 2 of a game played with the Canadian rule, Ben dealing, with the totals given. */
+    const canadian = (first: Parameters<typeof saved>[0]) =>
+        wizard(at({ part: 'bid', player: 'ann' }, {}, 1), [saved(first)], { canadian: true });
+    const canadianWords = (bid: number) =>
+        `Ben deals and has the highest score alone, so under the Canadian rule the bids may not add up to 2, the cards each player holds, and Ben cannot bid ${String(bid)}.`;
+
+    it('says which bid the dealer cannot make under the Canadian rule while the dealer has the highest score alone', async () => {
+        await draw(canadian({ ann: [0, 0], ben: [1, 1], cat: [0, 0] }));
+        setCount('bid-ann', 1);
+        // A 0 shown before any bid is no bid, so Cat's is set and then taken down to nothing.
+        setCount('bid-cat', 1);
+        setCount('bid-cat', 0);
+        expect(await screen.findByText(canadianWords(1))).toBeTruthy();
+        // A bid of nothing is never barred, so with the others at 2 the dealer may bid anything.
+        setCount('bid-cat', 1);
+        await waitFor(() => {
+            expect(screen.queryByText(/Canadian rule/)).toBeNull();
+        });
+    });
+
+    it('bars no bid under the Canadian rule while another player has the highest score', async () => {
+        await draw(canadian({ ann: [1, 1], ben: [0, 0], cat: [0, 0] }));
+        setCount('bid-ann', 1);
+        // A 0 shown before any bid is no bid, so Cat's is set and then taken down to nothing.
+        setCount('bid-cat', 1);
+        setCount('bid-cat', 0);
+        const save = dockButton('Save the bids');
+        setCount('bid-ben', 1);
+        await waitFor(() => {
+            expect(save).not.toHaveAttribute('aria-disabled');
+        });
+        expect(screen.queryByText(/cannot bid/)).toBeNull();
+    });
+
     it('counts and names a bid kept from before a player was skipped', async () => {
         await draw(plusMinusOne({ entries: { cat: { bid: 1 } }, out: ['cat'] }));
         expect(

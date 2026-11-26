@@ -22,4 +22,4 @@ export type {
     ScoreResult,
     SwitchOption,
 } from './types.js';
-export { type WizardEntry, type WizardRound, wizardRounds } from './wizard.js';
+export { dealerOf, type WizardEntry, type WizardRound, wizardRounds } from './wizard.js';

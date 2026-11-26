@@ -322,7 +322,28 @@ describe('the new game screen', () => {
         const store = await open();
         const game = await store.game('id-1');
         store.close();
-        expect(game?.options).toEqual({ 'plus-minus-one': true });
+        expect(game?.options).toEqual({ 'plus-minus-one': true, canadian: false });
+    });
+
+    it('turns plus or minus one off as the Canadian rule is turned on, and says so', async () => {
+        await draw([player('ann', 'Ann')], '/new/?game=wizard');
+        const minus = screen.getByRole('checkbox', { name: 'Plus or minus one' });
+        const canadian = screen.getByRole('checkbox', { name: 'Canadian rule' });
+        fireEvent.click(minus);
+        expect(minus).toBeChecked();
+        fireEvent.click(canadian);
+        expect(canadian).toBeChecked();
+        expect(minus).not.toBeChecked();
+        await heard(
+            status(),
+            'Plus or minus one is off, since it cannot be played with the Canadian rule.'
+        );
+        fireEvent.click(minus);
+        expect(canadian).not.toBeChecked();
+        await heard(
+            status(),
+            'The Canadian rule is off, since it cannot be played with plus or minus one.'
+        );
     });
 
     it('keeps the start button off, saying how many the game takes, until enough are seated', async () => {

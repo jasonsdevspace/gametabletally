@@ -28,8 +28,58 @@ export const optionsOf = (
 ): Record<string, OptionValue> =>
     Object.fromEntries(game.options.map(({ id, default: rule }) => [id, picked[id] ?? rule]));
 
+/** Whether two switches rule on the same thing, so they are never on together. */
+const clash = (one: GameOption, other: GameOption): boolean =>
+    one.kind === 'switch' &&
+    other.kind === 'switch' &&
+    ((one.excludes ?? []).includes(other.id) || (other.excludes ?? []).includes(one.id));
+
+/**
+ * The options picked once one more is, and the switches that pick turned off: a switch turned on
+ * turns off each switch it cannot be on with, so the game is never started with two rules on the
+ * same thing.
+ */
+export const pickOption = (
+    game: Game,
+    picked: Readonly<Record<string, OptionValue>>,
+    id: string,
+    value: OptionValue
+): { readonly picked: Record<string, OptionValue>; readonly off: readonly GameOption[] } => {
+    const option = game.options.find((one) => one.id === id);
+    const off =
+        option && value === true
+            ? game.options.filter(
+                  (other) =>
+                      other.id !== id &&
+                      clash(option, other) &&
+                      (picked[other.id] ?? other.default) === true
+              )
+            : [];
+    return {
+        picked: {
+            ...picked,
+            [id]: value,
+            ...Object.fromEntries(off.map(({ id: one }) => [one, false])),
+        },
+        off,
+    };
+};
+
+/**
+ * How an option is named in the middle of a sentence, where its name alone would read wrong, as a
+ * rule named for a place keeps its capital and takes "the".
+ */
+const IN_A_SENTENCE: Readonly<Record<string, string>> = { canadian: 'the Canadian rule' };
+
 /** An option's name in the middle of a sentence. */
-const named = ({ name }: GameOption): string => `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+export const named = (option: GameOption): string =>
+    IN_A_SENTENCE[option.id] ?? `${option.name.charAt(0).toLowerCase()}${option.name.slice(1)}`;
+
+/** An option's name at the start of a sentence. */
+export const namedFirst = (option: GameOption): string => {
+    const name = named(option);
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+};
 
 /**
  * The options of a game that differ from the published rules, as a sentence, or nothing where it
