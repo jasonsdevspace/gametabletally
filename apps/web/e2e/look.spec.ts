@@ -26,10 +26,13 @@ test('no page asks another origin for anything', async ({ page, context, baseURL
     expect(elsewhere).toEqual([]);
 });
 
-test("draws its text in DM Sans, loaded from the app's own files", async ({ page, baseURL }) => {
+/** A font as the build writes it, under `/assets/`, named by its content's hash. */
+const BUILT_FONT = (name: string) => new RegExp(`^/assets/${name}-[\\w-]{8}\\.woff2$`);
+
+test("draws its text in DM Sans, loaded from the app's own files", async ({ page }) => {
     const fonts: string[] = [];
     page.on('request', (request) => {
-        if (request.resourceType() === 'font') fonts.push(request.url());
+        if (request.resourceType() === 'font') fonts.push(new URL(request.url()).pathname);
     });
     await page.goto(hrefOf('play'));
     await fontsReady(page);
@@ -38,16 +41,15 @@ test("draws its text in DM Sans, loaded from the app's own files", async ({ page
         await page.evaluate(() => getComputedStyle(document.body).fontFamily.split(',')[0]?.trim())
     ).toMatch(/^"?DM Sans"?$/);
     // The serif is the website's alone, so a screen for keeping score never asks for it.
-    expect(fonts).toEqual([new URL('/fonts/dm-sans-latin.woff2', baseURL).href]);
+    expect(fonts).toEqual([expect.stringMatching(BUILT_FONT('dm-sans-latin'))]);
 });
 
 test("sets the website's display lines in Instrument Serif, from the app's own files", async ({
     page,
-    baseURL,
 }) => {
     const fonts: string[] = [];
     page.on('request', (request) => {
-        if (request.resourceType() === 'font') fonts.push(request.url());
+        if (request.resourceType() === 'font') fonts.push(new URL(request.url()).pathname);
     });
     await page.goto('/');
     await fontsReady(page);
@@ -57,11 +59,10 @@ test("sets the website's display lines in Instrument Serif, from the app's own f
             .evaluate((heading) => getComputedStyle(heading).fontFamily.split(',')[0]?.trim())
     ).toMatch(/^"?Instrument Serif"?$/);
     expect(await page.evaluate(() => document.fonts.check('48px "Instrument Serif"'))).toBe(true);
-    expect(fonts.sort()).toEqual(
-        ['/fonts/dm-sans-latin.woff2', '/fonts/instrument-serif-latin.woff2'].map(
-            (path) => new URL(path, baseURL).href
-        )
-    );
+    expect(fonts.sort()).toEqual([
+        expect.stringMatching(BUILT_FONT('dm-sans-latin')),
+        expect.stringMatching(BUILT_FONT('instrument-serif-latin')),
+    ]);
 });
 
 for (const theme of ['light', 'dark'] as const)
