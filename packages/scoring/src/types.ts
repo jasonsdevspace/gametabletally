@@ -54,6 +54,8 @@ export interface ProblemData {
     readonly 'player-twice': Nothing;
     readonly 'unknown-option': { readonly option: string };
     readonly 'value-not-allowed': { readonly option: string; readonly value: Plain };
+    /** Two switches on that cannot be on together, by their ids in the order the game declares them. */
+    readonly 'options-clash': { readonly options: readonly [string, string] };
     /**
      * `out` when the round's list of players out is not a list of ids, or nothing when the round
      * does not hold its entries.
@@ -208,6 +210,12 @@ export interface SwitchOption extends OptionBase {
     readonly kind: 'switch';
     /** Whether the published rule has it on, which a game not given the option is played by. */
     readonly default: boolean;
+    /**
+     * The ids of the game's other switches it cannot be on with, since they rule on the same thing,
+     * where it has any. A game given two of them on is refused, and an app turns one off as the
+     * other is turned on.
+     */
+    readonly excludes?: readonly string[];
 }
 
 /**

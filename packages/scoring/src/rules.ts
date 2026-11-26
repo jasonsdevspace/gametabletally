@@ -19,6 +19,10 @@ export type Settled = Readonly<Record<string, OptionValue>>;
 
 /** What a game's rules are told about the round they are reading. */
 export interface RoundContext {
+    /** The ids of every player in the game, in seat order, those out of the round among them. */
+    readonly seats: readonly string[];
+    /** Each player's total before the round, by id. */
+    readonly totals: ReadonlyMap<string, number>;
     /** The ids of the players in the round, in seat order. Those out of it are not among them. */
     readonly players: readonly string[];
     /** The ids of the players out of the round, in seat order. */
@@ -247,7 +251,9 @@ export const declare = (...options: readonly GameOption[]): readonly GameOption[
             Object.freeze(
                 option.kind === 'number'
                     ? { ...option, values: Object.freeze([...option.values]) }
-                    : { ...option }
+                    : option.excludes === undefined
+                      ? { ...option }
+                      : { ...option, excludes: Object.freeze([...option.excludes]) }
             )
         )
     );

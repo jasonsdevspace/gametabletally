@@ -151,6 +151,37 @@ const optionProblems = (
             return allows(option, value) ? [] : [problemAt(notAllowed(rules, option, value))];
         });
 
+/**
+ * The switches given on together that cannot be, each pair once, in the order the game declares
+ * them, so a game is never played by two rules on the same thing.
+ */
+const clashProblems = (
+    rules: Rules,
+    options: Readonly<Record<string, unknown>>
+): readonly Problem[] => {
+    const on = rules.options.filter(
+        (option) => option.kind === 'switch' && options[option.id] === true
+    );
+    return on.flatMap((option, at) =>
+        on
+            .slice(at + 1)
+            .filter(
+                (other) =>
+                    (option.kind === 'switch' && (option.excludes ?? []).includes(other.id)) ||
+                    (other.kind === 'switch' && (other.excludes ?? []).includes(option.id))
+            )
+            .map((other) =>
+                problemAt(
+                    refusal(
+                        'options-clash',
+                        `${option.name} and ${other.name} cannot both be on in ${rules.name}.`,
+                        { options: [option.id, other.id] }
+                    )
+                )
+            )
+    );
+};
+
 /** The game's options as it is played, with the published rule's for each one not given. */
 const settle = (rules: Rules, options: Readonly<Record<string, unknown>>): Settled =>
     Object.fromEntries(
@@ -330,7 +361,16 @@ const step = ({ rules, input, options }: Playing, walked: Walked, index: number)
     // settled, so nothing in it can be scored, or doubled, for anyone.
     const read =
         seated.problems.length === 0
-            ? rules.scoreRound(round, { players: playing, out, index, options })
+            ? rules.scoreRound(round, {
+                  seats: players,
+                  totals: new Map(
+                      players.map((player, seat) => [player, walked.totals[seat] ?? 0])
+                  ),
+                  players: playing,
+                  out,
+                  index,
+                  options,
+              })
             : { scores: new Map<string, number>(), problems: [], complete: false };
     const outcome = { ...read, problems: [...seated.problems, ...read.problems] };
     const complete = read.complete && outcome.problems.length === 0;
@@ -401,7 +441,12 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
             ),
         ]);
     const { players } = input;
-    const stopped = [...playerProblems(rules, players), ...optionProblems(rules, input.options)];
+    const given = optionProblems(rules, input.options);
+    const stopped = [
+        ...playerProblems(rules, players),
+        ...given,
+        ...(given.length === 0 ? clashProblems(rules, input.options) : []),
+    ];
     if (stopped.length > 0) return unscored(input, stopped);
     const playing: Playing = { rules, input, options: settle(rules, input.options) };
     const start: Walked = {

@@ -130,7 +130,7 @@ describe('an option as GAMES declares it', () => {
             expect(option.values).toBeUndefined();
             return option.default ? 1 : 0;
         };
-        expect(GAMES.flatMap(({ options }) => options).map(either)).toEqual([200, 100, 0]);
+        expect(GAMES.flatMap(({ options }) => options).map(either)).toEqual([200, 100, 0, 0]);
     });
 
     it('cannot be changed through GAMES, so what score accepts stays the rules', () => {
@@ -139,6 +139,7 @@ describe('an option as GAMES declares it', () => {
             for (const option of options) {
                 expect(Object.isFrozen(option)).toBe(true);
                 if (option.kind === 'number') expect(Object.isFrozen(option.values)).toBe(true);
+                else if (option.excludes) expect(Object.isFrozen(option.excludes)).toBe(true);
             }
         }
         const [flip] = GAMES;

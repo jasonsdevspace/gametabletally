@@ -1,5 +1,16 @@
 {
     "game": "wizard",
     "rules": 1,
-    "options": [{ "id": "plus-minus-one", "kind": "switch", "default": false }]
+    "options": [
+        {
+            "id": "plus-minus-one",
+            "kind": "switch",
+            "default": false
+        },
+        {
+            "id": "canadian",
+            "kind": "switch",
+            "default": false
+        }
+    ]
 }

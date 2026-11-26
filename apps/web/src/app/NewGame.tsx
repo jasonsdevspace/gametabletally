@@ -19,7 +19,7 @@ import { fetchGameAhead } from './entries.js';
 import { Failure } from './failure.js';
 import { Dock, useToast } from './frame-places.js';
 import { Icon } from './icon.js';
-import { optionsOf, shownOf } from './options.js';
+import { optionsOf, pickOption, shownOf } from './options.js';
 import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
@@ -422,10 +422,19 @@ export const NewGame = ({
                     game={game}
                     picked={picked[game.id] ?? {}}
                     onPick={(id, value) => {
-                        setPicked((now) => ({
-                            ...now,
-                            [game.id]: { ...now[game.id], [id]: value },
-                        }));
+                        const { picked: next, off } = pickOption(
+                            game,
+                            picked[game.id] ?? {},
+                            id,
+                            value
+                        );
+                        setPicked((now) => ({ ...now, [game.id]: next }));
+                        // A rule turned off by another is said, since its box changed unasked.
+                        const turnedOn = game.options.find((one) => one.id === id);
+                        for (const one of off)
+                            say(
+                                `${one.name} is off, since it cannot be played with the ${turnedOn?.name ?? 'rule'}.`
+                            );
                     }}
                 />
             ) : null}

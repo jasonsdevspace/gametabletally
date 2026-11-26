@@ -49,6 +49,11 @@ given no options, or an option given as null, is played by the book.
   a player then marked out of the round included. The bids after it were made knowing it, so
   marking a player out never changes whether the bids are refused. A table that bids again after a
   player leaves clears the stale bid, and the bids are added up without it.
+- **Wizard's Canadian rule is an option of its own beside Plus or minus one,** off by the published
+  rules, since some tables play the narrower rule instead: the dealer may not make the bids add up
+  to the cards dealt while leading alone, and may always bid nothing. Two switches that rule on the
+  same thing name each other in `excludes`, and a game given both on is refused with
+  `options-clash`, rather than played by whichever the package checks first.
 - **The name and description of an option are the package's English** and not part of the
   contract, as a refusal's sentence is not. A caller keys on the id.
 
