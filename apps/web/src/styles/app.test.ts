@@ -151,7 +151,7 @@ describe("the app's sheet over the design kit", () => {
 
     it("sets DM Sans on the kit's sans role, from the app's own files", () => {
         expect(app.get('--dk-font-sans')).toMatch(/^'DM Sans',/);
-        expect(rules).toMatch(/src: url\('\/fonts\/dm-sans-latin\.woff2'\) format\('woff2'\)/);
+        expect(rules).toMatch(/src: url\('\.\.\/fonts\/dm-sans-latin\.woff2'\) format\('woff2'\)/);
         expect(app.has('--dk-font-mono')).toBe(false);
     });
 

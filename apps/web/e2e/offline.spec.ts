@@ -131,9 +131,10 @@ test('installs without downloading again a hashed file the page loaded, and fetc
     // The build names every file under /assets/ by its content's hash, and nothing else.
     const hashed = kept.filter((path) => path.startsWith('/assets/'));
     const fresh = kept.filter((path) => !path.startsWith('/assets/'));
-    // The page loaded both kinds, its scripts and its fonts among them, so both halves are held.
-    expect(hashed.length).toBeGreaterThan(0);
-    expect(fresh.filter((path) => path.startsWith('/fonts/')).length).toBeGreaterThan(0);
+    // The page loaded both kinds, its scripts and fonts and its own page, so both halves are held.
+    expect(hashed.filter((path) => path.endsWith('.woff2'))).toHaveLength(2);
+    expect(hashed.filter((path) => path.endsWith('.js')).length).toBeGreaterThan(0);
+    expect(fresh).toContain('/index.html');
     expect(hashed.filter((path) => (body.get(path) ?? 1) > 0)).toEqual([]);
     expect(fresh.filter((path) => (body.get(path) ?? 0) <= 0)).toEqual([]);
 });
