@@ -203,6 +203,24 @@ const scriptsOfPage = (file: string): string[] =>
         ),
     ].flatMap(([, path]) => (path ? [path] : []));
 
+/** The scripts a built script imports as it loads, by address, leaving out what it loads on demand. */
+const importsOf = (path: string): string[] =>
+    [
+        ...readFileSync(join(DIST, path), 'utf8').matchAll(
+            /(?:\bfrom\s*|\bimport\s*)"\.\/([^"]+\.js)"/g
+        ),
+    ].flatMap(([, file]) => (file ? [`/assets/${file}`] : []));
+
+test('has each page fetch every script its scripts import, so they all come down at once', () => {
+    for (const page of listedFiles().filter((file) => file.endsWith('.html'))) {
+        const fetched = new Set(scriptsOfPage(page.slice(1)));
+        const missing = [...fetched]
+            .flatMap((path) => importsOf(path))
+            .filter((path) => !fetched.has(path));
+        expect([...new Set(missing)], page).toEqual([]);
+    }
+});
+
 /** The source files a page's scripts hold. */
 const sourcesOfPage = (file: string): Set<string> => {
     const scripts = builtScripts();
@@ -253,25 +271,25 @@ test('has each page fetch the shell and its own screen, and no other screen', ()
 
 /**
  * The most each file built on its own may send, compressed, in bytes: what the split build sent,
- * with room for the screen to grow. The app's frame shares its file with the parts the app's
- * screens share.
+ * with room for the screen to grow. The parts the screens share are files of their own, which the
+ * budgets for each page's first load hold.
  */
 const FILE_BUDGET: Readonly<Record<string, number>> = {
-    [SCREEN_FILES.start]: 1750,
-    [SCREEN_FILES.about]: 3500,
-    [SCREEN_FILES.install]: 1750,
-    [SCREEN_FILES.play]: 1750,
+    [SCREEN_FILES.start]: 1500,
+    [SCREEN_FILES.about]: 4500,
+    [SCREEN_FILES.install]: 1500,
+    [SCREEN_FILES.play]: 1500,
     [SCREEN_FILES.new]: 3500,
     [SCREEN_FILES.game]: 1750,
-    [SCREEN_FILES.scores]: 1000,
+    [SCREEN_FILES.scores]: 750,
     [SCREEN_FILES.recap]: 2000,
-    [SCREEN_FILES.history]: 1250,
+    [SCREEN_FILES.history]: 1000,
     [SCREEN_FILES.players]: 1250,
-    [SCREEN_FILES.player]: 2000,
+    [SCREEN_FILES.player]: 3000,
     [ENTRY_FILES['flip-7']]: 2500,
     [ENTRY_FILES.skyjo]: 5000,
-    [ENTRY_FILES.wizard]: 5500,
-    [FRAME_FILE]: 17_000,
+    [ENTRY_FILES.wizard]: 8000,
+    [FRAME_FILE]: 5000,
 };
 
 test('keeps each file built on its own to a budget of its own', () => {
