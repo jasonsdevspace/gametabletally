@@ -4,9 +4,9 @@
  *
  *   npm run pin-cases -w @gametabletally/scoring
  *
- * New cases are pinned, and an answer that refused the game as a whole is pinned again as it now
- * stands. A pinned answer that changed otherwise, or a pinned case taken away, is named and nothing
- * is written, since that change belongs in a new version of the rule set.
+ * Every case not yet pinned is pinned, and an answer an addition changed is pinned again as it now
+ * stands. A pinned answer that changed otherwise, a pinned case taken away, or a file of pins whose
+ * cases are gone is named and nothing is written, since that change belongs in a new version.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -22,7 +22,16 @@ const files = readdirSync(CASES, { recursive: true, withFileTypes: true })
     .map((entry) => relative(CASES, join(entry.parentPath, entry.name)).split(sep).join('/'))
     .sort();
 
-const found = [];
+const pinFiles = existsSync(RELEASED)
+    ? readdirSync(RELEASED, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+          .map((entry) =>
+              relative(RELEASED, join(entry.parentPath, entry.name)).split(sep).join('/')
+          )
+    : [];
+const found = pinFiles
+    .filter((place) => !files.includes(place))
+    .map((place) => `${place}: the cases of a released rule set are gone`);
 const written = [];
 for (const place of files) {
     const file = JSON.parse(readFileSync(join(CASES, place), 'utf8'));

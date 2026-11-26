@@ -18,26 +18,28 @@ import {
     type Pins,
     unpinned,
 } from '../scripts/released.mjs';
+import { RULES } from './score.js';
 
 /*
  * A version of a rule set always means the same rules, so a phone and a server on different builds
- * score a game it names the same way. Every released answer is pinned in `released`, and a change
- * to how a game scores, a correction included, is a new version, as record 5 sets out.
+ * score a game that names it the same way. Every case's released answer is pinned in `released`, and
+ * a change to how a game scores, a correction included, is a new version, as record 5 sets out.
  */
 
-/** Each rule set's cases, with the answers it was released with, as `npm run pin-cases` wrote them. */
+/** Each rule set's cases, with the answers it was released with, as `npm run pin-cases` wrote. */
 const FILES: readonly (readonly [PinnedFile, Pins])[] = [
     [flip7, flip7Pins],
     [skyjo, skyjoPins],
     [wizard, wizardPins],
 ];
 
-it('keeps a file of released answers for every rule set with cases, and no other', () => {
+it('keeps a file of released answers for every rule set the package holds, and no other', () => {
     const root = fileURLToPath(new URL('../released', import.meta.url));
     const kept = readdirSync(root, { recursive: true, withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
         .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
         .sort();
+    expect(kept).toEqual(RULES.map(({ id, rules }) => `${id}/${String(rules)}.json`).sort());
     expect(kept).toEqual(FILES.map(([{ game, rules }]) => `${game}/${String(rules)}.json`).sort());
 });
 
@@ -64,35 +66,59 @@ describe('a released answer', () => {
         input: game(['ann', 'ben']),
         expect: { rounds: [{ state: 'scored' }], problems: [] },
     };
-    const refused: PinnedCase = {
-        name: 'a game refused as a whole',
+    const unknownOption: PinnedCase = {
+        name: 'a game naming an option the rule set does not have',
+        input: { ...game(['ann', 'ben']), options: { house: true } },
+        expect: { rounds: [], problems: [{ code: 'unknown-option', round: null }] },
+    };
+    const tooFew: PinnedCase = {
+        name: 'a game with too few players',
         input: game(['ann']),
-        expect: { rounds: [], problems: [{ round: null }] },
+        expect: {
+            rounds: [{ state: 'skipped' }],
+            problems: [{ code: 'too-few-players', round: null }],
+        },
     };
     const file = (cases: readonly PinnedCase[]): PinnedFile => ({ game: 'g', rules: 1, cases });
-    const released = pinned({ game: 'g', rules: 1, answers: [] }, file([scored, refused]));
+    const all = [scored, unknownOption, tooFew];
+    const released = pinned({ game: 'g', rules: 1, answers: [] }, file(all));
+    const answered = (one: PinnedCase): PinnedCase => ({
+        ...one,
+        expect: { rounds: [{ state: 'scored' }], problems: [] },
+    });
 
     it('holds every case it pinned', () => {
-        expect(breaks(released, file([scored, refused]))).toEqual([]);
-        expect(unpinned(released, file([scored, refused]))).toEqual([]);
+        expect(breaks(released, file(all))).toEqual([]);
+        expect(unpinned(released, file(all))).toEqual([]);
     });
 
-    it('may not change, nor its case be taken away', () => {
-        const corrected = { ...scored, expect: { rounds: [{ state: 'refused' }], problems: [] } };
-        expect(breaks(released, file([corrected, refused]))).toEqual([
+    it('may not change, nor its case be taken away, which is named', () => {
+        const corrected: PinnedCase = {
+            ...scored,
+            expect: { rounds: [{ state: 'refused' }], problems: [] },
+        };
+        expect(breaks(released, file([corrected, unknownOption, tooFew]))).toEqual([
             'the answer to "a game scored" changed',
         ]);
-        expect(breaks(released, file([refused]))).toHaveLength(1);
+        expect(breaks(released, file([unknownOption, tooFew]))).toEqual([
+            'the case "a game scored" is gone',
+        ]);
     });
 
-    it('may change where it refused the game as a whole, which no saved game ever was', () => {
-        const accepted = { ...refused, expect: { rounds: [], problems: [] } };
-        expect(breaks(released, file([scored, accepted]))).toEqual([]);
-        expect(pinned(released, file([scored, accepted])).answers[1]?.whole).toBe(false);
+    it('may change where it refused a game for an option the rule set did not have, which gave no score', () => {
+        const accepted = answered(unknownOption);
+        expect(breaks(released, file([scored, accepted, tooFew]))).toEqual([]);
+        expect(pinned(released, file([scored, accepted, tooFew])).answers[1]?.liftable).toBe(false);
     });
 
-    it('is asked of a case added after it, which is named until it is pinned', () => {
+    it('may not change where it refused a game for anything else, such as its players', () => {
+        expect(breaks(released, file([scored, unknownOption, answered(tooFew)]))).toEqual([
+            'the answer to "a game with too few players" changed',
+        ]);
+    });
+
+    it('names a case added after it until the case is pinned', () => {
         const added: PinnedCase = { ...scored, name: 'a case added', input: game(['cat', 'dan']) };
-        expect(unpinned(released, file([scored, refused, added]))).toEqual(['a case added']);
+        expect(unpinned(released, file([...all, added]))).toEqual(['a case added']);
     });
 });

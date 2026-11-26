@@ -2,14 +2,17 @@
  * The answers a rule set was released with, pinned so they never change under its version.
  *
  * A version of a rule set always means the same rules, so a phone and a server on different builds
- * score a game it names the same way, which record 5 sets out. Every case is pinned by a digest of
- * what goes in and of the answer that comes out. A pinned answer may never change and a pinned case
- * may never be taken away, so a change to how a game scores, a correction included, is a new
- * version. One exception: an answer that refused the game as a whole, such as one naming an option
- * the game did not have, may change, since no game refused that way was ever played or saved, and a
- * later addition, such as a new option, may accept it.
+ * score a game that names it the same way, which record 5 sets out. Every case is pinned by its name
+ * and a digest of what goes in and of the answer that comes out. A pinned answer may never change and
+ * a pinned case may never be taken away, so a change to how a game scores, a correction included, is
+ * a new version. One exception: an answer that refused the game as a whole because it named an option
+ * or a value the rule set did not have may change, since a game refused that way was given no score,
+ * and a later addition, such as a new option, may accept it.
  */
 import { createHash } from 'node:crypto';
+
+/** The refusals of a whole game that an addition to the rule set may lift. */
+const LIFTED_BY_ADDITIONS = new Set(['unknown-option', 'value-not-allowed']);
 
 /** A value as JSON with every object's keys in order, so the same value is always the same text. */
 const canonical = (value) =>
@@ -32,28 +35,33 @@ export const inputOf = (one) =>
 /** A digest of the answer a case expects. */
 export const answerOf = (one) => digest(canonical(one.expect));
 
-/** Whether an answer refuses the game as a whole, reading none of its rounds. */
-export const refusedWhole = (expect) =>
-    expect.problems.some(({ round }) => round === null) &&
+/**
+ * Whether an answer refused the game as a whole only for naming an option or a value the rule set
+ * did not have, reading none of its rounds, which a later addition may accept.
+ */
+export const liftable = (expect) =>
+    expect.problems.length > 0 &&
+    expect.problems.every(({ code, round }) => round === null && LIFTED_BY_ADDITIONS.has(code)) &&
     expect.rounds.every(({ state }) => state === 'skipped');
 
-/** A case pinned: what goes in, what comes out, and whether that refused the game as a whole. */
+/** A case pinned: its name, what goes in, what comes out, and whether an addition may change it. */
 export const pinOf = (one) => ({
+    name: one.name,
     input: inputOf(one),
     answer: answerOf(one),
-    whole: refusedWhole(one.expect),
+    liftable: liftable(one.expect),
 });
 
 /**
  * What a file of cases breaks of the answers its rule set was released with, as sentences: a
- * pinned case taken away, and a pinned answer changed that did not refuse the game as a whole.
+ * pinned case taken away, and a pinned answer changed that an addition could not have changed.
  */
 export const breaks = (pinned, file) => {
     const now = new Map(file.cases.map((one) => [inputOf(one), one]));
     return pinned.answers.flatMap((pin) => {
         const one = now.get(pin.input);
-        if (!one) return [`a case pinned as ${pin.input} is gone`];
-        if (answerOf(one) === pin.answer || pin.whole) return [];
+        if (!one) return [`the case "${pin.name}" is gone`];
+        if (answerOf(one) === pin.answer || pin.liftable) return [];
         return [`the answer to "${one.name}" changed`];
     });
 };
@@ -65,14 +73,14 @@ export const unpinned = (pinned, file) => {
 };
 
 /**
- * The pins of a file once its new cases are pinned, and an answer that refused the game as a whole
- * is pinned again as it now stands. A pin that would break is left as it is, for `breaks` to name.
+ * The pins of a file once its new cases are pinned and each answer an addition changed is pinned
+ * again as it now stands. A pin that would break is left as it is, for `breaks` to name.
  */
 export const pinned = (before, file) => {
     const now = new Map(file.cases.map((one) => [inputOf(one), one]));
     const kept = before.answers.map((pin) => {
         const one = now.get(pin.input);
-        return one && pin.whole && answerOf(one) !== pin.answer ? pinOf(one) : pin;
+        return one && (pin.liftable || answerOf(one) === pin.answer) ? pinOf(one) : pin;
     });
     const known = new Set(kept.map(({ input }) => input));
     const added = file.cases.filter((one) => !known.has(inputOf(one))).map(pinOf);

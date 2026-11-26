@@ -313,17 +313,19 @@ runtime that is not Node.
 A version of a rule set always means the same rules. Every change to how a game scores, a
 correction to a rule that was wrong included, is a new version, with the earlier one kept, as
 [record 5](../../docs/decisions/0005-every-change-to-scoring-is-a-new-version.md) sets out. So a
-caller can rely on this: two builds that both hold a game's version give it the same answer, and a
-build that does not hold it refuses the game with `unknown-rules` rather than scoring it by other
-rules. A game saved under an earlier version keeps the answer it had, a wrong rule included, until
-it is moved to a later version on purpose.
+caller can rely on this: two builds that hold a game's version and both score it give it the same
+answer. An older build may refuse as a whole a game that names an option or a value added after
+it, with `unknown-option` or `value-not-allowed`, and a build that does not hold the version
+refuses the game with `unknown-rules`. Neither scores a game by other rules. A game saved under an
+earlier version keeps the answer it had, a wrong rule included, until it is moved to a later
+version.
 
-`released` holds the answer every case was released with, as a digest of what goes in and what
-comes out, a file for each rule set. A test fails where a released answer changes or a released
-case is taken away. The one answer that may change is one that refused the game as a whole, such
-as a game naming an option the rule set did not have, since no game refused that way was ever
-played or saved. `npm run pin-cases -w @gametabletally/scoring` pins the cases added since, and
-names any released answer that changed rather than pin it again.
+`released` holds, for each rule set, every case's name and a digest of what it hands over and of
+the answer it expects. A test fails where a released answer changes or a released case is taken
+away. The one answer that may change is one that refused the game as a whole for naming an option
+or a value the rule set did not have, since a game refused that way was given no score.
+`npm run pin-cases -w @gametabletally/scoring` pins every case not yet pinned, and writes nothing
+while a released answer has changed or a released case is gone, naming each.
 
 ## One script
 

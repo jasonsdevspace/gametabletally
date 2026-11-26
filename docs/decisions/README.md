@@ -13,6 +13,7 @@ choice costs, and the test behind it. Each is written when the decision is made.
    within a version of a rule set, and an option or a value added stays in it.
 4. [Screens load on demand](0004-screens-load-on-demand.md): a page sends the shell and its own
    screen's code, and a new screen adds only its own file.
-5. [Every change to how a game scores is a new
-   version](0005-every-change-to-scoring-is-a-new-version.md): a correction included, so a version
-   always means the same rules on every build, and every released answer is pinned.
+5. [Every change to how a game scores is a new version of its rule
+   set](0005-every-change-to-scoring-is-a-new-version.md): a correction to a wrong rule is a new
+   version too, so a version means the same rules on every build, and every released answer is
+   pinned.

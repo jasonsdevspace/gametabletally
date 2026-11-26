@@ -5,7 +5,7 @@ export interface PinnedCase {
     readonly text?: string;
     readonly expect: {
         readonly rounds: readonly { readonly state: string }[];
-        readonly problems: readonly { readonly round: number | null }[];
+        readonly problems: readonly { readonly code: string; readonly round: number | null }[];
     };
 }
 
@@ -18,9 +18,10 @@ export interface PinnedFile {
 
 /** One case's pin. */
 export interface Pin {
+    readonly name: string;
     readonly input: string;
     readonly answer: string;
-    readonly whole: boolean;
+    readonly liftable: boolean;
 }
 
 /** The answers one version of a game's rule set was released with. */
@@ -32,7 +33,7 @@ export interface Pins {
 
 export declare const inputOf: (one: PinnedCase) => string;
 export declare const answerOf: (one: PinnedCase) => string;
-export declare const refusedWhole: (expect: PinnedCase['expect']) => boolean;
+export declare const liftable: (expect: PinnedCase['expect']) => boolean;
 export declare const pinOf: (one: PinnedCase) => Pin;
 export declare const breaks: (pinned: Pins, file: PinnedFile) => string[];
 export declare const unpinned: (pinned: Pins, file: PinnedFile) => string[];
