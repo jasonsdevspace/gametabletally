@@ -1,0 +1,301 @@
+{
+    "game": "wizard",
+    "rules": 1,
+    "answers": [
+        {
+            "input": "4681b2e55bc5b242",
+            "answer": "e198e4373f9edb93",
+            "whole": false
+        },
+        {
+            "input": "e67b7d8509a03bdc",
+            "answer": "e4f59abf695852b9",
+            "whole": false
+        },
+        {
+            "input": "426923dc0a503fd6",
+            "answer": "67eb94ef50332d12",
+            "whole": false
+        },
+        {
+            "input": "08da8eb39f22c6ef",
+            "answer": "67eb94ef50332d12",
+            "whole": false
+        },
+        {
+            "input": "d2bce1534cf9101f",
+            "answer": "92ce64480b59ba73",
+            "whole": false
+        },
+        {
+            "input": "9732b0a817dedcbc",
+            "answer": "89e94c40b5022d52",
+            "whole": false
+        },
+        {
+            "input": "0e848a0781419e8b",
+            "answer": "db2b90f32df16120",
+            "whole": false
+        },
+        {
+            "input": "7347de22eb86f912",
+            "answer": "2be289bdc7fd43f7",
+            "whole": false
+        },
+        {
+            "input": "17c2d3569a0349ea",
+            "answer": "4e34888804f463c8",
+            "whole": false
+        },
+        {
+            "input": "233b6e044596b2d2",
+            "answer": "73633536cac4889a",
+            "whole": false
+        },
+        {
+            "input": "3a99ea8acda0c822",
+            "answer": "061f454fb81480a0",
+            "whole": false
+        },
+        {
+            "input": "a91f8612f730e215",
+            "answer": "10644f5dc729a292",
+            "whole": false
+        },
+        {
+            "input": "5b0a42e51b68f31f",
+            "answer": "aac308f868f9805e",
+            "whole": false
+        },
+        {
+            "input": "fc835cfe7669495a",
+            "answer": "cb686b3f969e7a1d",
+            "whole": false
+        },
+        {
+            "input": "ecb903b94e8fcfe7",
+            "answer": "ab55c876dd5a95fc",
+            "whole": false
+        },
+        {
+            "input": "0db4948b3cb9a656",
+            "answer": "6c23f69f542e953a",
+            "whole": false
+        },
+        {
+            "input": "c3dfa7978e9406d5",
+            "answer": "ab27510abdd3b07b",
+            "whole": false
+        },
+        {
+            "input": "f2fd348e85145657",
+            "answer": "7de6550ae7301d48",
+            "whole": false
+        },
+        {
+            "input": "a6c1ed16e8c15f2a",
+            "answer": "6ffffb3edaccb494",
+            "whole": false
+        },
+        {
+            "input": "1842135dfbf744df",
+            "answer": "052aa1ea6e2c7a40",
+            "whole": false
+        },
+        {
+            "input": "036ba7d40b312caa",
+            "answer": "424a74249837b1f8",
+            "whole": false
+        },
+        {
+            "input": "a5dd8eddec493129",
+            "answer": "442d937acf1610de",
+            "whole": false
+        },
+        {
+            "input": "7732c1e8da809901",
+            "answer": "eead545184b5435a",
+            "whole": false
+        },
+        {
+            "input": "5aeb7209b3187aa5",
+            "answer": "ac441fa212854dbf",
+            "whole": false
+        },
+        {
+            "input": "5fd1d651720bf271",
+            "answer": "3bad5d86ebd30dff",
+            "whole": false
+        },
+        {
+            "input": "a41318370f40876d",
+            "answer": "275cc4cdd420a072",
+            "whole": false
+        },
+        {
+            "input": "ee1c3bbfbdb918a2",
+            "answer": "275cc4cdd420a072",
+            "whole": false
+        },
+        {
+            "input": "a56bef119c0b57cc",
+            "answer": "2842f0d7f8a4a9b0",
+            "whole": false
+        },
+        {
+            "input": "2bf41855512afa65",
+            "answer": "275cc4cdd420a072",
+            "whole": false
+        },
+        {
+            "input": "b0a375da6d58c4eb",
+            "answer": "4f50d752dcd71506",
+            "whole": false
+        },
+        {
+            "input": "b275c6e82010e95c",
+            "answer": "af612f0988d8e3c5",
+            "whole": false
+        },
+        {
+            "input": "cae7c1c9fddbfc8d",
+            "answer": "c42a5311429c0993",
+            "whole": false
+        },
+        {
+            "input": "4d0d486578f668e8",
+            "answer": "464f8f43ee6b9a56",
+            "whole": false
+        },
+        {
+            "input": "94cb6385061bbf10",
+            "answer": "3d8231280a2429ac",
+            "whole": true
+        },
+        {
+            "input": "70134070f972c6d0",
+            "answer": "d8b1086ac1840307",
+            "whole": true
+        },
+        {
+            "input": "f2438c9eef44caf6",
+            "answer": "272f7a7e5f6164a2",
+            "whole": true
+        },
+        {
+            "input": "bdff390093d213b8",
+            "answer": "82f96e99054765dc",
+            "whole": false
+        },
+        {
+            "input": "e60c2e6224915317",
+            "answer": "d65de4121fd232bd",
+            "whole": false
+        },
+        {
+            "input": "634ac447b41333bd",
+            "answer": "e6ecf9870419fe97",
+            "whole": false
+        },
+        {
+            "input": "208769488aeccfb9",
+            "answer": "67eb94ef50332d12",
+            "whole": false
+        },
+        {
+            "input": "268cba733851c21b",
+            "answer": "f6895b9afabeabd4",
+            "whole": false
+        },
+        {
+            "input": "3e2f23d04906ef56",
+            "answer": "f6895b9afabeabd4",
+            "whole": false
+        },
+        {
+            "input": "b4f584ddf8bb5c57",
+            "answer": "b545857c2dfa6502",
+            "whole": false
+        },
+        {
+            "input": "bae230683b647f69",
+            "answer": "28cce9545bf1829c",
+            "whole": false
+        },
+        {
+            "input": "de468ae650d0f87f",
+            "answer": "d8bce058f913f7be",
+            "whole": false
+        },
+        {
+            "input": "17ab3e12f4309c31",
+            "answer": "24d3929f127e8775",
+            "whole": false
+        },
+        {
+            "input": "a84be6ad533fd796",
+            "answer": "24d3929f127e8775",
+            "whole": false
+        },
+        {
+            "input": "84829848e82f3ab0",
+            "answer": "c8146552e1196a11",
+            "whole": true
+        },
+        {
+            "input": "22a9ac74dfd4ecf9",
+            "answer": "33ccbaef783f8282",
+            "whole": false
+        },
+        {
+            "input": "6e081f1507aae9f8",
+            "answer": "952302b573e1abd1",
+            "whole": false
+        },
+        {
+            "input": "ba0399aae60eeec4",
+            "answer": "bbd5600b47263746",
+            "whole": false
+        },
+        {
+            "input": "1e540af240cfa2c4",
+            "answer": "7afc6eaf20d234a8",
+            "whole": false
+        },
+        {
+            "input": "80b8c49f93b1fb3a",
+            "answer": "24d3929f127e8775",
+            "whole": false
+        },
+        {
+            "input": "c4afb66c016fe917",
+            "answer": "3522c4bda0296fb6",
+            "whole": false
+        },
+        {
+            "input": "7c832ec0e97d5cfd",
+            "answer": "b603ce7bf061211b",
+            "whole": true
+        },
+        {
+            "input": "0dbcdfbc623f1dba",
+            "answer": "f712f939ae3f4361",
+            "whole": false
+        },
+        {
+            "input": "226c3168a30073ba",
+            "answer": "621d8595700a05ea",
+            "whole": false
+        },
+        {
+            "input": "1daafd699e80a00a",
+            "answer": "965f442df0b1cc6c",
+            "whole": false
+        },
+        {
+            "input": "07b98db4a5e1c2ac",
+            "answer": "272f7a7e5f6164a2",
+            "whole": true
+        }
+    ]
+}
