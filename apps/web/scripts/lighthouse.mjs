@@ -1,5 +1,7 @@
 /**
- * Lighthouse over the built app, served as GitHub Pages serves it.
+ * Lighthouse over the built app, served as GitHub Pages serves it, over HTTP/2 with compression, so
+ * a page that fetches several files is judged as a visitor's browser fetches them. The server makes
+ * a certificate for the run with OpenSSL, and the browser is told to accept it.
  *
  *   npm run lighthouse
  *
@@ -34,9 +36,11 @@ const LAYOUT_SHIFT = 0.1;
  * The most script and style a page may carry on its first load, in bytes sent over the network. A
  * page sends the shell and its own screen's code, and a screen of the app the app's frame as well,
  * so the website's pages and the app's each have a budget of their own, set from what the split
- * build sends with room for a screen to grow.
+ * build sends with room for a screen to grow. They hold the parts the screens share, which have no
+ * budget of their own. Pages sends a little more than the audit counts, its headers and its
+ * compression adding about 160 bytes a file, so the budgets are a floor on what a visitor gets.
  */
-const BUDGET = { WebsiteScript: 108_000, AppScript: 124_000, Stylesheet: 30_000 };
+const BUDGET = { WebsiteScript: 104_000, AppScript: 120_000, Stylesheet: 30_000 };
 
 /** The script a page may carry, by whether it is one of the app's or the website's. */
 const scriptBudgetOf = (path) => (inApp(routeAt(path)) ? BUDGET.AppScript : BUDGET.WebsiteScript);
@@ -101,10 +105,11 @@ const timing = (m) => [
     ...(m.shift > LAYOUT_SHIFT ? ['shift'] : []),
 ];
 
-const server = await serve(PORT);
+// Over HTTP/2, as Pages serves the live site, with a certificate the browser is told to accept.
+const server = await serve(PORT, { secure: true });
 const chrome = await launch({
     chromePath: chromium.executablePath(),
-    chromeFlags: ['--headless=new', '--no-sandbox'],
+    chromeFlags: ['--headless=new', '--no-sandbox', '--ignore-certificate-errors'],
 });
 const failures = [];
 

@@ -1,9 +1,8 @@
 /**
  * The source files that load on demand: every screen, by its route's name, each game's round entry
- * and the app's frame. Each screen and entry is built into a file of its own, and the frame goes in
- * the file of the parts the app's screens share. The screens' loaders name them, the build keeps
- * each screen and entry apart from those shared parts, and the prerender has each page fetch its
- * own. Paths are from the app's folder, as the build names its files.
+ * and the app's frame. The screens' loaders name them, the prerender has each page fetch its own,
+ * and the tests hold each screen and entry to a file of its own, which the bundler gives each one
+ * loaded by `import()`. Paths are from the app's folder, as the build names its files.
  */
 export const SCREEN_FILES = {
     start: 'src/website/Start.tsx',
@@ -26,7 +25,7 @@ export const ENTRY_FILES = {
     wizard: 'src/app/wizard-round.tsx',
 } as const;
 
-/** The app's frame, loaded with the app's first screen, in the file its screens share. */
+/** The app's frame, loaded with the app's first screen. */
 export const FRAME_FILE = 'src/app/AppFrame.tsx';
 
 /** Every file built on its own. */
