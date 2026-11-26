@@ -37,8 +37,9 @@ import type { Summary } from './summary.js';
  */
 
 /**
- * Who deals a round, by the scoring package's rule, which the Canadian rule bars by: the first
- * seat in the first round and one seat on in each round after, passing over a player out of it.
+ * Who deals a round, from the scoring package's `dealerOf`, so the screen shows the dealer the
+ * Canadian rule reads: the first seat in the first round and one seat on in each round after,
+ * passing over a player out of it, or null where no one is in it.
  */
 export const dealerOf = (
     players: readonly string[],
@@ -186,10 +187,11 @@ const barredNow = ({
     const entries = { ...round.entries, ...Object.fromEntries(bids) };
     const bid = barredBid(game.saved, index, { ...round, entries }, dealer);
     if (bid === null) return NONE_BARRED;
-    // The Canadian rule bars the bid only while the dealer leads alone, which is said with it.
+    // The Canadian rule bars a bid only while the dealer has the highest score alone, so its
+    // sentence gives that reason.
     const why =
         game.saved.options['canadian'] === true
-            ? `${nameOf(dealer)} deals and leads alone, so under the Canadian rule the bids may not add up to ${String(index + 1)}, the cards each player holds, and ${nameOf(dealer)} cannot bid ${String(bid)}.`
+            ? `${nameOf(dealer)} deals and has the highest score alone, so under the Canadian rule the bids may not add up to ${String(index + 1)}, the cards each player holds, and ${nameOf(dealer)} cannot bid ${String(bid)}.`
             : `The bids may not add up to ${String(index + 1)}, the cards each player holds, so ${nameOf(dealer)}, bidding last, cannot bid ${String(bid)}.`;
     return { words: why, blocked: countOf(dealer) === bid };
 };

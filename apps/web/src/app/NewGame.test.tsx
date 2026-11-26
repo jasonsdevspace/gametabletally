@@ -338,6 +338,12 @@ describe('the new game screen', () => {
             status(),
             'Plus or minus one is off, since it cannot be played with the Canadian rule.'
         );
+        fireEvent.click(minus);
+        expect(canadian).not.toBeChecked();
+        await heard(
+            status(),
+            'The Canadian rule is off, since it cannot be played with plus or minus one.'
+        );
     });
 
     it('keeps the start button off, saying how many the game takes, until enough are seated', async () => {

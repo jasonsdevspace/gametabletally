@@ -65,8 +65,21 @@ export const pickOption = (
     };
 };
 
+/**
+ * How an option is named in the middle of a sentence, where its name alone would read wrong, as a
+ * rule named for a place keeps its capital and takes "the".
+ */
+const IN_A_SENTENCE: Readonly<Record<string, string>> = { canadian: 'the Canadian rule' };
+
 /** An option's name in the middle of a sentence. */
-const named = ({ name }: GameOption): string => `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+export const named = (option: GameOption): string =>
+    IN_A_SENTENCE[option.id] ?? `${option.name.charAt(0).toLowerCase()}${option.name.slice(1)}`;
+
+/** An option's name at the start of a sentence. */
+export const namedFirst = (option: GameOption): string => {
+    const name = named(option);
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+};
 
 /**
  * The options of a game that differ from the published rules, as a sentence, or nothing where it

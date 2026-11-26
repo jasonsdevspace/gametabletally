@@ -70,16 +70,18 @@ const PLUS_MINUS_ONE: SwitchOption = {
 
 /**
  * The Canadian rule, an optional rule of the published game and off by it: the dealer, who bids
- * last, may not bid so the bids add up to the cards dealt while they hold the highest total alone,
- * and may always bid nothing. It rules on the same bids as Plus or minus one, more narrowly, so the
- * two are never on together.
+ * last, may not bid so the bids add up to the cards dealt while they have the highest score alone,
+ * and may always bid nothing. The highest score is the highest total on the score sheet, every
+ * seat's, a player who missed a round or is out of this one among them, as the published rule
+ * reads. It rules on the same bids as Plus or minus one, more narrowly, so the two are never on
+ * together.
  */
 const CANADIAN: SwitchOption = {
     kind: 'switch',
     id: 'canadian',
     name: 'Canadian rule',
     description:
-        'While the dealer leads alone, their bid may not make the bids add up to the cards dealt, unless it is 0.',
+        'While the dealer has the highest score alone, their bid may not make the bids add up to the cards dealt, unless it is 0.',
     default: false,
     excludes: ['plus-minus-one'],
 };
@@ -91,8 +93,9 @@ const CANADIAN: SwitchOption = {
 export const wizardRounds = (players: number): number => DECK / players;
 
 /**
- * Who deals a round: the first seat in the first round and one seat on in each round after,
- * passing over a player out of it, or null where no one is in it. The dealer bids last.
+ * Who deals a round: the seat as many on from the first as the round's place, or the next seat in
+ * the round where that one is out, so the seat after a skipped deal deals again in the round
+ * after. Null where no one is in the round. The dealer bids last.
  */
 export const dealerOf = (
     seats: readonly string[],
@@ -106,7 +109,10 @@ export const dealerOf = (
     return null;
 };
 
-/** The player holding the highest total alone before the round, or null where it is shared. */
+/**
+ * The player with the highest total alone before the round, over every seat, or null where it is
+ * shared.
+ */
 const leaderAlone = (totals: ReadonlyMap<string, number>): string | null => {
     const highest = Math.max(...totals.values());
     const at = [...totals].filter(([, total]) => total === highest);
@@ -126,7 +132,7 @@ const bidOf = (round: unknown, player: string): number | null => {
 /**
  * Whether the round's bids are barred by the options: under Plus or minus one whenever they add
  * up to the cards dealt, and under the Canadian rule when the dealer's bid makes them add up to it
- * while the dealer leads alone, unless the dealer bid nothing.
+ * while the dealer has the highest score alone, unless the dealer bid nothing.
  */
 const barred = (round: unknown, context: RoundContext, dealt: number): boolean => {
     if (bidsMade(round, context) !== dealt) return false;
@@ -220,17 +226,12 @@ const bidsMade = (
     round: unknown,
     { players, out }: Pick<RoundContext, 'players' | 'out'>
 ): number | null => {
-    const entries = isRecord(round) && isRecord(round['entries']) ? round['entries'] : {};
-    const bidOf = (player: string): number | null => {
-        const entry = Object.prototype.hasOwnProperty.call(entries, player)
-            ? entries[player]
-            : undefined;
-        const bid = isRecord(entry) ? entry['bid'] : undefined;
-        return isWhole(bid) ? bid : null;
-    };
-    const bids = players.map(bidOf);
+    const bids = players.map((player) => bidOf(round, player));
     if (bids.some((bid) => bid === null)) return null;
-    return [...bids, ...out.map(bidOf)].reduce<number>((sum, bid) => sum + (bid ?? 0), 0);
+    return [...bids, ...out.map((player) => bidOf(round, player))].reduce<number>(
+        (sum, bid) => sum + (bid ?? 0),
+        0
+    );
 };
 
 const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
@@ -239,10 +240,10 @@ const scoreRound = (round: unknown, context: RoundContext): RoundOutcome => {
     const read = withoutBidsOfThoseOut(round, context.out, dealt);
     const { scores, problems, allIn } = readEntries(read, context, readPlayer(dealt));
     if (problems.length > 0) return { scores, problems, complete: false };
-    // Under Plus or minus one, and under the Canadian rule while the dealer leads alone, the last
-    // bid cannot make the bids come to the cards dealt, so a round whose bids do is refused,
-    // whatever its tricks. The bids are read from the round as entered, so a bid passed over for a
-    // player marked out still counts.
+    // Under Plus or minus one, and under the Canadian rule while the dealer has the highest score
+    // alone, the last bid cannot make the bids come to the cards dealt, so a round whose bids do
+    // is refused, whatever its tricks. The bids are read from the round as entered, so a bid
+    // passed over for a player marked out still counts.
     if (barred(round, context, dealt))
         return {
             scores,

@@ -5,12 +5,14 @@
         {
             "id": "plus-minus-one",
             "kind": "switch",
-            "default": false
+            "default": false,
+            "excludes": ["canadian"]
         },
         {
             "id": "canadian",
             "kind": "switch",
-            "default": false
+            "default": false,
+            "excludes": ["plus-minus-one"]
         }
     ]
 }

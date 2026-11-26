@@ -54,7 +54,10 @@ export interface ProblemData {
     readonly 'player-twice': Nothing;
     readonly 'unknown-option': { readonly option: string };
     readonly 'value-not-allowed': { readonly option: string; readonly value: Plain };
-    /** Two switches on that cannot be on together, by their ids in the order the game declares them. */
+    /**
+     * Two switches on that cannot be on together, by their ids in the order the game declares
+     * them.
+     */
     readonly 'options-clash': { readonly options: readonly [string, string] };
     /**
      * `out` when the round's list of players out is not a list of ids, or nothing when the round

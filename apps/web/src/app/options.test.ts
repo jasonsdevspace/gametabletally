@@ -1,7 +1,15 @@
 import { type Game, type GameOption, GAMES, type SwitchOption } from '@gametabletally/scoring';
 import { describe, expect, it } from 'vitest';
 
-import { optionsOf, optionWords, pickOption, playedWith, shownOf } from './options.js';
+import {
+    named,
+    namedFirst,
+    optionsOf,
+    optionWords,
+    pickOption,
+    playedWith,
+    shownOf,
+} from './options.js';
 
 /* A game's rule options as the app offers them, saves them and names them. */
 
@@ -71,6 +79,18 @@ describe("a game's rule options", () => {
             picked: { 'plus-minus-one': false, canadian: false },
             off: [],
         });
+    });
+
+    it('name the Canadian rule as a rule named for a place, in a sentence and at its start', () => {
+        const [minus, canadian] = shownOf(gameOf('wizard'));
+        if (!minus || !canadian) throw new Error('Wizard has no two switches.');
+        expect(named(canadian)).toBe('the Canadian rule');
+        expect(namedFirst(canadian)).toBe('The Canadian rule');
+        expect(named(minus)).toBe('plus or minus one');
+        expect(namedFirst(minus)).toBe('Plus or minus one');
+        expect(optionWords(gameOf('wizard'), { canadian: true })).toBe(
+            'Played with the Canadian rule.'
+        );
     });
 
     it('are named only where they differ from the published rules', () => {

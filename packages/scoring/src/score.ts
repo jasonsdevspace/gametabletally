@@ -155,10 +155,9 @@ const optionProblems = (
  * The switches given on together that cannot be, each pair once, in the order the game declares
  * them, so a game is never played by two rules on the same thing.
  */
-const clashProblems = (
-    rules: Rules,
-    options: Readonly<Record<string, unknown>>
-): readonly Problem[] => {
+const clashProblems = (rules: Rules, options: Settled): readonly Problem[] => {
+    // Read from the settled options, defaults filled in, so a switch on by default clashes as one
+    // given on does.
     const on = rules.options.filter(
         (option) => option.kind === 'switch' && options[option.id] === true
     );
@@ -445,7 +444,7 @@ const scoreRead = (input: ScoreInput): ScoreResult => {
     const stopped = [
         ...playerProblems(rules, players),
         ...given,
-        ...(given.length === 0 ? clashProblems(rules, input.options) : []),
+        ...(given.length === 0 ? clashProblems(rules, settle(rules, input.options)) : []),
     ];
     if (stopped.length > 0) return unscored(input, stopped);
     const playing: Playing = { rules, input, options: settle(rules, input.options) };

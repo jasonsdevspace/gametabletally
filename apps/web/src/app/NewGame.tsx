@@ -19,7 +19,7 @@ import { fetchGameAhead } from './entries.js';
 import { Failure } from './failure.js';
 import { Dock, useToast } from './frame-places.js';
 import { Icon } from './icon.js';
-import { optionsOf, pickOption, shownOf } from './options.js';
+import { named, namedFirst, optionsOf, pickOption, shownOf } from './options.js';
 import { AddByName, usePlayersRead, useRunning } from './player-parts.js';
 import { moveSeat, playerNamed, seatsProblem } from './seats.js';
 
@@ -422,18 +422,18 @@ export const NewGame = ({
                     game={game}
                     picked={picked[game.id] ?? {}}
                     onPick={(id, value) => {
-                        const { picked: next, off } = pickOption(
-                            game,
-                            picked[game.id] ?? {},
-                            id,
-                            value
-                        );
-                        setPicked((now) => ({ ...now, [game.id]: next }));
-                        // A rule turned off by another is said, since its box changed unasked.
+                        // The switches turned off are read from this render's picks, for the announcement,
+                        // and the picks are updated from the latest state, so two picks before a render both stick.
+                        const { off } = pickOption(game, picked[game.id] ?? {}, id, value);
+                        setPicked((now) => ({
+                            ...now,
+                            [game.id]: pickOption(game, now[game.id] ?? {}, id, value).picked,
+                        }));
+                        // A switch turned off by another is announced, since its box changed without being touched.
                         const turnedOn = game.options.find((one) => one.id === id);
                         for (const one of off)
                             say(
-                                `${one.name} is off, since it cannot be played with the ${turnedOn?.name ?? 'rule'}.`
+                                `${namedFirst(one)} is off, since it cannot be played with ${turnedOn ? named(turnedOn) : 'that rule'}.`
                             );
                     }}
                 />

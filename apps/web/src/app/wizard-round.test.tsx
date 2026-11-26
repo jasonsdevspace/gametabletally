@@ -254,9 +254,9 @@ describe('a round of Wizard', () => {
     const canadian = (first: Parameters<typeof saved>[0]) =>
         wizard(at({ part: 'bid', player: 'ann' }, {}, 1), [saved(first)], { canadian: true });
     const canadianWords = (bid: number) =>
-        `Ben deals and leads alone, so under the Canadian rule the bids may not add up to 2, the cards each player holds, and Ben cannot bid ${String(bid)}.`;
+        `Ben deals and has the highest score alone, so under the Canadian rule the bids may not add up to 2, the cards each player holds, and Ben cannot bid ${String(bid)}.`;
 
-    it('says which bid the dealer cannot make under the Canadian rule while the dealer leads alone', async () => {
+    it('says which bid the dealer cannot make under the Canadian rule while the dealer has the highest score alone', async () => {
         await draw(canadian({ ann: [0, 0], ben: [1, 1], cat: [0, 0] }));
         setCount('bid-ann', 1);
         // A 0 shown before any bid is no bid, so Cat's is set and then taken down to nothing.
@@ -270,7 +270,7 @@ describe('a round of Wizard', () => {
         });
     });
 
-    it('bars no bid under the Canadian rule while another player leads', async () => {
+    it('bars no bid under the Canadian rule while another player has the highest score', async () => {
         await draw(canadian({ ann: [1, 1], ben: [0, 0], cat: [0, 0] }));
         setCount('bid-ann', 1);
         // A 0 shown before any bid is no bid, so Cat's is set and then taken down to nothing.
