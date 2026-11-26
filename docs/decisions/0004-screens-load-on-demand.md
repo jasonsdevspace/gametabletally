@@ -43,10 +43,11 @@ pad or Wizard's bids and no other game's. `apps/web/src/own-files.ts` lists the 
 demand, the screens' loaders and the build read it, and a test holds the entries' loaders to it.
 
 - **A page sends the shell and its own code.** The shell holds the router, the status line, the
-  watch for a newer build and the website's frame. A page of the app adds the app's frame and the
-  parts its screens share, in one file, and its own screen. A page of the website adds its own page
-  and none of the app's screens or its frame. The prerender has each page fetch its own files
-  beside the shell, read from the build's manifest and source maps.
+  watch for a newer build and the website's frame. A page of the app adds the app's frame, the
+  parts its screens share and its own screen, split into files as the bundler splits them by
+  default. A page of the website adds its own page and none of the app's screens or its frame. The
+  prerender has each page fetch its own files beside the shell, read from the build's manifest and
+  source maps.
 - **Every screen's code is loaded once the service worker serves the page,** so a move to a screen
   not yet opened draws at once, from the phone, rather than holding its loading line. The worker
   fetches every file once the first page has loaded, as it always has, so this costs no network. A
@@ -73,18 +74,16 @@ demand, the screens' loaders and the build read it, and a test holds the entries
 
 ## Consequences
 
-- On a first visit in the local audit, the website's pages send about 101 KB of script rather than
-  125 KB, and the app's pages 118 to 121 KB. A new screen adds only its own file, to the pages that
-  show it.
-- A page of the app fetches a few files rather than one. Over HTTP/1.1, as the local audit serves
-  it, a page that draws from the phone's games paints its largest content at about 2250 ms rather
-  than 2100 ms. Measured once over HTTP/2, as GitHub Pages serves it, the same pages paint sooner
-  than with the one script.
-- The parts the app's screens share are kept in one file with the frame, to hold the count of files
-  down, which takes the bundler's strict execution order and about 5 KB more script on every page.
-  The budget for that file in `apps/web/e2e/build.spec.ts` covers the frame and those parts
-  together, so a helper only one screen uses, put under `apps/web/src/app`, reaches every page of
-  the app, and that budget is what catches it.
+- On a first visit in the local audit, the website's pages send about 96 KB to 101 KB of script
+  rather than 125 KB, and the app's pages 110 KB to 116 KB. A new screen adds only its own file, to
+  the pages that show it.
+- A page of the app fetches several files rather than one. The audit serves the build over HTTP/2,
+  as GitHub Pages does, where they come down together, and a page that draws from the phone's
+  games paints its largest content at about 1650 ms. Over HTTP/1.1 each file cost a round trip, and
+  the build first kept the parts the screens share in one file to hold the count down, which took
+  the bundler's strict execution order and 4 KB to 8 KB more script on every page. Measured over
+  HTTP/2, the bundler's own split paints at the same moment with that script left out, so the build
+  splits as the bundler does.
 - The scoring rules stay in the shell, since the website names the games, so every page carries
   every game's rules.
 

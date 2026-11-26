@@ -1,5 +1,7 @@
 /**
- * Lighthouse over the built app, served as GitHub Pages serves it.
+ * Lighthouse over the built app, served as GitHub Pages serves it, over HTTP/2 with compression, so
+ * a page that fetches several files is judged as a visitor's browser fetches them. The server makes
+ * a certificate for the run with OpenSSL, and the browser is told to accept it.
  *
  *   npm run lighthouse
  *
@@ -36,7 +38,7 @@ const LAYOUT_SHIFT = 0.1;
  * so the website's pages and the app's each have a budget of their own, set from what the split
  * build sends with room for a screen to grow.
  */
-const BUDGET = { WebsiteScript: 108_000, AppScript: 124_000, Stylesheet: 30_000 };
+const BUDGET = { WebsiteScript: 104_000, AppScript: 118_000, Stylesheet: 30_000 };
 
 /** The script a page may carry, by whether it is one of the app's or the website's. */
 const scriptBudgetOf = (path) => (inApp(routeAt(path)) ? BUDGET.AppScript : BUDGET.WebsiteScript);
@@ -101,10 +103,11 @@ const timing = (m) => [
     ...(m.shift > LAYOUT_SHIFT ? ['shift'] : []),
 ];
 
-const server = await serve(PORT);
+// Over HTTP/2, as Pages serves the live site, with a certificate the browser is told to accept.
+const server = await serve(PORT, { secure: true });
 const chrome = await launch({
     chromePath: chromium.executablePath(),
-    chromeFlags: ['--headless=new', '--no-sandbox'],
+    chromeFlags: ['--headless=new', '--no-sandbox', '--ignore-certificate-errors'],
 });
 const failures = [];
 

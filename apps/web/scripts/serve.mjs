@@ -10,8 +10,11 @@
  * downloads. Vite's own preview answers an unknown path with the start page instead, which would
  * hide a page that was not built.
  */
-import { createReadStream, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { createReadStream, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { createSecureServer } from 'node:http2';
+import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGzip } from 'node:zlib';
@@ -90,10 +93,38 @@ const send = (request, response, status, file) => {
     (gzip ? stream.pipe(createGzip()) : stream).pipe(response);
 };
 
-/** Starts the server on a port, and resolves to a way to stop it once it listens. */
-export const serve = (port) =>
+/**
+ * A certificate for localhost made for this run alone, so the server can speak HTTP/2, which a
+ * browser speaks only over TLS, as Pages does. It is made by OpenSSL and thrown away at once.
+ */
+const certificate = () => {
+    const folder = mkdtempSync(join(tmpdir(), 'serve-'));
+    const key = join(folder, 'key.pem');
+    const cert = join(folder, 'cert.pem');
+    try {
+        execFileSync(
+            'openssl',
+            [
+                ...['req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1'],
+                ...['-nodes', '-keyout', key, '-out', cert, '-days', '1'],
+                ...['-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost'],
+            ],
+            { stdio: 'ignore' }
+        );
+        return { key: readFileSync(key), cert: readFileSync(cert) };
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
+};
+
+/**
+ * Starts the server on a port, and resolves to its address and a way to stop it once it listens.
+ * Asked to be secure, it serves HTTP/2 over TLS with a certificate made for the run, as Pages
+ * serves the live site, for a browser told to accept that certificate.
+ */
+export const serve = (port, { secure = false } = {}) =>
     new Promise((ready) => {
-        const server = createServer((request, response) => {
+        const answer = (request, response) => {
             const url = new URL(request.url ?? '/', 'http://localhost');
             let path;
             try {
@@ -121,16 +152,24 @@ export const serve = (port) =>
             } else {
                 send(request, response, 404, join(ROOT, '404.html'));
             }
+        };
+        const server = secure
+            ? createSecureServer({ ...certificate(), allowHTTP1: true }, answer)
+            : createServer(answer);
+        // A browser keeps its connections open, and a server waits for those to end before it
+        // closes, so they are ended first.
+        const open = new Set();
+        server.on(secure ? 'session' : 'connection', (connection) => {
+            open.add(connection);
+            connection.on('close', () => open.delete(connection));
         });
         server.listen(port, () => {
             ready({
-                origin: `http://localhost:${port}`,
-                // A browser keeps its connections open, and a server waits for those to end
-                // before it closes, so they are ended first.
+                origin: `${secure ? 'https' : 'http'}://localhost:${port}`,
                 stop: () =>
                     new Promise((done) => {
                         server.close(done);
-                        server.closeAllConnections();
+                        for (const connection of open) connection.destroy();
                     }),
             });
         });

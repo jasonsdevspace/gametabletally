@@ -79,7 +79,8 @@ every address opening with the connection off after one visit. Service workers a
 browser test but those of the worker, so no other test reads a cached page. `npm run lighthouse`
 holds every page to a hundred for accessibility, and to ninety for performance, a good largest
 paint and layout shift, and a budget for the style and the script its first load carries, with one
-script budget for the website's pages and another for the app's.
+script budget for the website's pages and another for the app's, served over HTTP/2 as GitHub Pages
+serves them, with a certificate made for the run.
 
 A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
 passed, and a merge that fails one is not deployed. The live address counts page views with
