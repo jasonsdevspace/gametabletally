@@ -1,5 +1,5 @@
 import type { PlausibleEventOptions } from '@plausible-analytics/tracker';
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -365,6 +365,87 @@ describe('the events counted', () => {
         countEvent('Game started', 'wizard', live, {});
         await vi.waitFor(() => {
             expect(sent).toEqual([{ name: 'Game started', props: { game: 'Wizard' } }]);
+        });
+    });
+});
+
+describe('the list on the phone', () => {
+    it('sends an event the database refuses to keep, as on a full phone, rather than lose it', async () => {
+        const { sent, load } = network();
+        await countVisits(live, {}, load);
+        await settle();
+        vi.spyOn(IDBObjectStore.prototype, 'add').mockImplementation(() => {
+            throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        });
+        countEvent('Game started', 'wizard', live, {});
+        await vi.waitFor(() => {
+            expect(sent).toEqual([{ name: 'Game started', props: { game: 'Wizard' } }]);
+        });
+    });
+
+    it('stops counting on the page once the browser sends Global Privacy Control, and keeps nothing', async () => {
+        const { sent, load, lose, reconnect } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(async () => {
+            expect(await kept()).toEqual([['Install']]);
+        });
+        countEvent('Install', undefined, live, { globalPrivacyControl: true });
+        await vi.waitFor(async () => {
+            expect(await hasDatabase()).toBe(false);
+        });
+        reconnect();
+        navigate('/play/');
+        await settle();
+        expect(await hasDatabase()).toBe(false);
+        expect(sent).toEqual([]);
+    });
+
+    it('lets another page delete the database, and opens it again for the next event', async () => {
+        const { load, lose } = network();
+        await countVisits(live, {}, load);
+        lose();
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(async () => {
+            expect(await kept()).toEqual([['Install']]);
+        });
+        const blocked = vi.fn();
+        await new Promise<void>((resolve, reject) => {
+            const deleting = indexedDB.deleteDatabase(DATABASE);
+            deleting.onblocked = blocked;
+            deleting.onsuccess = () => {
+                resolve();
+            };
+            deleting.onerror = () => {
+                reject(deleting.error ?? new Error('The counts were not deleted.'));
+            };
+        });
+        expect(blocked).not.toHaveBeenCalled();
+        expect(await hasDatabase()).toBe(false);
+        countEvent('Game finished', 'skyjo', live, {});
+        await vi.waitFor(async () => {
+            expect(await kept()).toEqual([['Game finished', 'Skyjo']]);
+        });
+    });
+
+    it("moves an older version's list in once, and takes it out of local storage", async () => {
+        localStorage.setItem(OLDER_KEPT, stored([['Install'], ['Game started', 'Wizard']]));
+        countEvent('Game finished', 'skyjo', live, {});
+        await vi.waitFor(async () => {
+            expect(await kept()).toEqual([
+                ['Install'],
+                ['Game started', 'Wizard'],
+                ['Game finished', 'Skyjo'],
+            ]);
+        });
+        expect(localStorage.getItem(OLDER_KEPT)).toBeNull();
+        // A list an older page writes again after the move is not moved a second time.
+        localStorage.setItem(OLDER_KEPT, stored([['Install']]));
+        stopCounting();
+        countEvent('Install', undefined, live, {});
+        await vi.waitFor(async () => {
+            expect(await kept()).toHaveLength(4);
         });
     });
 });

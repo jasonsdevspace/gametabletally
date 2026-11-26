@@ -96,8 +96,9 @@ it is never sent twice. One made with no connection is kept in a small database 
 phone, up to a limit past which new ones are dropped, and sent once the connection returns, while
 one that fails with the browser online, as a blocker makes it, is dropped. Every change to that
 list is one transaction, so two open pages counting at once never undo each other's events. It is
-the only thing counting stores on the phone, and it is deleted where a visit does not count. Marking the events as goals in Plausible
-is done by hand in its dashboard.
+the only thing counting stores on the phone, and it is deleted where a visit does not count, which
+also stops counting on a page where Global Privacy Control is turned on while it is open. Marking
+the events as goals in Plausible is done by hand in its dashboard.
 
 Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
 message to the house style. Pull requests are squashed, so a pull request's title becomes the

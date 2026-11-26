@@ -127,6 +127,9 @@ const keptOn = (page: Page) =>
                             return;
                         }
                         const read = database.transaction('kept').objectStore('kept').getAll();
+                        read.onerror = () => {
+                            reject(read.error ?? new Error('The counts could not be read.'));
+                        };
                         read.onsuccess = () => {
                             database.close();
                             resolve(
@@ -290,7 +293,11 @@ test('keeps events made with no connection up to the limit, and drops the newest
     await page.evaluate(
         ({ name, most }) =>
             new Promise<void>((resolve, reject) => {
-                const opening = indexedDB.open(name);
+                // Opened as the app opens it, so the store is made as the app makes it.
+                const opening = indexedDB.open(name, 1);
+                opening.onupgradeneeded = () => {
+                    opening.result.createObjectStore('kept', { autoIncrement: true });
+                };
                 opening.onerror = () => {
                     reject(opening.error ?? new Error('The counts could not be opened.'));
                 };
@@ -302,6 +309,9 @@ test('keeps events made with no connection up to the limit, and drops the newest
                     writing.oncomplete = () => {
                         database.close();
                         resolve();
+                    };
+                    writing.onerror = () => {
+                        reject(writing.error ?? new Error('The counts were not seeded.'));
                     };
                 };
             }),

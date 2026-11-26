@@ -154,7 +154,10 @@ const inStore = <T>(
         };
     });
 
-/** The list kept in the database, each change one transaction, so two pages never undo another's. */
+/**
+ * The list kept in the database. Each change is one transaction, so two pages never undo each
+ * other's, and the list never holds more than its limit.
+ */
 const storedList = (database: IDBDatabase): List => ({
     add: (event) =>
         inStore<undefined>(database, (store, done) => {
@@ -178,14 +181,26 @@ const storedList = (database: IDBDatabase): List => ({
                 else at.continue();
             };
         }),
+    // Where another page filled the list while the event was out, the newest is dropped for it.
     putBack: ({ key, event }) =>
         inStore<undefined>(database, (store, done) => {
-            store.put(event, key);
             done(undefined);
+            const counted = store.count();
+            counted.onsuccess = () => {
+                if (counted.result < MOST_KEPT) {
+                    store.put(event, key);
+                    return;
+                }
+                const newest = store.openCursor(null, 'prev');
+                newest.onsuccess = () => {
+                    newest.result?.delete();
+                    store.put(event, key);
+                };
+            };
         }),
 });
 
-/** The list kept in memory, for a browser that cannot open the database, until the page closes. */
+/** The list kept in memory, where the database cannot keep it, until the page closes. */
 const memoryList = (): List => {
     let next = 0;
     const events: Taken[] = [];
@@ -197,33 +212,55 @@ const memoryList = (): List => {
         take: () => Promise.resolve(events.shift() ?? null),
         putBack: (taken) => {
             events.unshift(taken);
+            if (events.length > MOST_KEPT) events.pop();
             return Promise.resolve();
         },
     };
 };
 
-/** The events an older version left in local storage, which are moved to the database once. */
+/** The events an older version left in local storage, read without taking them away. */
 const olderEvents = (): Kept[] => {
     try {
         const read: unknown = JSON.parse(localStorage.getItem(OLDER_KEPT) ?? '[]');
-        localStorage.removeItem(OLDER_KEPT);
         return Array.isArray(read)
-            ? read.filter(isKept).map(({ n, g }) => (g === undefined ? { n } : { n, g }))
+            ? read
+                  .filter(isKept)
+                  .slice(0, MOST_KEPT)
+                  .map(({ n, g }) => (g === undefined ? { n } : { n, g }))
             : [];
     } catch {
         return [];
     }
 };
 
-/** Opens the database, making its store the first time. */
+/**
+ * Opens the database. The first page to open it makes its store and moves in the events an older
+ * version left in local storage, in the one upgrade the browser lets a single page run, and takes
+ * them out of local storage once the move has gone through, so none is moved twice or lost.
+ */
 const openDatabase = (): Promise<IDBDatabase> =>
     new Promise((resolve, reject) => {
         const opening = indexedDB.open(DATABASE, 1);
+        let moved = false;
         opening.onupgradeneeded = () => {
-            opening.result.createObjectStore(STORE, { autoIncrement: true });
+            const store = opening.result.createObjectStore(STORE, { autoIncrement: true });
+            for (const event of olderEvents()) store.add(event);
+            moved = true;
         };
         opening.onsuccess = () => {
-            resolve(opening.result);
+            const database = opening.result;
+            if (!database.objectStoreNames.contains(STORE)) {
+                database.close();
+                reject(new Error('The counts have no store.'));
+                return;
+            }
+            if (moved)
+                try {
+                    localStorage.removeItem(OLDER_KEPT);
+                } catch {
+                    // Nothing was stored there.
+                }
+            resolve(database);
         };
         opening.onerror = () => {
             reject(opening.error ?? new Error('The counts could not be opened.'));
@@ -236,34 +273,68 @@ let list: Promise<List> | null = null;
 /** The connection the list holds, closed where a visit no longer counts. */
 let connection: IDBDatabase | null = null;
 
+/** Counts each time the list is let go, so an open that finishes after that is closed again. */
+let opens = 0;
+
 /**
  * The list of events waiting, in the database where the browser opens it and in memory where it
- * cannot, with any events an older version left in local storage moved into it.
+ * cannot.
  */
 const theList = (): Promise<List> => {
-    list ??= openDatabase().then(
-        async (database) => {
+    if (list) return list;
+    const mine = (opens += 1);
+    list = openDatabase().then(
+        (database) => {
+            // An open that finishes once the list was let go closes again, and leaves the list as
+            // it now stands.
+            if (mine !== opens) {
+                database.close();
+                return memoryList();
+            }
             connection = database;
-            // A newer version of the database closes this one, and the next change opens it again.
+            // A page deleting or upgrading the database closes this connection, and the next change
+            // opens it again.
             database.onversionchange = () => {
                 database.close();
+                if (connection !== database) return;
                 connection = null;
                 list = null;
+                opens += 1;
             };
-            const opened = storedList(database);
-            for (const event of olderEvents()) await opened.add(event);
-            return opened;
+            return storedList(database);
         },
         () => memoryList()
     );
     return list;
 };
 
-/** Forgets every event kept, where a visit no longer counts, leaving nothing on the phone. */
-const forget = (): void => {
+/** Lets the list go, closing its connection, so the next change opens it again. */
+const letGo = (): void => {
     connection?.close();
     connection = null;
     list = null;
+    opens += 1;
+};
+
+/**
+ * Keeps the list in memory for the rest of the page's life, holding the events given, where a change
+ * to the database failed, so an event is still sent rather than lost.
+ */
+const toMemory = async (events: readonly Kept[]): Promise<List> => {
+    letGo();
+    const fallback = memoryList();
+    for (const event of events) await fallback.add(event);
+    list = Promise.resolve(fallback);
+    return fallback;
+};
+
+/**
+ * Forgets every event kept, where a visit no longer counts, and stops counting on the page, so
+ * nothing counting kept stays on the phone and nothing more is sent from it.
+ */
+const forget = (): void => {
+    stopSending();
+    letGo();
     try {
         localStorage.removeItem(OLDER_KEPT);
     } catch {
@@ -315,9 +386,9 @@ let sending = false;
 let again = false;
 
 /**
- * Sends the events waiting, oldest first. Each is taken off the list before it is sent, in one
- * change, so a page that closes with a send on its way, or another page sending at the same time,
- * never sends it again. One that fails with the connection gone or changing while it was on its way
+ * Sends the events waiting, each page the events it takes, oldest first. Each is taken off the list
+ * before it is sent, in one change, so a page that closes with a send on its way, or another page
+ * sending at the same time, never sends it again. One that fails with the connection gone or changing while it was on its way
  * is put back at the head of the list, to send when the connection returns. One that fails with the
  * browser online throughout, as a blocker makes it, is dropped, so the list never holds events that
  * can never be sent.
@@ -331,10 +402,18 @@ const sendKept = (): void => {
     const sendOne = send;
     sending = true;
     const round = async () => {
-        const waiting = await theList();
-        for (let taken = await waiting.take(); taken !== null; taken = await waiting.take()) {
+        let waiting = await theList();
+        for (;;) {
+            const taken = await waiting.take().catch(async () => {
+                // The database failed under the page, so the rest of its life keeps them in memory.
+                waiting = await toMemory([]);
+                return null;
+            });
+            if (taken === null) return;
             if ((await sendOne(taken.event)) !== 'offline') continue;
-            await waiting.putBack(taken);
+            await waiting.putBack(taken).catch(async () => {
+                waiting = await toMemory([taken.event]);
+            });
             return;
         }
     };
@@ -365,8 +444,11 @@ export const countEvent = (
     }
     const named = GAMES.find(({ id }) => id === game)?.name;
     if (game !== undefined && named === undefined) return;
+    const event: Kept = named === undefined ? { n: name } : { n: name, g: named };
     void theList()
-        .then((waiting) => waiting.add(named === undefined ? { n: name } : { n: name, g: named }))
+        .then((waiting) => waiting.add(event))
+        // A write the database refuses, as on a full phone, keeps the event in memory instead.
+        .catch(() => toMemory([event]))
         .then(sendKept)
         .catch(() => undefined);
 };
@@ -445,19 +527,22 @@ export const countVisits = async (
     }
 };
 
-/** Forgets that counting started, for the tests. */
-export const stopCounting = (): void => {
+/** Stops counting on the page, so nothing is sent from it until counting starts again. */
+const stopSending = (): void => {
     count = null;
     send = null;
-    sending = false;
-    again = false;
     last = null;
-    connection?.close();
-    connection = null;
-    list = null;
     window.removeEventListener('popstate', countMove);
     window.removeEventListener('online', sendKept);
     window.removeEventListener('online', changed);
     window.removeEventListener('offline', changed);
+};
+
+/** Forgets that counting started, for the tests. */
+export const stopCounting = (): void => {
+    stopSending();
+    sending = false;
+    again = false;
     changes = 0;
+    letGo();
 };
