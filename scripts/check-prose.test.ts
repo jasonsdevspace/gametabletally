@@ -117,9 +117,19 @@ describe('the words the prose check refuses', () => {
         }
     );
 
-    it('refuses waiting on as a phrase, as in waiting on the release', () => {
-        expect(rules('a.ts', '// Waiting on the release\n')).toEqual(['a.ts:1  process artifact']);
-    });
+    it.each(['Waiting on the release', 'Awaiting on the release'])(
+        'refuses %j, the phrase on its own',
+        (words) => {
+            expect(rules('a.ts', `// ${words}\n`)).toEqual(['a.ts:1  process artifact']);
+        }
+    );
+
+    it.each(['for now leaves', 'for now skips', 'not implementedly'])(
+        'passes %j, which only starts like a process artifact',
+        (words) => {
+            expect(rules('a.ts', `// The cache ${words} stale rows\n`)).toEqual([]);
+        }
+    );
 
     it.each([
         'issue 12',
