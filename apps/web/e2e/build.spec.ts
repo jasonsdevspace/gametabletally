@@ -100,6 +100,19 @@ const listedFiles = (): readonly string[] => {
     return readPrecache(JSON.parse(text)).files;
 };
 
+test('builds each font under /assets/ named by its hash, with only its license left in /fonts', () => {
+    const files = listedFiles();
+    for (const font of ['dm-sans-latin', 'instrument-serif-latin'])
+        expect(
+            files.filter((file) => new RegExp(`^/assets/${font}-[\\w-]{8}\\.woff2$`).test(file)),
+            font
+        ).toHaveLength(1);
+    expect(files.filter((file) => file.startsWith('/fonts/'))).toEqual([
+        '/fonts/dm-sans-OFL.txt',
+        '/fonts/instrument-serif-OFL.txt',
+    ]);
+});
+
 test("the worker's install takes from the browser's cache only the files the build named by their hash", () => {
     const files = listedFiles();
     expect(files.filter((file) => file.startsWith('/assets/')).length).toBeGreaterThan(0);
