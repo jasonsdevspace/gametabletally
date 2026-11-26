@@ -110,6 +110,17 @@ describe('the words the prose check refuses', () => {
         ]);
     });
 
+    it.each(['waiting once', 'waiting one', 'waiting only', 'awaiting one'])(
+        'passes %j, which only starts like a process artifact',
+        (words) => {
+            expect(rules('a.ts', `// The page reloads after ${words} turn\n`)).toEqual([]);
+        }
+    );
+
+    it('refuses waiting on as a phrase, as in waiting on the release', () => {
+        expect(rules('a.ts', '// Waiting on the release\n')).toEqual(['a.ts:1  process artifact']);
+    });
+
     it.each([
         'issue 12',
         'issue #12',
