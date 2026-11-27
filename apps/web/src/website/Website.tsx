@@ -1,5 +1,5 @@
 import { GAMES } from '@gametabletally/scoring';
-import { DemoFooter, PortfolioStrip, SkipLink } from '@jasonsdevspace/design-kit/react';
+import { SkipLink } from '@jasonsdevspace/design-kit/react';
 import type { ReactNode } from 'react';
 
 import { MARK } from '../mark.js';
@@ -10,16 +10,11 @@ import { listOf } from './games.js';
 /**
  * The website's frame, around the pages a visitor reads before they keep score: the first visit,
  * the install page, the about page, and the pages for an address that is not one and for an
- * error. It is the design kit's skip link, strip and footer, with the app's own header between
- * the strip and the page. A screen for keeping score is drawn without it, so play keeps the whole
- * screen.
+ * error. It is the design kit's skip link, the app's own header and the app's own footer, drawn
+ * in the kit's footer style. It names no portfolio, so the site reads as the app's own, and the
+ * story of how it was made is told on the portfolio. A screen for keeping score is drawn without
+ * it, so play keeps the whole screen.
  */
-
-/** Where the strip's and the footer's How it works leads: the section of the about page. */
-const HOW = `${hrefOf('about')}#how`;
-
-/** The repository, which the strip and the footer link to. */
-export const SOURCE = 'https://github.com/jasonsdevspace/gametabletally';
 
 /** The line that says whose games these are not, built from the games' own names. */
 export const NOT_AFFILIATED = `Game Table Tally is not affiliated with the publishers of ${listOf(
@@ -81,11 +76,6 @@ export const Website = ({
     return (
         <>
             <SkipLink target="main" />
-            <PortfolioStrip
-                about={HOW}
-                source={SOURCE}
-                current={current === 'about' ? 'about' : undefined}
-            />
             <header className="dk-site-header">
                 <Way className="dk-site-brand" href={hrefOf('start')}>
                     <TallyMark size={32} className="dk-site-mark" />
@@ -110,14 +100,15 @@ export const Website = ({
             <main id="main" tabIndex={-1} className="gtt-site">
                 {children}
             </main>
-            <DemoFooter
-                name="Game Table Tally"
-                about={HOW}
-                source={SOURCE}
-                current={current === 'about' ? 'about' : undefined}
-            >
-                {NOT_AFFILIATED}
-            </DemoFooter>
+            <footer className="dk-footer">
+                <p>
+                    Game Table Tally is a free scorekeeper for the game table.{' '}
+                    <Way href={hrefOf('about')} aria-current={currentIf(current === 'about')}>
+                        About the app
+                    </Way>{' '}
+                    says how it works, what it counts and who made it. {NOT_AFFILIATED}
+                </p>
+            </footer>
         </>
     );
 };

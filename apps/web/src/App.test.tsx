@@ -157,6 +157,33 @@ describe("the website's pages", () => {
         }
     );
 
+    it.each(['/', '/install/', '/about/', '/no-such-page/'])(
+        "draws %s as the app's own site, with no portfolio strip or link",
+        (path) => {
+            at(path);
+            expect(document.querySelector('.dk-strip')).toBeNull();
+            const addresses = screen
+                .getAllByRole('link')
+                .map((link) => link.getAttribute('href') ?? '');
+            expect(addresses.filter((href) => href.includes('jasonsdevspace.com'))).toEqual([]);
+            const footer = within(screen.getByRole('contentinfo'));
+            expect(footer.getByRole('link', { name: 'About the app' })).toHaveAttribute(
+                'href',
+                '/about/'
+            );
+            expect(screen.getByRole('contentinfo')).toHaveTextContent(NOT_AFFILIATED);
+        }
+    );
+
+    it('says on the about page who made the app, with a link to his GitHub profile', () => {
+        at('/about/');
+        const maker = within(screen.getByRole('region', { name: 'Who made it' }));
+        expect(maker.getByRole('link', { name: 'his GitHub profile' })).toHaveAttribute(
+            'href',
+            'https://github.com/jasonsdevspace'
+        );
+    });
+
     it.each(['/', '/about/'])('carries the not affiliated line on %s', (path) => {
         at(path);
         expect(document.body.textContent).toContain(NOT_AFFILIATED);

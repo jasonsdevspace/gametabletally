@@ -9,9 +9,12 @@ import { Backup } from './Backup.js';
 import { listOf } from './games.js';
 import { NOT_AFFILIATED, Website } from './Website.js';
 
+/** The GitHub profile of the app's maker, which the about page links to. */
+export const MAKER = 'https://github.com/jasonsdevspace';
+
 /**
  * What the app is, whose games it names and does not own, the games saved on the phone, what is
- * counted and what never leaves the phone, and the switch for light and dark.
+ * counted and what never leaves the phone, who made it, and the switch for light and dark.
  */
 export const About = () => {
     const theme = useRef<HTMLDivElement>(null);
@@ -78,6 +81,14 @@ export const About = () => {
                         the phone and sent once the connection is back. If too many are waiting, new
                         ones are dropped. If your browser sends Global Privacy Control, a setting
                         that asks sites not to track you, nothing is counted at all.
+                    </p>
+                </section>
+                <section aria-labelledby="maker">
+                    <h2 id="maker">Who made it</h2>
+                    <p>
+                        Game Table Tally is made by Jason Poteet, who plays these games with his
+                        friends and built it so nobody at the table has to keep score on paper. More
+                        of his work is on <a href={MAKER}>his GitHub profile</a>.
                     </p>
                 </section>
                 <section aria-labelledby="look">
