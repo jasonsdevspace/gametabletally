@@ -1,5 +1,6 @@
 /**
- * Draws every icon the app serves from the mark's one source, `src/mark.ts`, into `public`.
+ * Draws every icon the app serves from the mark's one source, `src/mark.ts`, into `public`, and the
+ * README's marks into `.github/readme`.
  *
  *   npm run icons
  *
@@ -24,7 +25,7 @@ const README = fileURLToPath(new URL('../../../.github/readme', import.meta.url)
 
 /**
  * What every icon was drawn from, as the test reads it back: each icon's drawing, the `.ico`'s
- * sizes, and this script, which draws them.
+ * sizes, the README's marks, and this script, which draws them.
  */
 export const drawnFrom = () =>
     createHash('sha256')

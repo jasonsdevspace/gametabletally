@@ -31,12 +31,14 @@ is worked out from the whole history of the game rather than added to a running 
 can be changed afterward and the totals still come out right. These are what it promises.
 
 - **Each game is scored by its own rules.** In Skyjo the player who ends a round has their score
-  doubled when it is above zero and another player holds as little or less. In Wizard every bid
-  goes in on one screen, the bids and who deals stay on it through the hand, and the tricks are
-  saved once they add up.
+  doubled when it is above zero and another player holds as little or less. In Wizard a bid met
+  exactly scores twenty and ten for each trick taken, and a bid missed loses ten for each trick over
+  or under.
 - **A game fits the night it is played.** A game is kept from its first round to its recap, with a
   player skipped for a round, a game left to finish later, and a saved round changed afterward. A
-  Skyjo total is typed on a number pad or added up from the cards.
+  Skyjo total is typed on a number pad or added up from the cards. A round of Wizard takes every bid
+  on one screen, shows the bids and who deals through the hand, and is saved once the tricks add up
+  to the cards dealt.
 - **It works with no connection.** After one visit every address opens with the connection off.
 - **Your games stay on your phone.** They leave it only in a file you save yourself, which another
   phone or browser can restore from.
@@ -54,13 +56,11 @@ can be changed afterward and the totals still come out right. These are what it 
 
 The games it scores:
 
-| Game   | Players   | What the app does                                                        |
-| ------ | --------- | ------------------------------------------------------------------------ |
-| Flip 7 | 3 or more | Adds up the cards a player holds, with a bust and the modifier cards     |
-| Skyjo  | 2 to 8    | Takes a total typed or added from the cards, and doubles a round-ender's |
-| Wizard | 3 to 6    | Takes every bid on one screen, then the tricks, saved once they add up   |
-
-The rest of this page is for engineers.
+| Game   | Players   | What the app does                                                                      |
+| ------ | --------- | -------------------------------------------------------------------------------------- |
+| Flip 7 | 3 or more | Adds up the cards a player holds, with a bust and the modifier cards                   |
+| Skyjo  | 2 to 8    | Takes a total typed or added from the cards, and doubles the ender's score by the rule |
+| Wizard | 3 to 6    | Takes every bid on one screen, then the tricks, saved once they add up                 |
 
 ## What the live site counts
 
@@ -83,16 +83,20 @@ new ones are dropped, and sent once the connection returns, while one that fails
 online, as a blocker makes it, is dropped. Every change to that list is one transaction, so two
 open pages counting at once never undo each other's events. It is the only thing counting stores on
 the phone, and it is deleted where a visit does not count, which also stops counting on a page
-where Global Privacy Control is turned on while it is open.
+where Global Privacy Control is turned on while it is open. Marking the events as goals in Plausible
+is done by hand in its dashboard.
 
 </details>
+
+The rest of this page is for engineers.
 
 ## Dev setup
 
 How to contribute is in [CONTRIBUTING.md](.github/CONTRIBUTING.md), and how to report a security
 issue is in [SECURITY.md](.github/SECURITY.md).
 
-You need [Node.js 24](https://nodejs.org/) and Git. The version is in `.nvmrc`, so `nvm use` picks it.
+You need [Node.js 24](https://nodejs.org/) and Git. The version is in `.nvmrc`, so `nvm use` picks
+it.
 
 ```bash
 git clone https://github.com/jasonsdevspace/gametabletally.git
@@ -187,11 +191,12 @@ commit on main, and CI holds the title and the body to the same check.
   cases.
 - `apps/web/` is the app, which reads the scoring package from its source, so nothing needs
   building first.
-    - `src/` holds the screens, the website's pages, the styles and the mark. Players and games are
-      kept on the phone in the shape [docs/saved-games.md](docs/saved-games.md) describes, and the
-      about page saves them to a file in that shape and restores from one. The addresses are one list
-      in `src/routes.ts`, and the build writes each as a page drawn ahead of time, so every address
-      reads with no script, with `404.html` for any other path, as GitHub Pages serves it.
+    - `src/` holds the screens, the website's pages, the saved-game store, the counting, the styles
+      and the mark. Players and games are kept on the phone in the shape
+      [docs/saved-games.md](docs/saved-games.md) describes, and the about page saves them to a file
+      in that shape and restores from one. The addresses are one list in `src/routes.ts`, and the
+      build writes each as a page drawn ahead of time, so every address reads with no script, with
+      `404.html` for any other path, as GitHub Pages serves it.
     - `worker/` builds the service worker, which caches every file of the build on the first visit
       and answers every page from that cache after, so the app opens with no connection. A newer
       build's worker installs and waits for the visitor to take it.
@@ -199,14 +204,17 @@ commit on main, and CI holds the title and the body to the same check.
     - `e2e/` holds the browser tests, and `scripts/` the scripts that draw the icons, write the
       pages ahead of time, list what the worker caches, serve the build and run the audit.
 - `docs/` holds the decision records and the shape of a saved game.
+- `scripts/` holds the prose, Node version and commit message checks.
 - `.github/` holds the contributing guide, the security policy, the issue and pull request
-  templates, the README's mark and picture in `readme/`, and the workflows.
+  templates, the README's mark, drawn by `npm run icons`, and its picture of a round, taken by hand
+  from the live app, in `readme/`, and the workflows.
 
 </details>
 
 ## Decisions
 
-The choices with a real alternative, each with the option rejected and what it costs:
+The choices with a real alternative, each with the option rejected and what it costs, are indexed in
+[docs/decisions](docs/decisions/README.md):
 
 1. [Scoring runs on the phone, and a server only checks it](docs/decisions/0001-scoring-runs-on-the-phone.md)
 2. [Games are saved as they were entered, in IndexedDB](docs/decisions/0002-games-are-saved-as-entered.md)

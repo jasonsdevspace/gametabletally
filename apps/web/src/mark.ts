@@ -1,7 +1,7 @@
 /**
  * The app's mark, a tally of five on the app's blue: the one source the header draws it from and
- * `scripts/icons.mjs` draws every icon from, the favicon, the apple touch icon and the install
- * icons. A new mark is drawn by changing this alone and running `npm run icons`.
+ * `scripts/icons.mjs` draws every icon from, the favicon, the apple touch icon, the install icons
+ * and the README's marks. A new mark is drawn by changing this alone and running `npm run icons`.
  */
 export const MARK = {
     /** The width and height the drawing is laid out in. */
