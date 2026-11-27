@@ -17,8 +17,8 @@ phone's home screen.
 
 ## Working on it
 
-How to contribute is in [CONTRIBUTING.md](CONTRIBUTING.md), and how to report a security issue is
-in [SECURITY.md](SECURITY.md).
+How to contribute is in [CONTRIBUTING.md](.github/CONTRIBUTING.md), and how to report a security
+issue is in [SECURITY.md](.github/SECURITY.md).
 
 You need [Node.js 24](https://nodejs.org/) and Git. The version is in `.nvmrc`, so `nvm use` picks it.
 
