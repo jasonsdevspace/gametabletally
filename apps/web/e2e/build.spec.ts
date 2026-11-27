@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 import { drawnFrom } from '../scripts/icons.mjs';
 import { precacheOf } from '../scripts/precache.mjs';
-import { ICO_SIZES, ICONS, MARK, markSvg } from '../src/mark.js';
+import { ICO_SIZES, ICONS, MARK, markSvg, README_MARKS, README_SHAPE } from '../src/mark.js';
 import { ENTRY_FILES, FRAME_FILE, OWN_FILES, SCREEN_FILES } from '../src/own-files.js';
 import { inApp, NOT_FOUND_FILE, ROUTES } from '../src/routes.js';
 import { installCacheOf, readPrecache } from '../worker/answer.js';
@@ -135,7 +135,17 @@ test("draws every icon from the mark's source as it stands, at the size it is na
         fileURLToPath(import.meta.resolve('@jasonsdevspace/design-kit/tokens.css')),
         'utf8'
     );
-    expect(kit).toContain(`--dk-accent: light-dark(${MARK.ground},`);
+    expect(kit).toContain(`--dk-accent: light-dark(${MARK.ground}, ${MARK.dark.ground})`);
+    expect(kit).toContain(`--dk-on-accent: light-dark(${MARK.ink}, ${MARK.dark.ink})`);
+    // The README's marks, one for each of GitHub's themes, drawn with the icons.
+    for (const { file, colors } of README_MARKS)
+        expect(
+            readFileSync(
+                fileURLToPath(new URL(`../../../.github/readme/${file}`, import.meta.url)),
+                'utf8'
+            ),
+            file
+        ).toBe(markSvg(README_SHAPE, colors));
     for (const icon of ICONS)
         if (icon.size === null)
             expect(readFileSync(join(DIST, icon.file), 'utf8'), icon.file).toBe(markSvg(icon));

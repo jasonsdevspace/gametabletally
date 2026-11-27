@@ -5,7 +5,8 @@
  *
  * The favicon is the mark as an SVG, with an `.ico` beside it for browsers that read no SVG. The
  * apple touch icon and the install icons fill their square, for a phone to round itself, and the
- * maskable icon leaves room around the strokes for a phone's own shape. Each picture is drawn by
+ * maskable icon leaves room around the strokes for a phone's own shape. The README's marks, one
+ * for each of GitHub's themes, are written to `.github/readme`. Each picture is drawn by
  * Chromium at its size. What they were drawn from is written beside this script, which a test holds
  * to the mark as it stands, so an icon not drawn again after a change fails the build's tests.
  */
@@ -16,9 +17,10 @@ import { fileURLToPath } from 'node:url';
 
 import { chromium } from '@playwright/test';
 
-import { FAVICON, ICO_SIZES, ICONS, markSvg } from '../src/mark.ts';
+import { FAVICON, ICO_SIZES, ICONS, markSvg, README_MARKS, README_SHAPE } from '../src/mark.ts';
 
 const PUBLIC = fileURLToPath(new URL('../public', import.meta.url));
+const README = fileURLToPath(new URL('../../../.github/readme', import.meta.url));
 
 /**
  * What every icon was drawn from, as the test reads it back: each icon's drawing, the `.ico`'s
@@ -28,6 +30,7 @@ export const drawnFrom = () =>
     createHash('sha256')
         .update(JSON.stringify(ICONS.map((icon) => [icon, markSvg(icon)])))
         .update(JSON.stringify(ICO_SIZES))
+        .update(JSON.stringify(README_MARKS.map(({ colors }) => markSvg(README_SHAPE, colors))))
         .update(readFileSync(fileURLToPath(import.meta.url)))
         .digest('hex')
         .slice(0, 16);
@@ -78,6 +81,11 @@ if (realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.me
         for (const size of ICO_SIZES) pngs.push({ size, png: await draw(favicon, size) });
         writeFileSync(join(PUBLIC, 'favicon.ico'), icoOf(pngs));
         console.log('drew favicon.ico');
+        mkdirSync(README, { recursive: true });
+        for (const { file, colors } of README_MARKS) {
+            writeFileSync(join(README, file), markSvg(README_SHAPE, colors));
+            console.log(`drew .github/readme/${file}`);
+        }
         writeFileSync(
             fileURLToPath(new URL('icons-drawn.json', import.meta.url)),
             `${JSON.stringify({ source: drawnFrom() }, null, 4)}\n`
