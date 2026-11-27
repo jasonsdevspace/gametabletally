@@ -162,10 +162,17 @@ describe("the website's pages", () => {
         (path) => {
             at(path);
             expect(document.querySelector('.dk-strip')).toBeNull();
-            const addresses = screen
+            const hosts = screen
                 .getAllByRole('link')
-                .map((link) => link.getAttribute('href') ?? '');
-            expect(addresses.filter((href) => href.includes('jasonsdevspace.com'))).toEqual([]);
+                .map(
+                    (link) =>
+                        new URL(link.getAttribute('href') ?? '', window.location.href).hostname
+                );
+            expect(
+                hosts.filter(
+                    (host) => host === 'jasonsdevspace.com' || host.endsWith('.jasonsdevspace.com')
+                )
+            ).toEqual([]);
             const footer = within(screen.getByRole('contentinfo'));
             expect(footer.getByRole('link', { name: 'About the app' })).toHaveAttribute(
                 'href',
