@@ -1,7 +1,7 @@
 /**
  * The app's mark, a tally of five on the app's blue: the one source the header draws it from and
- * `scripts/icons.mjs` draws every icon from, the favicon, the apple touch icon and the install
- * icons. A new mark is drawn by changing this alone and running `npm run icons`.
+ * `scripts/icons.mjs` draws every icon from, the favicon, the apple touch icon, the install icons
+ * and the README's marks. A new mark is drawn by changing this alone and running `npm run icons`.
  */
 export const MARK = {
     /** The width and height the drawing is laid out in. */
@@ -23,6 +23,12 @@ export const MARK = {
      */
     ground: '#1f4fd8',
     ink: '#ffffff',
+    /**
+     * The ground and the strokes in the kit's dark theme, its accent and the text on it there, as the
+     * header draws the mark. The repository's README shows a file for each of GitHub's themes, since
+     * the light ground stands too dark on GitHub's dark page.
+     */
+    dark: { ground: '#8fb0ff', ink: '#121212' },
 } as const;
 
 /** How an icon draws the mark. */
@@ -35,9 +41,18 @@ export interface MarkShape {
     readonly small: boolean;
 }
 
-/** The mark as an SVG file, drawn as an icon draws it. */
-export const markSvg = ({ corners, scale, small }: MarkShape): string => {
-    const { box, strokes, ground, ink } = MARK;
+/** The colors the mark is drawn in. */
+export interface MarkColors {
+    readonly ground: string;
+    readonly ink: string;
+}
+
+/** The mark as an SVG file, drawn as an icon draws it, in the light theme's colors unless given others. */
+export const markSvg = (
+    { corners, scale, small }: MarkShape,
+    { ground, ink }: MarkColors = MARK
+): string => {
+    const { box, strokes } = MARK;
     const middle = box / 2;
     const strokeWidth = small ? MARK.small.strokeWidth : MARK.strokeWidth;
     const moves = [
@@ -72,6 +87,18 @@ export const ICONS = [
 
 /** The favicon, which the `.ico` is drawn from too. */
 export const FAVICON = ICONS[0];
+
+/**
+ * The marks the repository's README shows, by their file in `.github/readme`, one for each of
+ * GitHub's themes, drawn as the header draws the mark.
+ */
+export const README_MARKS = [
+    { file: 'mark-light.svg', colors: MARK },
+    { file: 'mark-dark.svg', colors: MARK.dark },
+] as const;
+
+/** How the README's marks are drawn: whole, with their corners, at the full strokes. */
+export const README_SHAPE: MarkShape = { corners: true, scale: 1, small: false };
 
 /** The sizes the favicon's `.ico` holds, for browsers that read no SVG. */
 export const ICO_SIZES = [16, 32, 48] as const;
