@@ -177,6 +177,52 @@ const startFlip7 = async (page: Page): Promise<string> => {
     return new URL(page.url()).searchParams.get('id') ?? '';
 };
 
+// The numbers Plausible's own script sets on an event: the time the page was in view in
+// milliseconds, how far it was scrolled and the script's version. They can hold any digits, so a
+// score's digits in them say nothing about what the app sent.
+const PLAUSIBLE_NUMBERS = new Set(['e', 'sd', 'v']);
+
+/** The words in `never` that a request's body carries outside Plausible's own numbers. */
+const wordsSent = (body: string, never: readonly string[]): string[] => {
+    // A request with no body, such as the script's own load, carries nothing to check.
+    if (body === '') return [];
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error(`Not an event: ${body}`);
+    }
+    const sent = Object.fromEntries(Object.entries(parsed));
+    for (const key of PLAUSIBLE_NUMBERS) {
+        if (key in sent) expect(typeof sent[key], `${key} in ${body}`).toBe('number');
+    }
+    const rest = JSON.stringify(
+        Object.fromEntries(Object.entries(sent).filter(([key]) => !PLAUSIBLE_NUMBERS.has(key)))
+    );
+    return never.filter((word) => rest.includes(word));
+};
+
+test("reads Plausible's own engagement time, scroll depth and version as its numbers, never as a score", () => {
+    test.skip(test.info().project.name !== 'phone', 'It reads no page, so one project runs it.');
+    const never = ['141', 'Zelda'];
+    const engaged = JSON.stringify({
+        n: 'engagement',
+        u: 'https://gametabletally.com/game/',
+        e: 1141,
+        sd: 100,
+        v: 37,
+    });
+    expect(wordsSent(engaged, never)).toEqual([]);
+    const scored = JSON.stringify({ n: 'Game finished', p: { game: 'Flip 7', score: 141 }, e: 5 });
+    expect(wordsSent(scored, never)).toEqual(['141']);
+    const addressed = JSON.stringify({
+        n: 'pageview',
+        u: 'https://gametabletally.com/?winner=Zelda',
+    });
+    expect(wordsSent(addressed, never)).toEqual(['Zelda']);
+    expect(wordsSent('', never)).toEqual([]);
+    expect(() => wordsSent(JSON.stringify({ n: 'engagement', e: 'Zelda' }), never)).toThrow();
+    expect(() => wordsSent('[1141]', never)).toThrow('Not an event');
+});
+
 test("counts a game started and a game finished by the game's name alone, and sends no name, score or id", async ({
     page,
     baseURL,
@@ -238,10 +284,8 @@ test("counts a game started and a game finished by the game's name alone, and se
     ];
     expect(plausible.requests.length).toBeGreaterThan(0);
     for (const { url, body, cookie } of plausible.requests) {
-        for (const words of never) {
-            expect(url).not.toContain(words);
-            expect(body).not.toContain(words);
-        }
+        for (const words of never) expect(url).not.toContain(words);
+        expect(wordsSent(body, never)).toEqual([]);
         expect(cookie).toBeUndefined();
     }
     expect(await page.context().cookies()).toEqual([]);
