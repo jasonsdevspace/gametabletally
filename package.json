@@ -17,7 +17,8 @@
         "format": "prettier --write .",
         "test": "vitest",
         "build": "npm run build --workspaces --if-present",
-        "verify": "npm run type-check --workspaces && tsc -p scripts && eslint . && prettier --check . && node scripts/check-prose.mjs && node scripts/check-node.mjs && vitest run && npm run build && npm run cases:outside-node",
+        "prose": "check-prose",
+        "verify": "npm run type-check --workspaces && tsc -p scripts && eslint . && prettier --check . && npm run prose && node scripts/check-node.mjs && vitest run && npm run build && npm run cases:outside-node",
         "prepare": "husky || true",
         "cases:outside-node": "npm run cases:outside-node --workspace=@gametabletally/scoring",
         "e2e": "npm run build && npm run e2e --workspace=@gametabletally/web",
@@ -26,6 +27,7 @@
     "devDependencies": {
         "@axe-core/playwright": "^4.14.0",
         "@eslint/js": "^10.0.1",
+        "@jasonsdevspace/prose-check": "0.1.0",
         "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
         "@playwright/test": "^1.65.1",
         "@testing-library/jest-dom": "^8.0.0",
