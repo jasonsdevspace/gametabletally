@@ -1,8 +1,8 @@
 /*
  * The website's pages: the first visit, the install page, the about page and the pages for an
- * address that is not one and for an error. They sit in the design kit's strip and footer, and
- * this sheet lays out what is between them, on the kit's column, spaces and sizes, with no color
- * of its own. Instrument Serif sets the display lines here and nowhere in the app.
+ * address that is not one and for an error. They sit between the app's own header and its footer,
+ * drawn in the kit's footer style, and this sheet lays out what is between them, on the kit's
+ * column, spaces and sizes, with no color of its own. Instrument Serif sets the display lines here and nowhere in the app.
  */
 
 /* Instrument Serif, served by the app, for the Latin letters the website writes. */
