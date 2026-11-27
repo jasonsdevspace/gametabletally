@@ -35,6 +35,10 @@ updates:
           # The Node types follow the Node major in .nvmrc.
           - dependency-name: '@types/node'
             update-types: ['version-update:semver-major']
+          # The design kit moves by hand, in a pull request of its own that reads the
+          # release's Upgrading notes and checks the pages, since before 1.0.0 a minor
+          # or a patch of the kit can change what a page draws.
+          - dependency-name: '@jasonsdevspace/design-kit'
 
     - package-ecosystem: github-actions
       directory: /
