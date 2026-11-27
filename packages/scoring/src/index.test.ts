@@ -98,8 +98,7 @@ describe('how long a game of Wizard lasts', () => {
 
 describe('scoring a game', () => {
     it('refuses a list of players out with a hole in it, as JSON cannot write one', () => {
-        // A sparse array, which a caller in TypeScript can hand over and JSON never holds.
-        // eslint-disable-next-line no-sparse-arrays
+        // eslint-disable-next-line no-sparse-arrays -- a hole a caller in TypeScript can hand over and JSON never holds
         const out = [, 'cat'];
         const result = score({
             game: 'skyjo',
