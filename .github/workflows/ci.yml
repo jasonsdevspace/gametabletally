@@ -41,22 +41,22 @@ jobs:
               run: npm ci --ignore-scripts
 
             - name: Type-check
-              run: npm run type-check --workspaces && npx tsc -p scripts
+              run: npm run type-check
 
             - name: Lint
-              run: npx eslint .
+              run: npm run lint
 
             - name: Format check
-              run: npx prettier --check .
+              run: npm run format:check
 
             - name: Prose check
               run: npm run prose
 
             - name: Node version check
-              run: node scripts/check-node.mjs
+              run: npm run node-check
 
             - name: Unit tests
-              run: npx vitest run
+              run: npm run test:run
 
             # The scoring package from its compiled output, and the app as a
             # browser receives it, so a build that type-checks but does not
