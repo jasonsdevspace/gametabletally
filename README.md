@@ -17,10 +17,10 @@ saved on the phone. It is built on my [design kit](https://github.com/jasonsdevs
 [Read how it works](https://gametabletally.com/about/#how) ·
 [Read how a game is scored](packages/scoring/README.md)
 
-<a href="https://gametabletally.com/play/"><picture>
+<p><a href="https://gametabletally.com/play/"><picture>
 <source media="(prefers-color-scheme: dark)" srcset=".github/readme/round-dark.png">
 <img src=".github/readme/round-light.png" alt="Game Table Tally on a phone, scoring a player's round of Flip 7 from the cards they hold" width="280">
-</picture></a>
+</picture></a></p>
 
 ## Why I built it
 
