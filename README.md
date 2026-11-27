@@ -14,7 +14,7 @@ to a phone's home screen, and works with no connection after the first visit. Ga
 saved on the phone. It is built on my [design kit](https://github.com/jasonsdevspace/design-kit).
 
 **[Open the app](https://gametabletally.com/play/)** ·
-[Read how it works](https://gametabletally.com/about/#how) ·
+[Read how it was built](https://jasonsdevspace.com/projects/gametabletally/) ·
 [Read how a game is scored](packages/scoring/README.md)
 
 <p><a href="https://gametabletally.com/play/"><picture>
