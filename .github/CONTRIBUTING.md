@@ -6,7 +6,7 @@ conduct](https://github.com/jasonsdevspace/.github/blob/main/CODE_OF_CONDUCT.md)
 
 ## Setting up and running the checks
 
-[Working on it](../README.md#working-on-it) in the README says how to install and what each check
+[Dev setup](../README.md#dev-setup) in the README says how to install and what each check
 covers. Before a pull request, run these checks, which CI runs too:
 
 ```bash
