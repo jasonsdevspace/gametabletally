@@ -102,12 +102,18 @@ it.
 git clone https://github.com/jasonsdevspace/gametabletally.git
 cd gametabletally
 npm ci
+npm run prepare
 npm run verify
 ```
 
+`npm run prepare` sets up two hooks, one that lints and formats the staged files and one that holds
+each commit message to the house style. It runs by name, since the `.npmrc` turns npm's install
+scripts off and npm skips `prepare` with them.
+
 `npm run verify` runs what CI runs on every pull request: the type check, the lint rules, the
-formatting, a prose check, a check that everything names the Node version in `.nvmrc`, the tests,
-the build, and the scoring cases run against the built script in a runtime that is not Node.
+formatting, a prose check, a check that everything names the Node version in `.nvmrc`, a check that
+npm runs no install scripts, the tests, the build, and the scoring cases run against the built
+script in a runtime that is not Node.
 
 To work on the app:
 
@@ -175,9 +181,8 @@ served over HTTP/2 as GitHub Pages serves them, with a certificate made for the 
 A merge to main is built and deployed to GitHub Pages at gametabletally.com once every check has
 passed, and a merge that fails one is not deployed.
 
-Installing sets up two hooks: one lints and formats the staged files, and one holds each commit
-message to the house style. Pull requests are squashed, so a pull request's title becomes the
-commit on main, and CI holds the title and the body to the same check.
+Pull requests are squashed, so a pull request's title becomes the commit on main, and CI holds the
+title and the body to the same check the commit hook runs.
 
 </details>
 
