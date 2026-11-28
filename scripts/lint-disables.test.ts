@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
 import { repositoryFiles } from './repository.mjs';
@@ -35,5 +36,17 @@ describe('the lint disable comments', () => {
         expect(explained(' no-console -- */')).toBe(false);
         expect(explained(' no-console -- the reason */')).toBe(true);
         expect(explained(' no-console')).toBe(false);
+    });
+
+    it('fail one that suppresses nothing, so none outlives its reason', async () => {
+        const [result] = await new ESLint().lintText(
+            '// eslint-disable-next-line no-console -- logs nothing here\nexport const total = 1;\n',
+            { filePath: 'scripts/repository.mjs' }
+        );
+        expect(
+            result?.messages.filter(
+                (message) => message.severity === 2 && /Unused eslint-disable/.test(message.message)
+            )
+        ).toHaveLength(1);
     });
 });
