@@ -401,21 +401,119 @@ const jobsIn = (text: string): [string, string][] => {
     ].map((match) => [match[1] ?? '', match[2] ?? '']);
 };
 
-describe('the jobs and what they run', () => {
-    const lines = [...workflows].flatMap(([path, text]) =>
-        runsIn(text).flatMap((run) => run.split('\n').map((line) => `${path}: ${line.trim()}`))
+/**
+ * npm's subcommands that install, or that run packages' install scripts. `audit fix` is read as
+ * well, since it installs what it changes.
+ */
+const INSTALL_ALIASES = new Set([
+    'install',
+    'i',
+    'in',
+    'ins',
+    'add',
+    'ci',
+    'clean-install',
+    'ic',
+    'install-clean',
+    'cit',
+    'install-ci-test',
+    'it',
+    'install-test',
+    'update',
+    'up',
+    'upgrade',
+    'dedupe',
+    'rebuild',
+    'link',
+]);
+
+/** A text's lines with each backslash continuation joined, as the shell reads a command. */
+const joinedLines = (text: string): string[] =>
+    text.replace(/[ \t]*\\\r?\n[ \t]*/g, ' ').split('\n');
+
+/** A line's words, split at spaces, quotes, backticks and the shell's own operators. */
+const wordsOf = (line: string): string[] => line.split(/[\s"'`;&|()<>]+/).filter(Boolean);
+
+/** Whether a word runs npm, or npx, by name or by a path that ends in it. */
+const runs = (word: string, tool: 'npm' | 'npx') => word === tool || word.endsWith(`/${tool}`);
+
+/** Whether the last flag on a line that names install scripts turns them off, as npm reads it. */
+const scriptsOff = (words: readonly string[]): boolean => {
+    let off = false;
+    words.forEach((word, at) => {
+        if (word === '--ignore-scripts')
+            off = !['false', '0', 'null'].includes(words[at + 1] ?? '');
+        else if (word.startsWith('--ignore-scripts=')) off = word === '--ignore-scripts=true';
+        else if (word === '--no-ignore-scripts') off = false;
+    });
+    return off;
+};
+
+/**
+ * The lines that install with npm and leave install scripts on, wherever they run: the word npm
+ * followed later on the line by an install subcommand, or by `audit fix`, without the last flag
+ * that names install scripts turning them off. Every install carries the flag, inside the
+ * repository or out, so nothing has to decide where a step runs, and a line that only mentions an
+ * install, such as a message, is refused too and reworded rather than passing unread.
+ */
+const installsWithScripts = (lines: readonly string[]): string[] =>
+    lines
+        .filter((line) => {
+            const words = wordsOf(line);
+            const at = words.findIndex((word) => runs(word, 'npm'));
+            if (at < 0) return false;
+            const after = words.slice(at + 1);
+            const installs = after.some(
+                (word, index) =>
+                    INSTALL_ALIASES.has(word) || (word === 'audit' && after[index + 1] === 'fix')
+            );
+            return installs && !scriptsOff(words);
+        })
+        .map((line) => line.trim());
+
+/**
+ * The lines that could fetch a package and run it: an npx, `npm exec` or `npm x` without
+ * `--no-install` as its own first option, right after npx or the subcommand and before the tool,
+ * and any `npm init` given an initializer or `npm create`, which always fetch one.
+ */
+const fetchesToRun = (lines: readonly string[]): string[] =>
+    lines
+        .filter((line) => {
+            const words = wordsOf(line);
+            return words.some((word, at) => {
+                if (runs(word, 'npx')) return words[at + 1] !== '--no-install';
+                if (!runs(word, 'npm')) return false;
+                const after = words.slice(at + 1);
+                return after.some((next, index) => {
+                    if (next === 'exec' || next === 'x') return after[index + 1] !== '--no-install';
+                    if (next === 'create') return true;
+                    if (next === 'init' || next === 'innit')
+                        return after[index + 1] !== undefined && !after[index + 1]?.startsWith('-');
+                    return false;
+                });
+            });
+        })
+        .map((line) => line.trim());
+
+/** The lines a workflow runs, each continuation joined, with comment lines left out. */
+const workflowLines = (text: string): string[] =>
+    joinedLines(text.replace(/\r\n/g, '\n')).filter((line) => !/^\s*#/.test(line));
+
+/** A Dockerfile's RUN lines, each continuation joined. */
+const dockerRunLines = (text: string): string[] =>
+    joinedLines(text.replace(/\r\n/g, '\n')).filter((line) =>
+        /^\s*(?:ONBUILD\s+)?RUN\b/i.test(line)
     );
 
-    it('install dependencies without running their install scripts', () => {
-        const installs = lines.filter((line) => /\bnpm (?:ci|install|i|add)\b/.test(line));
-        expect(installs.length).toBeGreaterThan(0);
-        expect(installs.filter((line) => !/--ignore-scripts\b/.test(line))).toEqual([]);
-    });
+/** The repository's Dockerfiles, by the names Docker gives them. */
+const dockerfiles = repositoryFiles(import.meta.url, (path) =>
+    /(?:^|\/)Dockerfile(?:\.[^/]+)?$|\.Dockerfile$/.test(path)
+);
 
-    it('run npx, npm exec and npm x only on what is installed, so nothing is fetched to run', () => {
-        expect(lines.flatMap(fetchingRuns)).toEqual([]);
-    });
+/** The first npm that reads both `allow-git` and `allow-remote`, which the repository's `.npmrc` sets. */
+const NPM_FLOOR = [11, 14, 0] as const;
 
+describe('the jobs and what they run', () => {
     it('give every job a name of its own, a named image and a time limit', () => {
         for (const [path, text] of workflows) expect(jobsIn(text).length, path).toBeGreaterThan(0);
         const jobs = [...workflows].flatMap(([path, text]) =>
@@ -435,5 +533,102 @@ describe('the jobs and what they run', () => {
             ];
         });
         expect(problems).toEqual([]);
+    });
+});
+
+describe('the installs and fetches', () => {
+    const lines = [
+        ...[...workflows.values()].flatMap(workflowLines),
+        ...[...dockerfiles.values()].flatMap(dockerRunLines),
+    ];
+
+    it('turn install scripts off on every install, wherever it runs', () => {
+        expect(installsWithScripts(lines)).toEqual([]);
+    });
+
+    it('find the installs the workflows run, so a reading that finds none fails', () => {
+        expect(
+            lines.filter((line) => {
+                const words = wordsOf(line);
+                const at = words.findIndex((word) => runs(word, 'npm'));
+                return at >= 0 && words.slice(at + 1).some((word) => INSTALL_ALIASES.has(word));
+            }).length
+        ).toBeGreaterThan(0);
+    });
+
+    it('fetch nothing to run: npx, npm exec and npm x only with --no-install, and no npm init or create', () => {
+        expect(fetchesToRun(lines)).toEqual([]);
+    });
+
+    it('read an install however it is written, the last flag deciding', () => {
+        const read = (text: string) => installsWithScripts(joinedLines(text));
+        expect(read('npm ci --ignore-scripts')).toEqual([]);
+        expect(read('npm ci')).toHaveLength(1);
+        expect(read('npm ci --ignore-scripts --no-ignore-scripts')).toHaveLength(1);
+        expect(read('npm ci --ignore-scripts false')).toHaveLength(1);
+        expect(read('npm ci --ignore-scripts=false')).toHaveLength(1);
+        expect(read('npm --registry https://registry.example install -g x')).toHaveLength(1);
+        expect(read('npm install --location=global x')).toHaveLength(1);
+        expect(read('npm ci \\\n    --ignore-scripts')).toEqual([]);
+        expect(read('npm ci \\\n    --no-ignore-scripts')).toHaveLength(1);
+        expect(read('run: "npm ci"')).toHaveLength(1);
+        expect(read(`sh -c 'npm install x'`)).toHaveLength(1);
+        expect(read('/usr/local/bin/npm ci')).toHaveLength(1);
+        expect(read('npm audit fix')).toHaveLength(1);
+        expect(read('npm run build')).toEqual([]);
+        // A message that names an install is refused too, and reworded, never passed unread.
+        expect(read('echo "install it with npm ci"')).toHaveLength(1);
+        expect(dockerRunLines('RUN npm ci \\\n    --omit=dev\nCOPY . .')).toEqual([
+            'RUN npm ci --omit=dev',
+        ]);
+    });
+
+    it('read a fetch by its words', () => {
+        expect(
+            fetchesToRun([
+                'npx --no-install tsc',
+                'npx tsc',
+                'npx foo --no-install',
+                'npm exec --no-install tsc',
+                'npm exec tsc',
+                'npm x --no-install -- foo',
+                'npm init vite',
+                'npm create vite',
+                'npm init -y',
+                'RUN npx tsc',
+                'npm ci --ignore-scripts',
+            ])
+        ).toEqual([
+            'npx tsc',
+            'npx foo --no-install',
+            'npm exec tsc',
+            'npm init vite',
+            'npm create vite',
+            'RUN npx tsc',
+        ]);
+    });
+
+    it('declare an npm that reads allow-git and allow-remote, and run on one', () => {
+        const manifest: unknown = JSON.parse(
+            readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+        );
+        const engines =
+            typeof manifest === 'object' && manifest !== null && 'engines' in manifest
+                ? manifest.engines
+                : undefined;
+        const declared =
+            typeof engines === 'object' && engines !== null && 'npm' in engines
+                ? String(engines.npm)
+                : '';
+        expect(declared).toBe(`>=${NPM_FLOOR.join('.')}`);
+        const running = execFileSync('npm', ['--version'], { encoding: 'utf8' })
+            .trim()
+            .split('.')
+            .map(Number);
+        const atLeast = NPM_FLOOR.findIndex((part, index) => (running[index] ?? 0) !== part);
+        expect(
+            atLeast < 0 || (running[atLeast] ?? 0) > (NPM_FLOOR[atLeast] ?? 0),
+            `npm ${running.join('.')}`
+        ).toBe(true);
     });
 });
