@@ -205,9 +205,11 @@ commit on main, and CI holds the title and the body to the same check.
       pages ahead of time, list what the worker caches, serve the build and run the audit.
 - `docs/` holds the decision records and the shape of a saved game.
 - `scripts/` holds the Node version check, the shared file that lists the files each check reads,
-  and the tests that read the whole repository: the source condition, the workflows and that every
-  lint disable comment says why. The prose check and the commit message check come from the
-  `@jasonsdevspace/prose-check` package, run as `npm run prose` and by the commit hook.
+  and the tests that read the whole repository: the source condition and the workflows. The prose
+  check and the commit message check come from the `@jasonsdevspace/prose-check` package, run as
+  `npm run prose` and by the commit hook. The lint, format and TypeScript settings come from the
+  `@jasonsdevspace/config` package, and `eslint.config.js` adds only the rules that name this
+  repository's folders.
 - `.github/` holds the contributing guide, the security policy, the issue and pull request
   templates, the README's mark, drawn by `npm run icons`, and its picture of a round, taken by hand
   from the live app, in `readme/`, and the workflows.
