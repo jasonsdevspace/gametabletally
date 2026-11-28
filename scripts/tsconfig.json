@@ -6,5 +6,5 @@
         "noEmit": true,
         "types": ["node"]
     },
-    "include": ["*.test.ts", "test-repository.ts", "../vitest.config.ts", "../source-condition.ts"]
+    "include": ["*.test.ts", "../vitest.config.ts", "../source-condition.ts"]
 }
