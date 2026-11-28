@@ -19,11 +19,12 @@
         "build": "npm run build --workspaces --if-present",
         "prose": "check-prose",
         "node-check": "node scripts/check-node.mjs",
+        "installs": "check-installs",
         "type-check": "npm run type-check --workspaces && tsc -p scripts",
         "lint": "eslint .",
         "format:check": "prettier --check .",
         "test:run": "vitest run",
-        "verify": "npm run type-check && npm run lint && npm run format:check && npm run prose && npm run node-check && npm run test:run && npm run build && npm run cases:outside-node",
+        "verify": "npm run type-check && npm run lint && npm run format:check && npm run prose && npm run node-check && npm run installs && npm run test:run && npm run build && npm run cases:outside-node",
         "prepare": "husky || true",
         "cases:outside-node": "npm run cases:outside-node --workspace=@gametabletally/scoring",
         "e2e": "npm run build && npm run e2e --workspace=@gametabletally/web",
@@ -33,6 +34,7 @@
         "@axe-core/playwright": "^4.14.0",
         "@eslint/js": "^10.0.1",
         "@jasonsdevspace/prose-check": "0.3.0",
+        "@jasonsdevspace/repo-check": "0.1.0",
         "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
         "@playwright/test": "^1.65.1",
         "@testing-library/jest-dom": "^8.0.0",
@@ -70,9 +72,5 @@
         "*.{json,md,yml,yaml,css,html}": [
             "prettier --write"
         ]
-    },
-    "allowScripts": {
-        "unrs-resolver": true,
-        "fsevents": true
     }
 }
